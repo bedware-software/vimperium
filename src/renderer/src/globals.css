@@ -613,13 +613,21 @@ kbd.vim-mode[data-indicator="dot"]::before {
  * gradient's own angle or position animated would cost the window's main
  * thread a frame's work 60 times a second, for as long as Vim mode is on. */
 @keyframes mode-edge-turn { to { rotate: 1turn; } }
-/* A turn that rests at the sides: the comet's head (--head, its angle in the
- * gradient) is taken from the right end to the left and round again, each
- * half eased — slow at the ends, quick along the top and the bottom. */
-@keyframes mode-edge-turn-sides {
-  0% { rotate: calc(90deg - var(--head)); animation-timing-function: cubic-bezier(0.8, 0, 0.2, 1); }
-  50% { rotate: calc(270deg - var(--head)); animation-timing-function: cubic-bezier(0.8, 0, 0.2, 1); }
-  100% { rotate: calc(450deg - var(--head)); }
+/* A strip's pass, for the looks resting at the sides: from where it stands
+ * with the comet at rest in one end (--at) to where it stands with the comet
+ * at rest in the other (--past), eased — all but still in the ends, quick
+ * along the top and the bottom — then put back as far the other way
+ * (--before), out of sight both times, to come round again. */
+@keyframes mode-edge-pass {
+  0%, 100% { translate: var(--at); animation-timing-function: cubic-bezier(0.7, 0, 0.3, 1); }
+  50% { translate: var(--past); animation-timing-function: step-end; }
+  50.001% { translate: var(--before); animation-timing-function: cubic-bezier(0.7, 0, 0.3, 1); }
+}
+/* The same half a period on: the bottom's strip and the left end's. */
+@keyframes mode-edge-pass-back {
+  0% { translate: var(--before); animation-timing-function: cubic-bezier(0.7, 0, 0.3, 1); }
+  50% { translate: var(--at); animation-timing-function: cubic-bezier(0.7, 0, 0.3, 1); }
+  100% { translate: var(--past); }
 }
 @keyframes mode-edge-slide { to { translate: -50% 0; } }
 @keyframes mode-edge-breathe {
@@ -687,21 +695,129 @@ kbd.vim-mode[data-indicator="dot"]::before {
 .mode-edge[data-edge^="comet-rail"] > span > i {
   background: linear-gradient(90deg, color-mix(in oklch, var(--c1) 40%, transparent), color-mix(in oklch, var(--c2) 40%, transparent), color-mix(in oklch, var(--c3) 40%, transparent));
 }
-.mode-edge[data-edge^="comet-rail"] > span > i > i {
-  --head: 348deg;
+.mode-edge[data-edge="comet-rail"] > span > i > i {
   background: conic-gradient(transparent 0deg 200deg, color-mix(in oklch, var(--c2) 70%, transparent) 290deg, var(--c1) 348deg, transparent 360deg);
 }
 /* Comet: the comet alone. */
-.mode-edge[data-edge="comet"] > span > i > i,
-.mode-edge[data-edge="comet-sides"] > span > i > i {
-  --head: 340deg;
+.mode-edge[data-edge="comet"] > span > i > i {
   background: conic-gradient(transparent 0deg 230deg, var(--c2) 290deg, var(--c1) 340deg, transparent 360deg);
 }
-/* Either comet resting at the sides. A steady turn has it crawl past the
- * middle of a wide field's top and bottom and whip round its ends; this one
- * lingers at the ends instead. */
-.mode-edge[data-edge$="-sides"] > span > i > i {
-  animation-name: mode-edge-turn-sides;
+
+/* Either comet resting at the sides. A gradient turned about the middle of a
+ * wide field draws the comet small — a short bright piece at the end of a
+ * long line — only at the middle of the top and the bottom, and smears it
+ * along half the field at the ends, however the turn is timed. So these
+ * aren't turned. The comet is a strip drawn once — a tip, a short piece of
+ * c1, a long line of c2 fading out — and the edge is cut into four
+ * stretches, each showing that strip slide past (ModeEdge draws their
+ * boxes): a window between the ends, standing still, that clips the top's
+ * strip (sliding right) and the bottom's (sliding left), and beside it the
+ * right end's strip (sliding down) and the left end's (sliding up), --a
+ * wide. On the ring an end starts halfway round the corners — the 45° point
+ * of the ring's middle line, to the nearest pixel — where going by x and
+ * going by y take the corner at the same pace, so the line runs round it
+ * unbroken. Where a strip stands is the same straight-line function of how
+ * far the tip has gone for all four, and their keyframes share times and
+ * easing, so they are one light: the same small comet all the way round,
+ * at rest in the left and right ends and quick along the top and the bottom.
+ *
+ * --a: an end's width. --j: how far down an end the top's strip hands the
+ * line over. --k: px of end per px of comet. --c: how much of the comet an
+ * end takes. --run: half a lap. --len: the comet's whole length. --rest: how
+ * far past an end's middle the tip stops, the piece of c1 about centred
+ * there. */
+.mode-edge[data-edge$="-sides"] > span > i {
+  --a: round(max(2px, var(--r, 8px) * 0.2929 + 0.97px), 1px);
+  --j: var(--a);
+  --k: 1;
+  --c: calc((100cqh - 2 * var(--j)) / var(--k));
+  --run: calc(100cqw - 2 * var(--a) + var(--c));
+  --len: 80cqw;
+  --rest: min(34cqh, 50cqh - var(--j));
+  --tail: color-mix(in oklch, var(--c2) 70%, transparent);
+  --tail-far: color-mix(in oklch, var(--c2) 28%, transparent);
+}
+/* The glow's ends are wide, so its blur has as much to work on there as
+ * along the sides; --k keeps its lap as long as the ring's. */
+.mode-edge[data-edge$="-sides"] > span > i + i {
+  --a: min(50cqh, 25cqw, var(--r, 8px) + 14px);
+  --j: 0px;
+  --k: 0.7;
+}
+.mode-edge[data-edge="comet-sides"] > span > i {
+  --len: 66cqw;
+  --tail: var(--c2);
+  --tail-far: color-mix(in oklch, var(--c2) 40%, transparent);
+}
+/* The window between the ends. */
+.mode-edge[data-edge$="-sides"] > span > i > i:first-child {
+  left: var(--a);
+  right: var(--a);
+  top: 0;
+  bottom: 0;
+  width: auto;
+  height: auto;
+  translate: none;
+  overflow: hidden;
+  animation-name: none;
+}
+/* The strips: the comet from its tip back (--comet, --s px of strip per px
+ * of comet). Animation longhands, so the pauses below still reach them. */
+.mode-edge[data-edge$="-sides"] > span > i > i > i,
+.mode-edge[data-edge$="-sides"] > span > i > i + i {
+  --comet: transparent, var(--c1) calc(var(--s) * 12cqh), var(--c1) calc(var(--s) * 30cqh), var(--tail) calc(var(--s) * 95cqh), var(--tail-far) calc(var(--s) * (47.5cqh + var(--len) * 0.5)), transparent;
+  --dir: 1;
+  position: absolute;
+  animation-name: mode-edge-pass;
+  animation-duration: var(--speed);
+  animation-iteration-count: infinite;
+}
+/* The top's, its tip at its right end… */
+.mode-edge[data-edge$="-sides"] > span > i > i > i {
+  --s: 1;
+  --v: calc(100cqw - 2 * var(--a) + var(--c) / 2 + var(--rest) - var(--len));
+  --at: calc(var(--dir) * var(--v)) 0;
+  --past: calc(var(--dir) * (var(--v) + var(--run))) 0;
+  --before: calc(var(--dir) * (var(--v) - var(--run))) 0;
+  left: 0;
+  top: 0;
+  width: var(--len);
+  height: 50%;
+  background: linear-gradient(to left, var(--comet));
+}
+/* …and the bottom's, the same turned round. */
+.mode-edge[data-edge$="-sides"] > span > i > i > i:last-child {
+  --dir: -1;
+  left: auto;
+  top: auto;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to right, var(--comet));
+  animation-name: mode-edge-pass-back;
+}
+/* The right end's, its tip at its bottom… */
+.mode-edge[data-edge$="-sides"] > span > i > i + i {
+  --s: var(--k);
+  --v: calc(50cqh + var(--k) * (var(--rest) - var(--len)));
+  --at: 0 calc(var(--dir) * var(--v));
+  --past: 0 calc(var(--dir) * (var(--v) + var(--k) * var(--run)));
+  --before: 0 calc(var(--dir) * (var(--v) - var(--k) * var(--run)));
+  left: auto;
+  top: 0;
+  right: 0;
+  width: var(--a);
+  height: calc(var(--k) * var(--len));
+  background: linear-gradient(to top, var(--comet));
+}
+/* …and the left end's, turned round. */
+.mode-edge[data-edge$="-sides"] > span > i > i:nth-child(2) {
+  --dir: -1;
+  top: auto;
+  right: auto;
+  left: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom, var(--comet));
+  animation-name: mode-edge-pass-back;
 }
 /* Aurora: the three colours circling the whole edge. */
 .mode-edge[data-edge="aurora"] > span > i > i {

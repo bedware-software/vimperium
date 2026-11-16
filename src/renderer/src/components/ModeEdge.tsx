@@ -35,12 +35,21 @@ export function ModeEdge({ mode, edge, addressBar = false }: Props) {
   }, [look, shown])
 
   if (!shown) return null
+  // The ring and the glow, each a clipping box. A turning look has one mover
+  // in it. A comet resting at the sides slides strips past instead: a
+  // window with the top's and the bottom's in it, then the left end's and
+  // the right end's. Keyed by which, so a change of look makes the boxes
+  // anew and the strips start together.
+  const strips = look.endsWith('-sides')
+  const box = (key: string) => strips
+    ? <i key={`${key}-strips`}><i><i /><i /></i><i /><i /></i>
+    : <i key={key}><i /></i>
   return (
     <span ref={ref} className="mode-edge" data-edge={look} aria-hidden="true">
       {(['command', 'insert'] as const).map((layer) => (
         <span key={layer} data-for={layer} data-on={mode === layer ? '' : undefined}>
-          <i><i /></i>
-          <i><i /></i>
+          {box('ring')}
+          {box('glow')}
         </span>
       ))}
     </span>
