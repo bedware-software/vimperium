@@ -75,6 +75,9 @@ interface Settings {
   vimEdge: VimEdge
   /** That edge on every field that shows the mode, not the address bar alone. */
   vimEdgeEverywhere: boolean
+  /** Its pace in seconds: a lap, and a resting comet's stay in each end. */
+  vimEdgeSpeed?: number
+  vimEdgeRest?: number
   /** Whether the edge's light and the mark's glitch move, see lib/motion.ts;
    *  null = no choice made, the platform's default. */
   motion: MotionChoice | null
@@ -783,7 +786,7 @@ export default function App() {
       applyTheme(normalized.theme, normalized.lightVariant, normalized.darkVariant)
       applyDensity(normalized.density)
       applyVimIndicator(normalized.vimIndicator)
-      applyVimEdge(normalized.vimEdge, normalized.vimEdgeEverywhere === true)
+      applyVimEdge(normalized.vimEdge, normalized.vimEdgeEverywhere === true, normalized.vimEdgeSpeed, normalized.vimEdgeRest)
       applyMotion(normalized.motion)
       setDefaultNewTabUrl(normalized.defaultPageUrl)
       setNewTabFocusPref(normalized.newTabFocus)
@@ -1466,7 +1469,7 @@ export default function App() {
       applyTheme(s.theme, s.lightVariant, s.darkVariant)
       applyDensity(s.density)
       applyVimIndicator(s.vimIndicator)
-      applyVimEdge(s.vimEdge, s.vimEdgeEverywhere === true)
+      applyVimEdge(s.vimEdge, s.vimEdgeEverywhere === true, s.vimEdgeSpeed, s.vimEdgeRest)
       applyMotion(s.motion)
       setDefaultNewTabUrl(s.defaultPageUrl)
       setNewTabFocusPref(s.newTabFocus)
@@ -1589,7 +1592,7 @@ export default function App() {
     applyTheme(normalized.theme, normalized.lightVariant, normalized.darkVariant)
     applyDensity(normalized.density)
     applyVimIndicator(normalized.vimIndicator)
-    applyVimEdge(normalized.vimEdge, normalized.vimEdgeEverywhere === true)
+    applyVimEdge(normalized.vimEdge, normalized.vimEdgeEverywhere === true, normalized.vimEdgeSpeed, normalized.vimEdgeRest)
     applyMotion(normalized.motion)
     setDefaultNewTabUrl(normalized.defaultPageUrl)
     setNewTabFocusPref(normalized.newTabFocus)
@@ -1828,7 +1831,7 @@ export default function App() {
         onClose={() => setSettingsOpen(false)}
         settings={settings}
         onSave={handleSaveSettings}
-        onAppearancePreview={(p) => { applyTheme(p.theme, p.lightVariant, p.darkVariant); applyDensity(p.density); applyVimIndicator(p.vimIndicator); applyVimEdge(p.vimEdge, p.vimEdgeEverywhere); applyMotion(p.motion) }}
+        onAppearancePreview={(p) => { applyTheme(p.theme, p.lightVariant, p.darkVariant); applyDensity(p.density); applyVimIndicator(p.vimIndicator); applyVimEdge(p.vimEdge, p.vimEdgeEverywhere, p.vimEdgeSpeed, p.vimEdgeRest); applyMotion(p.motion) }}
         tabRequest={settingsTabRequest}
         vimKeymap={vimReady ? vimKeymap : null}
       />

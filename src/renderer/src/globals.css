@@ -615,18 +615,20 @@ kbd.vim-mode[data-indicator="dot"]::before {
 @keyframes mode-edge-turn { to { rotate: 1turn; } }
 /* A strip's pass, for the looks resting at the sides: from where it stands
  * with the comet at rest in one end (--at) to where it stands with the comet
- * at rest in the other (--past), eased — all but still in the ends, quick
- * along the top and the bottom — then put back as far the other way
- * (--before), out of sight both times, to come round again. */
+ * at rest in the other (--past), then put back as far the other way
+ * (--before), out of sight both times, to come round again. The pace of each
+ * half is the strip's own timing function (--pass-ease, from ModeEdge): the
+ * rest in an end, then an eased run — all but still in the ends, quick along
+ * the top and the bottom. */
 @keyframes mode-edge-pass {
-  0%, 100% { translate: var(--at); animation-timing-function: cubic-bezier(0.7, 0, 0.3, 1); }
+  0%, 100% { translate: var(--at); }
   50% { translate: var(--past); animation-timing-function: step-end; }
-  50.001% { translate: var(--before); animation-timing-function: cubic-bezier(0.7, 0, 0.3, 1); }
+  50.001% { translate: var(--before); }
 }
 /* The same half a period on: the bottom's strip and the left end's. */
 @keyframes mode-edge-pass-back {
-  0% { translate: var(--before); animation-timing-function: cubic-bezier(0.7, 0, 0.3, 1); }
-  50% { translate: var(--at); animation-timing-function: cubic-bezier(0.7, 0, 0.3, 1); }
+  0% { translate: var(--before); }
+  50% { translate: var(--at); }
   100% { translate: var(--past); }
 }
 @keyframes mode-edge-slide { to { translate: -50% 0; } }
@@ -770,6 +772,7 @@ kbd.vim-mode[data-indicator="dot"]::before {
   position: absolute;
   animation-name: mode-edge-pass;
   animation-duration: var(--speed);
+  animation-timing-function: var(--pass-ease, cubic-bezier(0.7, 0, 0.3, 1));
   animation-iteration-count: infinite;
 }
 /* The top's, its tip at its right end… */

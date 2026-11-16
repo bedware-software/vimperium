@@ -1,6 +1,6 @@
-import { useLayoutEffect, useRef } from 'react'
+import { useLayoutEffect, useMemo, useRef, type CSSProperties } from 'react'
 import type { VimMode } from '../lib/vim-mode'
-import { useVimEdge, useVimEdgeEverywhere, type VimEdge } from '../lib/vim-edge'
+import { isSidesEdge, useVimEdge, useVimEdgeEverywhere, useVimEdgeTiming, vimEdgePace, type VimEdge } from '../lib/vim-edge'
 
 interface Props {
   /** Null while Vim mode is off: no edge. */
@@ -20,7 +20,13 @@ interface Props {
 export function ModeEdge({ mode, edge, addressBar = false }: Props) {
   const chosen = useVimEdge()
   const everywhere = useVimEdgeEverywhere()
+  const timing = useVimEdgeTiming()
   const look = edge ?? chosen
+  // The pace, from Settings: the period, and a resting comet's timing.
+  const pace = useMemo(() => {
+    const { speed, ease } = vimEdgePace(look, timing.speed, timing.rest)
+    return { '--speed': speed, ...(ease ? { '--pass-ease': ease } : {}) } as CSSProperties
+  }, [look, timing])
   const shown = mode !== null && look !== 'off' && (addressBar || everywhere || edge !== undefined)
   const ref = useRef<HTMLSpanElement>(null)
 
@@ -40,12 +46,12 @@ export function ModeEdge({ mode, edge, addressBar = false }: Props) {
   // window with the top's and the bottom's in it, then the left end's and
   // the right end's. Keyed by which, so a change of look makes the boxes
   // anew and the strips start together.
-  const strips = look.endsWith('-sides')
+  const strips = isSidesEdge(look)
   const box = (key: string) => strips
     ? <i key={`${key}-strips`}><i><i /><i /></i><i /><i /></i>
     : <i key={key}><i /></i>
   return (
-    <span ref={ref} className="mode-edge" data-edge={look} aria-hidden="true">
+    <span ref={ref} className="mode-edge" data-edge={look} style={pace} aria-hidden="true">
       {(['command', 'insert'] as const).map((layer) => (
         <span key={layer} data-for={layer} data-on={mode === layer ? '' : undefined}>
           {box('ring')}

@@ -42,6 +42,10 @@ export interface Settings {
   /** The edge on every field that shows the mode, not the address bar
    *  alone. */
   vimEdgeEverywhere: boolean
+  /** The edge's pace (renderer lib/vim-edge.ts): seconds a lap of its light
+   *  takes, and seconds a comet resting at the sides stays in each end. */
+  vimEdgeSpeed: number
+  vimEdgeRest: number
   /** Whether the app's own decorations move — the edge's light, the mark's
    *  glitch (renderer lib/motion.ts): 'system' goes by the OS's Reduce
    *  motion, 'always' and 'never' don't. Null is no choice made: the
@@ -117,6 +121,10 @@ const KNOWN_DARK_VARIANTS = new Set(['dark-default', 'dark-deep', 'dark-soft'])
 const KNOWN_DENSITIES = new Set(['compact', 'normal'])
 const KNOWN_VIM_INDICATORS = new Set(['rim-label', 'rim', 'label', 'tint', 'base', 'dot', 'plain'])
 const KNOWN_VIM_EDGES = new Set(['comet-rail', 'comet-rail-sides', 'comet', 'comet-sides', 'aurora', 'living', 'glint', 'off'])
+/** The edge's seconds, kept within the slider's range (lib/vim-edge.ts). */
+function edgeSeconds(value: unknown, min: number, max: number, fallback: number): number {
+  return typeof value === 'number' && Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallback
+}
 const KNOWN_MOTIONS = new Set(['system', 'always', 'never'])
 function motionChoice(value: unknown): Settings['motion'] {
   return KNOWN_MOTIONS.has(value as string) ? (value as Settings['motion']) : null
@@ -327,6 +335,8 @@ export const DEFAULT_SETTINGS: Settings = {
   vimIndicator: 'rim-label',
   vimEdge: 'comet-rail',
   vimEdgeEverywhere: false,
+  vimEdgeSpeed: 10,
+  vimEdgeRest: 3,
   motion: null,
   vimKeymap: null,
   defaultPageUrl: '',
@@ -688,6 +698,8 @@ export function loadSettings(): Settings {
       ? (saved!.vimEdge as string)
       : DEFAULT_SETTINGS.vimEdge,
     vimEdgeEverywhere: saved?.vimEdgeEverywhere === true,
+    vimEdgeSpeed: edgeSeconds(saved?.vimEdgeSpeed, 4, 30, DEFAULT_SETTINGS.vimEdgeSpeed),
+    vimEdgeRest: edgeSeconds(saved?.vimEdgeRest, 0, 10, DEFAULT_SETTINGS.vimEdgeRest),
     motion: motionChoice(saved?.motion),
     vimKeymap: normalizeVimKeymap(saved?.vimKeymap),
     searchSuggestions: saved?.searchSuggestions !== false,
@@ -747,6 +759,8 @@ export function saveSettings(settings: Settings): void {
       ? settings.vimEdge
       : DEFAULT_SETTINGS.vimEdge,
     vimEdgeEverywhere: settings.vimEdgeEverywhere === true,
+    vimEdgeSpeed: edgeSeconds(settings.vimEdgeSpeed, 4, 30, DEFAULT_SETTINGS.vimEdgeSpeed),
+    vimEdgeRest: edgeSeconds(settings.vimEdgeRest, 0, 10, DEFAULT_SETTINGS.vimEdgeRest),
     motion: motionChoice(settings.motion),
     vimKeymap: normalizeVimKeymap(settings.vimKeymap),
     searchSuggestions: settings.searchSuggestions !== false,

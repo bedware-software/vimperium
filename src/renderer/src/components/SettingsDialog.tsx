@@ -13,7 +13,7 @@ import { VimModeBadge } from './VimModeBadge'
 import { ModeEdge } from './ModeEdge'
 import { BrandMark } from './BrandMark'
 import { WorkspaceStatsCard } from './WorkspaceStats'
-import { VIM_EDGES, DEFAULT_VIM_EDGE, DEFAULT_VIM_EDGE_EVERYWHERE, normalizeVimEdge, type VimEdge } from '../lib/vim-edge'
+import { VIM_EDGES, DEFAULT_VIM_EDGE, DEFAULT_VIM_EDGE_EVERYWHERE, VIM_EDGE_SPEED, VIM_EDGE_REST, isSidesEdge, normalizeVimEdge, normalizeVimEdgeSpeed, normalizeVimEdgeRest, type VimEdge } from '../lib/vim-edge'
 import { MOTIONS, effectiveMotion, normalizeMotion, type MotionChoice } from '../lib/motion'
 import { useAppStore } from '../store/app-store'
 import { DEFAULT_VIM_KEYMAP, parseVimKeymap, settingsKeymap, settingsCommandLabel, settingsCommandsInOrder, type ParsedVimKeymap, type VimKeymap } from '../lib/vim-keymap'
@@ -62,6 +62,8 @@ interface Settings {
   vimIndicator: VimIndicator
   vimEdge: VimEdge
   vimEdgeEverywhere: boolean
+  vimEdgeSpeed?: number
+  vimEdgeRest?: number
   /** Null = no choice made: the platform's default (lib/motion.ts). */
   motion: MotionChoice | null
   /** Null = the built-in default keymap. */
@@ -106,6 +108,8 @@ interface AppearancePreview {
   vimIndicator: VimIndicator
   vimEdge: VimEdge
   vimEdgeEverywhere: boolean
+  vimEdgeSpeed: number
+  vimEdgeRest: number
   motion: MotionChoice | null
 }
 
@@ -508,6 +512,8 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
   const [vimIndicator, setVimIndicator] = useState<VimIndicator>(DEFAULT_VIM_INDICATOR)
   const [vimEdge, setVimEdge] = useState<VimEdge>(DEFAULT_VIM_EDGE)
   const [vimEdgeEverywhere, setVimEdgeEverywhere] = useState(DEFAULT_VIM_EDGE_EVERYWHERE)
+  const [vimEdgeSpeed, setVimEdgeSpeed] = useState<number>(VIM_EDGE_SPEED.default)
+  const [vimEdgeRest, setVimEdgeRest] = useState<number>(VIM_EDGE_REST.default)
   // Null till one is picked, here or before: saved as null, so the
   // platform's default stays the platform's.
   const [motion, setMotion] = useState<MotionChoice | null>(null)
@@ -622,6 +628,8 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
     vimIndicator: DEFAULT_VIM_INDICATOR,
     vimEdge: DEFAULT_VIM_EDGE,
     vimEdgeEverywhere: DEFAULT_VIM_EDGE_EVERYWHERE,
+    vimEdgeSpeed: VIM_EDGE_SPEED.default,
+    vimEdgeRest: VIM_EDGE_REST.default,
     motion: null,
   })
 
@@ -893,6 +901,8 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
       const indicator = normalizeVimIndicator(settings.vimIndicator)
       const edge = normalizeVimEdge(settings.vimEdge)
       const edgeEverywhere = settings.vimEdgeEverywhere === true
+      const edgeSpeed = normalizeVimEdgeSpeed(settings.vimEdgeSpeed)
+      const edgeRest = normalizeVimEdgeRest(settings.vimEdgeRest)
       const savedMotion = normalizeMotion(settings.motion)
       setTheme(settings.theme)
       setLightVariant(lv)
@@ -906,9 +916,11 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
       setVimIndicator(indicator)
       setVimEdge(edge)
       setVimEdgeEverywhere(edgeEverywhere)
+      setVimEdgeSpeed(edgeSpeed)
+      setVimEdgeRest(edgeRest)
       setMotion(savedMotion)
       setVimKeymapText(settings.vimKeymap ?? DEFAULT_VIM_KEYMAP)
-      originalAppearanceRef.current = { theme: settings.theme, lightVariant: lv, darkVariant: dv, density: dens, vimIndicator: indicator, vimEdge: edge, vimEdgeEverywhere: edgeEverywhere, motion: savedMotion }
+      originalAppearanceRef.current = { theme: settings.theme, lightVariant: lv, darkVariant: dv, density: dens, vimIndicator: indicator, vimEdge: edge, vimEdgeEverywhere: edgeEverywhere, vimEdgeSpeed: edgeSpeed, vimEdgeRest: edgeRest, motion: savedMotion }
       setDefaultUrl(settings.defaultPageUrl)
       setSearchEngine(settings.searchEngine || SEARCH_ENGINES.Google)
       setSearchSuggestions(settings.searchSuggestions !== false)
@@ -1349,6 +1361,8 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
       vimIndicator,
       vimEdge,
       vimEdgeEverywhere,
+      vimEdgeSpeed,
+      vimEdgeRest,
       motion,
       // Left at the default it stays null, so later default bindings reach it.
       vimKeymap: vimKeymapText === DEFAULT_VIM_KEYMAP ? null : vimKeymapText,
@@ -1380,7 +1394,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
   }
 
   const previewAppearance = (next: Partial<AppearancePreview>): void => {
-    onAppearancePreview?.({ theme, lightVariant, darkVariant, density, vimIndicator, vimEdge, vimEdgeEverywhere, motion, ...next })
+    onAppearancePreview?.({ theme, lightVariant, darkVariant, density, vimIndicator, vimEdge, vimEdgeEverywhere, vimEdgeSpeed, vimEdgeRest, motion, ...next })
   }
 
   const handleWipeAllData = () => {
@@ -1913,6 +1927,35 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                   On every field that shows the mode too — Search Everything, the Command Palette,
                   Find, the address editor
                 </label>
+                {/* Its pace: a lap's seconds, and a resting comet's stay in each end. */}
+                <div className="mt-3 flex flex-col gap-2">
+                  {([
+                    { item: 'appearance:vim-edge-speed', label: 'Lap', hint: 'How long the light takes to go round, the rests aside', range: VIM_EDGE_SPEED, value: vimEdgeSpeed, disabled: vimEdge === 'off', set: (v: number) => { setVimEdgeSpeed(v); previewAppearance({ vimEdgeSpeed: v }) } },
+                    { item: 'appearance:vim-edge-rest', label: 'Rest at the sides', hint: 'How long a comet resting at the sides stays in each end', range: VIM_EDGE_REST, value: vimEdgeRest, disabled: !isSidesEdge(vimEdge), set: (v: number) => { setVimEdgeRest(v); previewAppearance({ vimEdgeRest: v }) } },
+                  ]).map(({ item, label, hint, range, value, disabled, set }) => {
+                    const pct = (v: number): string => `${((v - range.min) / (range.max - range.min)) * 100}%`
+                    return (
+                      <label key={item} className={`flex items-center gap-3 ${disabled ? 'opacity-50' : ''}`} title={`${hint}. Double-click to reset.`}>
+                        <span className="shrink-0 w-28 text-xs text-muted-foreground">{label}</span>
+                        <input
+                          data-vim-item={item}
+                          type="range"
+                          className="slider min-w-0 flex-1"
+                          min={range.min}
+                          max={range.max}
+                          step={range.step}
+                          value={value}
+                          disabled={disabled}
+                          aria-label={label}
+                          style={{ '--fill': pct(value), '--rest': pct(range.default) } as React.CSSProperties}
+                          onChange={(e) => set(Number(e.target.value))}
+                          onDoubleClick={() => set(range.default)}
+                        />
+                        <span className="shrink-0 w-10 text-right text-xs tabular-nums text-foreground">{value} s</span>
+                      </label>
+                    )
+                  })}
+                </div>
               </div>
 
               {/* Whether the edge's light and the mark's glitch move. */}

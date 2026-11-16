@@ -31,14 +31,66 @@ export function normalizeVimEdge(value: string | undefined): VimEdge {
  *  that shows the mode — the popups' boxes, Find, the address editor. */
 export const DEFAULT_VIM_EDGE_EVERYWHERE = false
 
+/** Its pace, in seconds: how long a lap of the light takes (the turning
+ *  looks' turn, the drifting ones' drift), and how long a comet resting at
+ *  the sides stays in each end — on top of the lap, so the run between the
+ *  ends keeps its speed whatever the rest. Settings' sliders; main keeps
+ *  them in the same range (settings-store.ts). */
+export const VIM_EDGE_SPEED = { min: 4, max: 30, step: 1, default: 10 } as const
+export const VIM_EDGE_REST = { min: 0, max: 10, step: 0.5, default: 3 } as const
+
+function seconds(value: unknown, range: { min: number; max: number; default: number }): number {
+  return typeof value === 'number' && Number.isFinite(value) ? Math.min(range.max, Math.max(range.min, value)) : range.default
+}
+export const normalizeVimEdgeSpeed = (value: unknown): number => seconds(value, VIM_EDGE_SPEED)
+export const normalizeVimEdgeRest = (value: unknown): number => seconds(value, VIM_EDGE_REST)
+
+export function isSidesEdge(edge: VimEdge): boolean {
+  return edge.endsWith('-sides')
+}
+
+/** cubic-bezier(x1, 0, x2, 1) at time t. */
+function eased(x1: number, x2: number, t: number): number {
+  const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx
+  let lo = 0, hi = 1, m = t
+  for (let i = 0; i < 30; i++) {
+    m = (lo + hi) / 2
+    if (((ax * m + bx) * m + cx) * m < t) lo = m
+    else hi = m
+  }
+  return (3 - 2 * m) * m * m
+}
+
+/** What .mode-edge is told of the pace (globals.css): --speed, the period —
+ *  for a comet resting at the sides the lap and its two rests — and for
+ *  that comet --pass-ease, each half period's timing: still for the rest,
+ *  then the eased run to the other end. A linear() of the run's curve,
+ *  since a keyframe's own offsets can't follow a setting. */
+export function vimEdgePace(edge: VimEdge, speed: number, rest: number): { speed: string; ease?: string } {
+  if (!isSidesEdge(edge) || rest <= 0) return { speed: `${speed}s` }
+  const half = speed / 2 + rest
+  const hold = rest / half
+  const pct = (v: number): string => `${+(v * 100).toFixed(3)}%`
+  const stops = [`0 ${pct(hold)}`]
+  const steps = 48
+  for (let i = 1; i < steps; i++) {
+    stops.push(`${+eased(0.7, 0.3, i / steps).toFixed(4)} ${pct(hold + (1 - hold) * (i / steps))}`)
+  }
+  return { speed: `${half * 2}s`, ease: `linear(0, ${stops.join(', ')}, 1)` }
+}
+
 let current: VimEdge = DEFAULT_VIM_EDGE
 let everywhere = DEFAULT_VIM_EDGE_EVERYWHERE
+let timing: { speed: number; rest: number } = { speed: VIM_EDGE_SPEED.default, rest: VIM_EDGE_REST.default }
 const listeners = new Set<() => void>()
 
-export function applyVimEdge(edge: VimEdge, onEveryField: boolean): void {
-  if (edge === current && onEveryField === everywhere) return
+export function applyVimEdge(edge: VimEdge, onEveryField: boolean, speed?: number, rest?: number): void {
+  const nextSpeed = normalizeVimEdgeSpeed(speed)
+  const nextRest = normalizeVimEdgeRest(rest)
+  if (edge === current && onEveryField === everywhere && nextSpeed === timing.speed && nextRest === timing.rest) return
   current = edge
   everywhere = onEveryField
+  if (nextSpeed !== timing.speed || nextRest !== timing.rest) timing = { speed: nextSpeed, rest: nextRest }
   listeners.forEach((listener) => listener())
 }
 
@@ -62,4 +114,8 @@ export function useVimEdge(): VimEdge {
 
 export function useVimEdgeEverywhere(): boolean {
   return useSyncExternalStore(subscribe, () => everywhere)
+}
+
+export function useVimEdgeTiming(): { speed: number; rest: number } {
+  return useSyncExternalStore(subscribe, () => timing)
 }
