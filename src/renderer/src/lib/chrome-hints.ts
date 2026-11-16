@@ -148,6 +148,18 @@ function visibleRect(el: HTMLElement, win: Window): ChromeHintTarget['rect'] | n
   return { left: r.left, top: r.top, width: r.width, height: r.height }
 }
 
+/** Where the control keeps a place for a label of its own
+ *  (`[data-chrome-hint-anchor]` inside it — a Sidebar row's cap in the
+ *  label column): the label goes right there. The overlay puts it at the
+ *  rect's left edge, halfway down; a place with no size yet (nothing in it)
+ *  still says where. */
+function anchorRect(el: HTMLElement): ChromeHintTarget['rect'] | null {
+  const anchor = el.querySelector('[data-chrome-hint-anchor]')
+  if (!anchor) return null
+  const r = anchor.getBoundingClientRect()
+  return { left: r.left, top: r.top, width: r.width, height: r.height }
+}
+
 function collectIn(root: ParentNode, win: Window, popup: HintPopup | null, out: ChromeHintTarget[]): void {
   for (const node of root.querySelectorAll(CHROME_HINT_SELECTOR)) {
     const el = asHtmlElement(node)
@@ -156,7 +168,7 @@ function collectIn(root: ParentNode, win: Window, popup: HintPopup | null, out: 
     if (isDisabled(el)) continue
     const rect = visibleRect(el, win)
     if (!rect) continue
-    out.push({ id: idOf(el), el, popup, rect })
+    out.push({ id: idOf(el), el, popup, rect: anchorRect(el) ?? rect })
   }
 }
 

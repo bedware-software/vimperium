@@ -113,17 +113,23 @@ export const LEAVE_INSERT_CAP = displayKeySequence('<C-c>')
  *  (positioned by the row, so its content never moves; a span, as the
  *  global kbd style's padding would widen it): in COMMAND its label — the
  *  part typed so far lit, rows it no longer fits faded. Nothing in INSERT,
- *  where typing goes in the box and no key picks a row. */
-export function RowHint({ mode, label, pending, className }: {
+ *  where typing goes in the box and no key picks a row. `always`: the cap
+ *  stays, empty, while there's no label to show — for a column of them that
+ *  mustn't come and go (the Sidebar's). */
+export function RowHint({ mode, label, pending, className, always = false }: {
   mode: 'command' | 'insert' | null
   label?: string
   /** Keys typed so far of an unfinished sequence. */
   pending?: string
   className?: string
+  always?: boolean
 }) {
-  if (mode !== 'command' || !label) return null
+  if (mode !== 'command' || !label) {
+    if (!always) return null
+    label = ''
+  }
   const typed = pending && label.startsWith(pending) ? pending.length : 0
-  const faded = !!pending && !typed
+  const faded = !!label && !!pending && !typed
   return (
     <span
       aria-hidden="true"

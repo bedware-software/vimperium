@@ -526,16 +526,17 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
     }))
     : null)
   const hintLabels = useHintLabels()
-  /** The row's label, in the row ahead of what it names: a tab's before
-   *  its icon, a group's between its count and its name — the same column
-   *  for both, nested tabs lined up under their group's (globals.css). */
-  const rowHint = (rowId: string): React.ReactNode => {
-    const label = hintLabels.get(hintId(rowId, groupRowIds.has(rowId)))
-    return label
-      // 18px tall in a 16px line: -my-px keeps the row's height as it is.
-      ? <RowHint mode="command" label={label} pending={vimPending} className="shrink-0 -my-px" />
-      : null
-  }
+  const rowLabel = (rowId: string): string | undefined => hintLabels.get(hintId(rowId, groupRowIds.has(rowId)))
+  /** The row's label cap, in the column down the Sidebar's left edge — a
+   *  tab's, a group's and a nested tab's in one line, out of the row's flow
+   *  (globals.css' label column). Always there, one width whatever the
+   *  labels' length; lettered while COMMAND's labels are up. Vim's ; puts
+   *  its own label right over it. */
+  const rowHint = (rowId: string): React.ReactNode => (
+    <span data-sidebar-hint="" data-chrome-hint-anchor="">
+      <RowHint mode="command" label={rowLabel(rowId)} pending={vimPending} always />
+    </span>
+  )
   const findVimRow = (id: string): Element | null =>
     sidebarRef.current?.querySelector(`[data-vim-row="${CSS.escape(id)}"]`) ?? null
   useEffect(() => {
@@ -935,9 +936,10 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
         if (!vimCursorId) break
         const row = findVimRow(vimCursorId)
         if (!row) break
-        // Just under the row, past the favicon column.
+        // Just under the row, past the label column (its left border) and
+        // the favicon column.
         const rect = row.getBoundingClientRect()
-        const point = { x: rect.left + 24, y: rect.bottom }
+        const point = { x: rect.left + row.clientLeft + 24, y: rect.bottom }
         if (groupById(vimCursorId)) void openGroupMenu(vimCursorId, point, true)
         else void openTabMenu(vimCursorId, point, true)
         break
@@ -1221,6 +1223,11 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
     )
   }
 
+  // New Tab's key, while the keys' help is open and no popup is over the
+  // window; the label column's cap holds three letters.
+  const newTabKey = helpOpen && !hintsBlocked ? newTabHint : ''
+  const newTabKeyFits = newTabKey.length <= 3
+
   // Show "after last tab in group" indicator
   const showAfterLastInGroup = (groupId: string, tabCount: number) =>
     isDraggingTab && dropTarget?.containerId === groupId && dropTarget?.index === tabCount && tabCount > 0
@@ -1232,7 +1239,7 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
   return (
     <>
       <div ref={sidebarRef} style={{ width }} className="bg-toolbar border-r border-border flex flex-col shrink-0 overflow-hidden select-none relative">
-        <div className="flex-1 overflow-y-auto pt-0 pb-0.5">
+        <div data-sidebar-list="" className="flex-1 overflow-y-auto pt-0 pb-0.5">
           {sidebarItems.map((item, sidebarIdx) => {
             if (item.type === 'tab') {
               return renderTabRow(item.tab, null, sidebarIdx)
@@ -1252,7 +1259,7 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
                   <div data-group-children="">
                     {group.tabs.map((tab, tabIndex) => renderTabRow(tab, group.id, tabIndex))}
                     {showAfterLastInGroup(group.id, group.tabs.length) && (
-                      <div className="relative h-0">
+                      <div data-sidebar-drop-line="" className="relative h-0">
                         <div className="absolute left-1 right-1 -top-px h-[3px] bg-primary rounded-full z-10" />
                       </div>
                     )}
@@ -1264,14 +1271,14 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
 
           {/* "After last item" indicator */}
           {showAfterLastSidebarItem && (
-            <div className="relative h-0">
+            <div data-sidebar-drop-line="" className="relative h-0">
               <div className="absolute left-1 right-1 -top-px h-[3px] bg-primary rounded-full z-10" />
             </div>
           )}
 
           {/* Empty sidebar drop target */}
           {dragging && dropTarget?.containerId === null && sidebarItems.length === 0 && (
-            <div className="relative h-0">
+            <div data-sidebar-drop-line="" className="relative h-0">
               <div className="absolute left-1 right-1 top-0 h-[3px] bg-primary rounded-full z-10" />
             </div>
           )}
@@ -1286,13 +1293,18 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
             data-sidebar-row=""
             onClick={handleNewTab}
             title={newTabHint ? `New Tab (${newTabHint})` : 'New Tab'}
-            className="w-full flex items-center gap-1 px-1 py-1 text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
+            className="relative w-full flex items-center gap-1 px-1 py-1 text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
           >
             {/* Its key, in the column the rows' labels take — while the
-                keys' help is open, as the header's buttons show theirs. */}
-            {newTabHint && helpOpen && !hintsBlocked && <RowHint mode="command" label={newTabHint} className="shrink-0 -my-px opacity-70" />}
+                keys' help is open, as the header's buttons show theirs. No
+                cap of its own otherwise: no label picks it. A key too long
+                for the column (Ctrl+T) goes at the row's end instead. */}
+            <span data-sidebar-hint="" data-chrome-hint-anchor="">
+              {newTabKey && newTabKeyFits && <RowHint mode="command" label={newTabKey} className="opacity-70" />}
+            </span>
             <Plus size={16} className="shrink-0" />
             <span className="flex-1 text-left text-xs truncate">New Tab</span>
+            {newTabKey && !newTabKeyFits && <RowHint mode="command" label={newTabKey} className="shrink-0 -my-px opacity-70" />}
           </button>
         </div>
 

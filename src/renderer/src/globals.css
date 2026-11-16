@@ -302,29 +302,80 @@ html[data-page-fullscreen] body {
   padding-right: 8px;
 }
 
-/* Tab-group children container — indented so its left edge aligns with
- * the horizontal centre of the count badge above it. The 2px guide
- * line then drops straight down from inside the badge (hidden by the
- * badge fill) through every nested row's ::before, terminating at the
- * vertical centre of the last row. With the line at the children's
- * left edge and a row padding-left, the favicon column sits cleanly
- * to the right of the line — the "nested" look the user expects, just
- * routed through the badge centre instead of the badge's bottom-left.
+/* ── The Sidebar's label column ──
+ * Down the Sidebar's left edge: a column of the rows' label caps — a tab's,
+ * a group's and a nested tab's all in one line — then a rule from top to
+ * bottom, then the rows themselves, nested as they are. The caps are always
+ * there, lettered only while COMMAND's labels are up (Sidebar's rowHint), so
+ * no row moves as the mode changes.
  *
- * Indent values: compact badge spans x=4..20 → centre x=12, so the
- * children's left edge is at x=11 (one pixel left of centre, so a 2px
- * line lands flush over the centre). Normal badge spans x=8..24 →
- * centre x=16 → indent 15. */
+ * The column is each row's own left border, see-through (--row-inset wide):
+ * the row is as wide as the Sidebar to the pointer, while its fill — hover,
+ * active, selected — starts past the rule, and its cap sits in that border.
+ * The rule is the list's background, so it runs the list's whole height and
+ * stays put as the rows scroll. --hint-w is every cap's width, lettered or
+ * not: one that holds a label of three letters (the longest there is), so
+ * the column is never wider or narrower for what the labels are. */
+[data-sidebar-list] {
+  --hint-pad: 4px;
+  --hint-w: 20px;
+  --gutter: calc(var(--hint-pad) * 2 + var(--hint-w) + 1px);
+  background: linear-gradient(var(--color-border), var(--color-border)) calc(var(--gutter) - 1px) 0 / 1px 100% no-repeat;
+}
+[data-density="normal"] [data-sidebar-list] {
+  --hint-pad: 6px;
+}
+[data-sidebar-list] [data-sidebar-row] {
+  --row-inset: var(--gutter);
+  border-left: var(--row-inset) solid transparent;
+  background-clip: padding-box;
+}
+/* The row's cap (or, on New Tab, its key while the keys' help is open). */
+[data-sidebar-hint] {
+  position: absolute;
+  left: calc(var(--hint-pad) - var(--row-inset));
+  top: 50%;
+  translate: 0 -50%;
+  display: flex;
+  pointer-events: none;
+}
+[data-sidebar-hint] > span {
+  width: var(--hint-w);
+  padding-inline: 0;
+}
+/* A drop line that isn't inside a row starts where the rows' fill does. */
+[data-sidebar-drop-line] {
+  margin-left: var(--gutter);
+}
+
+/* A group's tabs — their rows start at the horizontal centre of the count
+ * badge above them. The 2px guide line then drops straight down from inside
+ * the badge (hidden by the badge fill) through every nested row's ::before,
+ * to the bottom of the last row. With the line at the rows' left edge and a
+ * row padding-left, the favicon column sits cleanly to the right of the
+ * line — the "nested" look the user expects, just routed through the badge
+ * centre instead of the badge's bottom-left.
+ *
+ * The indent is part of the row's left border, past the label column, so a
+ * nested row too is as wide as the Sidebar and its cap stays in the column.
+ * Its values: compact badge spans x=4..20 → centre x=12, so the rows' edge
+ * is at x=11 (one pixel left of centre, so a 2px line lands flush over the
+ * centre). Normal badge spans x=8..24 → centre x=16 → indent 15. */
 [data-group-children] {
-  margin-left: 11px;
-  padding-left: 0;
+  --group-indent: 11px;
 }
 [data-density="normal"] [data-group-children] {
-  margin-left: 15px;
+  --group-indent: 15px;
 }
-/* A nested tab's row starts where its group's name column does — past the
- * count badge (16px) and the gap after it — so a tab's label and icon line
- * up with the group's label and pill. */
+[data-sidebar-list] [data-group-children] > [data-sidebar-row] {
+  --row-inset: calc(var(--gutter) + var(--group-indent));
+}
+[data-group-children] > [data-sidebar-drop-line] {
+  margin-left: calc(var(--gutter) + var(--group-indent));
+}
+/* A nested tab's content starts where its group's name column does — past
+ * the count badge (16px) and the gap after it — so a tab's icon lines up
+ * with the group's pill. */
 [data-group-children] > [data-sidebar-row],
 [data-density="normal"] [data-group-children] > [data-sidebar-row] {
   padding-left: 13px;
@@ -350,14 +401,14 @@ html[data-page-fullscreen] body {
 }
 
 /* Continuation of the guide line through every nested row. Drawn at
- * the row's left edge (which coincides with [data-group-children]'s
- * margin = badge centre x). Runs the full row height so consecutive
+ * the left edge of the row's fill (past its left border — the label column
+ * and the indent — which is the badge centre's x). Runs the full row height so consecutive
  * rows stack into a single uninterrupted line, terminating at the
  * bottom of the last row. */
 [data-group-children] > [data-sidebar-row]::before {
   content: "";
   position: absolute;
-  left: 0;               /* flush with row's left edge = line's x in sidebar */
+  left: 0;               /* flush with the fill's left edge = line's x in sidebar */
   top: 0;
   bottom: 0;
   width: 2px;
