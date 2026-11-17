@@ -1,7 +1,8 @@
 // The page area while parked on a tab group (a click on its header, or its
 // label in COMMAND): the group's tabs, the split picker's look laid out on
-// the page, in one column or two (the switch by the count, or c in COMMAND;
-// remembered).
+// the page, in one column or two (components/ColumnsSwitch.tsx: the switch
+// by the count, or c in COMMAND; remembered) — two being the wide layout,
+// the page's whole width.
 // Enter on the selected one, or a click, shows that tab.
 //
 // The filter is the address bar (lib/address-filter.ts): while the group
@@ -16,17 +17,17 @@
 // it (lib/hint-labels.ts), the one the Sidebar gives the same tab.
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Columns2, Globe, Rows3 } from 'lucide-react'
+import { Globe } from 'lucide-react'
 import { useAppStore } from '../store/app-store'
 import type { TabGroup } from '../store/types'
 import { TabFavicon } from './TabFavicon'
 import { CommentChip } from './CommentChip'
-import { RowHint } from './KeyHints'
-import { useHintLabels, useHintTargets, useReservedHintKeys } from '../lib/hint-labels'
+import { RowCap } from './KeyHints'
+import { useHintLabels, useHintTargets } from '../lib/hint-labels'
+import { ColumnsSwitch, usePageColumns } from './ColumnsSwitch'
 import { fuzzyFilter } from '../lib/fuzzy'
 import { focusAddressFilter, useAddressFilter, type AddressFilterKeyEvent } from '../lib/address-filter'
 import { keyTokenFromEvent } from '../lib/vim-keymap'
-import { SEQUENCE_JOIN } from '../../../shared/vim-keys'
 import { usePageKeys, type VimMode } from '../lib/vim-mode'
 import type { VimKeymap } from '../lib/vim-keymap'
 import { cn } from '../lib/utils'
@@ -43,37 +44,18 @@ interface Props {
   hintsOn: boolean
 }
 
-type Columns = 1 | 2
-
 const HALF_PAGE_ROWS = 5
-/** The page's own key, ahead of the keymap while the keymap leaves it free:
- *  one column or two. */
-const COLUMNS_KEY_TOKEN = 'c'
-const COLUMNS_KEY = 'vimperium-group-page-columns'
-
-function loadColumns(): Columns {
-  try {
-    return localStorage.getItem(COLUMNS_KEY) === '2' ? 2 : 1
-  } catch {
-    return 1
-  }
-}
-
-function saveColumns(columns: Columns): void {
-  try { localStorage.setItem(COLUMNS_KEY, String(columns)) } catch { /* the layout just isn't kept */ }
-}
+const COLUMNS_STORAGE_KEY = 'vimperium-group-page-columns'
 
 // Its rows' ids among the window's hint targets: the tab's own, as the
 // Sidebar lists it too — one tab, one label in both places.
 const hintId = (tabId: string): string => `tab:${tabId}`
 
-export function GroupPage({ group, vimKeymap, vimMode, vimPending, hintsOn }: Props) {
+export function GroupPage({ group, vimMode, vimPending, hintsOn }: Props) {
   const [selected, setSelected] = useState(0)
-  const [columns, setColumns] = useState<Columns>(loadColumns)
+  const { columns, setColumns, keyFree: columnsKeyFree, onKey: columnsKey } = usePageColumns(COLUMNS_STORAGE_KEY)
   const listRef = useRef<HTMLDivElement>(null)
   const setActiveTab = useAppStore((s) => s.setActiveTab)
-
-  useEffect(() => { saveColumns(columns) }, [columns])
 
   // The address bar is the filter, wearing the group's pill. Another group
   // parked on starts from an empty one.
@@ -131,25 +113,11 @@ export function GroupPage({ group, vimKeymap, vimMode, vimPending, hintsOn }: Pr
     return arrowKey(e.key)
   }
 
-  // c is the page's while no binding of the user's starts with it.
-  const columnsKeyFree = useMemo(() => {
-    if (!vimKeymap) return true
-    for (const seq of vimKeymap.keys()) if (seq.split(SEQUENCE_JOIN)[0] === COLUMNS_KEY_TOKEN) return false
-    return true
-  }, [vimKeymap])
-
-  // No row's label starts with it then.
-  useReservedHintKeys(columnsKeyFree ? [COLUMNS_KEY_TOKEN] : [])
-
   /** Enter and c, typed outside the filter. */
   const rowKey = (e: KeyboardEvent): boolean => {
     if (e.metaKey || e.ctrlKey || e.altKey) return false
-    const token = keyTokenFromEvent(e)
-    if (token === COLUMNS_KEY_TOKEN && columnsKeyFree) {
-      if (!e.repeat) setColumns((n) => (n === 1 ? 2 : 1))
-      return true
-    }
-    return token === '<CR>' && open(selected)
+    if (columnsKey(e)) return true
+    return keyTokenFromEvent(e) === '<CR>' && open(selected)
   }
 
   // COMMAND's labels on its rows.
@@ -206,7 +174,7 @@ export function GroupPage({ group, vimKeymap, vimMode, vimPending, hintsOn }: Pr
     <div className="absolute inset-0 z-50 overflow-y-auto bg-background px-8 text-foreground select-none">
       {/* The same space above the header as below the list. */}
       <div className="pb-[max(2rem,6vh)]">
-        <div className={cn('mx-auto w-full', columns === 2 ? 'max-w-4xl' : 'max-w-2xl')}>
+        <div className={cn('mx-auto w-full', columns === 2 ? 'max-w-none' : 'max-w-2xl')}>
           {/* Above the rows' labels (z-10), which pass under it too. */}
           <div className="sticky top-0 z-20 flex min-w-0 items-center gap-3 bg-background pb-4 pt-[max(2rem,6vh)]">
             <div
@@ -224,37 +192,7 @@ export function GroupPage({ group, vimKeymap, vimMode, vimPending, hintsOn }: Pr
             <span className="shrink-0 text-sm text-muted-foreground tabular-nums">
               {filtered ? `${rows.length} of ${count}` : count} {count === 1 ? 'tab' : 'tabs'}
             </span>
-            {/* The switch's key, while the keys are COMMAND's. */}
-            {vimMode === 'command' && columnsKeyFree && (
-              <kbd className="ml-auto shrink-0 font-mono text-[11px]" title="One column / two">{COLUMNS_KEY_TOKEN}</kbd>
-            )}
-            <div
-              role="radiogroup"
-              aria-label="Layout"
-              className={cn('flex h-8 shrink-0 items-center rounded-md bg-secondary p-0.5', !(vimMode === 'command' && columnsKeyFree) && 'ml-auto')}
-            >
-              {([1, 2] as const).map((n) => {
-                const Icon = n === 1 ? Rows3 : Columns2
-                const active = columns === n
-                return (
-                  <button
-                    key={n}
-                    type="button"
-                    role="radio"
-                    aria-checked={active}
-                    tabIndex={-1}
-                    onClick={() => setColumns(n)}
-                    title={`${n === 1 ? 'One column' : 'Two columns'}${columnsKeyFree ? ` (${COLUMNS_KEY_TOKEN})` : ''}`}
-                    className={cn(
-                      'flex h-7 w-8 items-center justify-center rounded transition-colors',
-                      active ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
-                    )}
-                  >
-                    <Icon size={14} />
-                  </button>
-                )
-              })}
-            </div>
+            <ColumnsSwitch columns={columns} onChange={setColumns} keyFree={columnsKeyFree} vimMode={vimMode} className="ml-auto" />
           </div>
           <div
             ref={listRef}
@@ -279,12 +217,9 @@ export function GroupPage({ group, vimKeymap, vimMode, vimPending, hintsOn }: Pr
                     idx === selected ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50',
                   )}
                 >
-                  <RowHint
-                    mode={vimMode}
-                    label={hintLabels.get(hintId(tab.id))}
-                    pending={vimPending}
-                    className="shrink-0 -my-px"
-                  />
+                  {/* Its label in COMMAND, its number in INSERT: the column
+                      and its rule, as the Sidebar's. */}
+                  <RowCap mode={vimMode} label={hintLabels.get(hintId(tab.id))} pending={vimPending} index={idx} />
                   <span className="flex w-6 shrink-0 items-center">
                     {tab.favicon ? <TabFavicon favicon={tab.favicon} /> : <Globe size={16} className="text-muted-foreground/60" />}
                   </span>

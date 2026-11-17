@@ -575,11 +575,12 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
   /** The row's label cap, in the column down the Sidebar's left edge — a
    *  tab's, a group's and a nested tab's in one line, out of the row's flow
    *  (globals.css' label column). Always there, one width whatever the
-   *  labels' length; lettered while COMMAND's labels are up. Vim's ; puts
+   *  labels' length; lettered while COMMAND's labels are up, the row's
+   *  number (1, 2, 3…) the rest of the time. Vim's ; puts
    *  its own label right over it. */
   const rowHint = (rowId: string): React.ReactNode => (
     <span data-sidebar-hint="" data-chrome-hint-anchor="">
-      <RowHint mode="command" label={rowLabel(rowId)} pending={vimPending} always />
+      <RowHint mode="command" label={rowLabel(rowId)} pending={vimPending} always index={visibleRowIds.indexOf(rowId)} />
     </span>
   )
   const findVimRow = (id: string): Element | null =>

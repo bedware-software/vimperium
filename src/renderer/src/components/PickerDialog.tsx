@@ -10,7 +10,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Search, CornerDownLeft } from 'lucide-react'
 import { DetachedWindow } from './DetachedWindow'
 import { InputField } from './InputField'
-import { Hint, HintBar, KeysPrompt, RowHint, vimKeyCaps } from './KeyHints'
+import { Hint, HintBar, KeysPrompt, RowCap, vimKeyCaps } from './KeyHints'
 import { GroupPill } from './GroupPill'
 import { ScopeSwitch } from './ScopeSwitch'
 import { fuzzyFilter } from '../lib/fuzzy'
@@ -432,13 +432,13 @@ export function PickerDialog({
                       // and the path's pill are always the same shade.
                       data-group-container={item.color ? '' : undefined}
                       style={item.color ? { ['--gc' as string]: item.color } : undefined}
-                      className={`relative flex items-center gap-2 px-4 py-1.5 cursor-pointer text-sm ${
+                      className={`relative flex items-center gap-2 pl-2 pr-4 py-1.5 cursor-pointer text-sm ${
                         isSelected ? 'bg-accent text-accent-foreground' : 'text-foreground hover:bg-accent/50'
                       }`}
                       onClick={(e) => onConfirm(item.id, { background: e.shiftKey })}
                       onMouseEnter={() => setSelectedIndex(idx)}
                     >
-                      <RowHint mode={vim.mode} label={hints.labels[idx]} pending={vim.pending} className="absolute left-0 top-1/2 -translate-y-1/2" />
+                      <RowCap mode={vim.mode} label={hints.labels[idx]} pending={vim.pending} index={idx} bleed="-my-1.5" />
                       <div className="flex-1 min-w-0">
                         {item.color ? (
                           <GroupPill name={item.label} className="block w-fit max-w-full truncate" />

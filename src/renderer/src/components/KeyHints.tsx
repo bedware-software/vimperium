@@ -132,31 +132,66 @@ export const LEAVE_INSERT_CAP = displayKeySequence('<C-c>')
  *  part typed so far lit, rows it no longer fits faded. Nothing in INSERT,
  *  where typing goes in the box and no key picks a row. `always`: the cap
  *  stays, empty, while there's no label to show — for a column of them that
- *  mustn't come and go (the Sidebar's). */
-export function RowHint({ mode, label, pending, className, always = false }: {
+ *  mustn't come and go. `index`: the row's place in its list (from 0) —
+ *  the cap stays likewise, and reads the row's number (1, 2, 3…) while it
+ *  has no label: in INSERT, or with the labels another list's. */
+export function RowHint({ mode, label, pending, className, always = false, index }: {
   mode: 'command' | 'insert' | null
   label?: string
   /** Keys typed so far of an unfinished sequence. */
   pending?: string
   className?: string
   always?: boolean
+  index?: number
 }) {
+  let numbered = false
   if (mode !== 'command' || !label) {
-    if (!always) return null
-    label = ''
+    if (index !== undefined && index >= 0) {
+      label = String(index + 1)
+      numbered = true
+    } else if (always) label = ''
+    else return null
   }
-  const typed = pending && label.startsWith(pending) ? pending.length : 0
-  const faded = !!label && !!pending && !typed
+  const typed = !numbered && pending && label.startsWith(pending) ? pending.length : 0
+  const faded = !numbered && !!label && !!pending && !typed
   return (
     <span
       aria-hidden="true"
       className={cn(
         'z-10 inline-flex items-center justify-center h-[18px] min-w-4 px-px rounded-md border border-border bg-popover text-foreground font-mono font-medium text-[10px] leading-none tabular-nums shadow-[0_0_2px_rgb(0_0_0/0.1)] select-none pointer-events-none transition-opacity',
+        // A number only counts the rows: quieter than a label to type.
+        numbered && 'font-normal text-muted-foreground',
         faded && 'opacity-30',
         className,
       )}
     >
       <span className="text-primary">{label.slice(0, typed)}</span>{label.slice(typed)}
+    </span>
+  )
+}
+
+/** A row's cap in a column of its own at the row's start, as the Sidebar's
+ *  label column: always there, one width whatever it reads (three letters
+ *  fit) — the row's label in COMMAND, its number otherwise — then a rule
+ *  down the row's whole height, so the rows' rules join into one line; the
+ *  row's content never moves as the mode changes. In the row's flow, as its
+ *  first child; `bleed` undoes the row's vertical padding for the rule
+ *  (-my-2 for a py-2 row). `rule` false: the cap alone, for rows that
+ *  aren't stacked edge to edge (the Bookshelf's nested ones). */
+export function RowCap({ mode, label, pending, index, rule = true, bleed = '-my-2', className }: {
+  mode: 'command' | 'insert' | null
+  label?: string
+  pending?: string
+  /** The row's place in its list, from 0. */
+  index: number
+  rule?: boolean
+  bleed?: string
+  className?: string
+}) {
+  return (
+    <span data-row-cap="" className={cn('flex shrink-0 items-center', rule && 'self-stretch', rule && bleed, className)}>
+      <RowHint mode={mode} label={label} pending={pending} index={index} className="w-5 px-0" />
+      {rule && <span aria-hidden="true" className="ml-2 w-px self-stretch bg-border" />}
     </span>
   )
 }

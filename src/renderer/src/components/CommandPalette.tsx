@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { Command } from 'lucide-react'
 import { DetachedWindow } from './DetachedWindow'
 import { InputField } from './InputField'
-import { Hint, HintBar, KeysPrompt, LEAVE_INSERT_CAP, RowHint, vimKeyCaps } from './KeyHints'
+import { Hint, HintBar, KeysPrompt, LEAVE_INSERT_CAP, RowCap, vimKeyCaps } from './KeyHints'
 import { hintIndex, usePopupHints } from '../lib/hint-labels'
 import { useAppStore } from '../store/app-store'
 import { actionHint, type HintSettings } from '../lib/shortcut-hints'
@@ -392,13 +392,13 @@ export function CommandPalette({ open, onOpenChange, onAction, vimKeymap }: Prop
                   <div
                     key={cmd.id}
                     data-selected={isSelected}
-                    className={`relative flex items-center justify-between px-4 py-1.5 cursor-pointer text-sm ${
+                    className={`relative flex items-center gap-2 pl-2 pr-4 py-1.5 cursor-pointer text-sm ${
                       isSelected ? 'bg-accent text-accent-foreground' : 'text-foreground hover:bg-accent/50'
                     }`}
                     onClick={() => handleSelect(cmd)}
                   >
-                    <RowHint mode={vim.mode} label={hints.labels[idx]} pending={vim.pending} className="absolute left-0 top-1/2 -translate-y-1/2" />
-                    <span>{cmd.label}</span>
+                    <RowCap mode={vim.mode} label={hints.labels[idx]} pending={vim.pending} index={idx} bleed="-my-1.5" />
+                    <span className="min-w-0 flex-1">{cmd.label}</span>
                     {hint && (
                       <span className="text-xs text-muted-foreground ml-4 shrink-0 flex items-center">
                         {hint.kind === 'vim' ? <kbd className="font-mono">{hint.keys}</kbd> : formatKeybinding(hint.accelerator)}

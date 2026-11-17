@@ -28,6 +28,7 @@ import { focusAddressFilter, useAddressFilter, type AddressFilterKeyEvent } from
 import { closePage, closePageTab, useSearchPageRequest, type SearchFilter } from '../lib/page-nav'
 import { internalPageOf } from '../lib/internal-pages'
 import { useHintLabels, useHintTargets, useReservedHintKeys } from '../lib/hint-labels'
+import { ColumnsSwitch, usePageColumns } from './ColumnsSwitch'
 import { usePageKeys } from '../lib/vim-mode'
 import { keyTokenFromEvent } from '../lib/vim-keymap'
 import type { VimKeymap } from '../lib/vim-keymap'
@@ -35,7 +36,7 @@ import type { VimMode } from '../lib/vim-mode'
 import { TabFavicon } from './TabFavicon'
 import { CommentChip } from './CommentChip'
 import { GroupPill } from './GroupPill'
-import { RowHint } from './KeyHints'
+import { RowCap } from './KeyHints'
 import { openDropdownAsync, type DropdownAction } from './dropdown-protocol'
 import { InputDialog } from './InputDialog'
 import { ConfirmDialog } from './ConfirmDialog'
@@ -329,6 +330,8 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
     setFilter(next)
     saveFilter(next)
   }
+  // One column or two (the wide layout), as a group's page has.
+  const { columns, setColumns, keyFree: columnsKeyFree, onKey: columnsKey } = usePageColumns('vimperium-search-page-columns')
   // No result's label starts with a kind's key.
   useReservedHintKeys(TYPE_KEY_LIST)
   // The Sidebar's row says what's searched.
@@ -354,10 +357,11 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
     }
     if (!plain || e.shiftKey) return false
     switch (e.key) {
-      case 'ArrowDown': moveBy(1); return true
-      case 'ArrowUp': moveBy(-1); return true
-      case 'PageDown': moveBy(HALF_PAGE_ROWS); return true
-      case 'PageUp': moveBy(-HALF_PAGE_ROWS); return true
+      // A line of the layout: the result above or below, in two columns too.
+      case 'ArrowDown': moveBy(columns); return true
+      case 'ArrowUp': moveBy(-columns); return true
+      case 'PageDown': moveBy(HALF_PAGE_ROWS * columns); return true
+      case 'PageUp': moveBy(-HALF_PAGE_ROWS * columns); return true
     }
     return false
   }
@@ -515,6 +519,8 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
         selectFilter(kind)
         return true
       }
+      // c: one column or two.
+      if (columnsKey(e)) return true
       // Tab: this workspace or every one.
       if (token === '<Tab>') {
         if (scopeApplies) toggleScope()
@@ -526,8 +532,8 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
       switch (command) {
         case 'scroll-down': moveBy(1); return true
         case 'scroll-up': moveBy(-1); return true
-        case 'half-page-down': moveBy(HALF_PAGE_ROWS); return true
-        case 'half-page-up': moveBy(-HALF_PAGE_ROWS); return true
+        case 'half-page-down': moveBy(HALF_PAGE_ROWS * columns); return true
+        case 'half-page-up': moveBy(-HALF_PAGE_ROWS * columns); return true
         case 'page-top': setSelected(0); return true
         case 'page-bottom': setSelected(Math.max(results.length - 1, 0)); return true
         case 'insert-mode':
@@ -569,6 +575,8 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
   const deleting = rowDialog?.kind === 'delete-workspace' ? rowDialog : null
 
   const TypeIcon = TYPE_ICONS[filter]
+  // Two columns are the wide layout: the page's whole width.
+  const widthClass = columns === 2 ? 'max-w-none' : 'max-w-2xl'
   const total = items.length
   const countLabel = query.trim() ? `${results.length}/${total}` : `${total}`
 
@@ -581,11 +589,11 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
     >
       {/* Header: the title, then the kinds and the scope. */}
       <div className="shrink-0 border-b border-border">
-        <div className="mx-auto flex max-w-2xl items-center gap-3 px-6 pt-5 pb-3">
+        <div className={`mx-auto flex items-center gap-3 px-6 pt-5 pb-3 ${widthClass}`}>
           <Search size={18} className="shrink-0 text-primary" />
           <h1 className="text-lg font-semibold tracking-tight">Search Everything</h1>
         </div>
-        <div className="mx-auto flex max-w-2xl items-center gap-1.5 px-6 pb-4">
+        <div className={`mx-auto flex items-center gap-1.5 px-6 pb-4 ${widthClass}`}>
           <div className="flex h-8 items-center rounded-md bg-secondary p-0.5" role="radiogroup" aria-label="What to search">
             {FILTER_TYPES.map((type) => {
               const Icon = TYPE_ICONS[type]
@@ -637,19 +645,30 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
               <span className="opacity-50">{SCOPE_KEY_CAP}</span>
             </button>
           )}
+          <ColumnsSwitch
+            columns={columns}
+            onChange={setColumns}
+            keyFree={columnsKeyFree}
+            vimMode={vimMode}
+            className={scopeApplies && windowWorkspaceId ? 'ml-2' : 'ml-auto'}
+          />
         </div>
       </div>
 
       {/* The results: the same padding above and below, scrolled or not. */}
       <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-2xl px-4 py-4" role="listbox" aria-label={TYPE_LABELS[filter]}>
-          <div className="flex items-center gap-2 px-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <div
+          className={`mx-auto px-4 py-4 ${widthClass} ${columns === 2 ? 'grid grid-cols-2 content-start gap-x-2' : ''}`}
+          role="listbox"
+          aria-label={TYPE_LABELS[filter]}
+        >
+          <div className="col-span-full flex items-center gap-2 px-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             <TypeIcon size={10} />
             <span className="flex-1">{TYPE_LABELS[filter]}</span>
             <span className="tabular-nums">{countLabel}</span>
           </div>
           {results.length === 0 && (
-            <p className="py-16 text-center text-sm text-muted-foreground">
+            <p className="col-span-full py-16 text-center text-sm text-muted-foreground">
               {query.trim() ? `Nothing matches “${query.trim()}”` : `No ${TYPE_LABELS[filter].toLowerCase()} here`}
             </p>
           )}
@@ -670,13 +689,13 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
                   void openRowMenu(item, { x: e.clientX, y: e.clientY }, false)
                 }}
                 onMouseMove={() => { if (selected !== idx) setSelected(idx) }}
-                className={`relative flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 ${
+                className={`relative flex min-w-0 cursor-pointer items-center gap-2 rounded-lg px-2 py-2 ${
                   idx === selected ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50'
                 }`}
               >
-                {label && vimMode === 'command' && hintsOn && (
-                  <RowHint mode="command" label={label} pending={vimPending} className="shrink-0 -my-px" />
-                )}
+                {/* Its label in COMMAND, its number in INSERT: the column and
+                    its rule, as the Sidebar's. */}
+                <RowCap mode={vimMode} label={hintsOn ? label : undefined} pending={vimPending} index={idx} />
                 <span className="relative flex w-6 shrink-0 items-center">
                   {item.type === 'tab' ? (
                     <>

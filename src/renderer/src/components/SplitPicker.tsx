@@ -10,7 +10,7 @@ import { DetachedWindow, type PopupPlacement } from './DetachedWindow'
 import { TabFavicon } from './TabFavicon'
 import { CommentChip } from './CommentChip'
 import { InputField } from './InputField'
-import { Hint, HintBar, KeysPrompt, LEAVE_INSERT_CAP, RowHint, vimKeyCaps } from './KeyHints'
+import { Hint, HintBar, KeysPrompt, LEAVE_INSERT_CAP, RowCap, vimKeyCaps } from './KeyHints'
 import { hintIndex, usePopupHints } from '../lib/hint-labels'
 import { SplitGlyph } from './SplitPanes'
 import { fuzzyFilter } from '../lib/fuzzy'
@@ -209,11 +209,11 @@ export function SplitPicker({ split, paneRef, vimKeymap, focusTick }: Props) {
                 key={row.id}
                 data-index={idx}
                 onClick={() => pick(row)}
-                className={`relative flex items-center gap-2 px-4 py-2 cursor-pointer ${
+                className={`relative flex items-center gap-2 pl-2 pr-4 py-2 cursor-pointer ${
                   idx === selected ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50'
                 } ${isNew ? 'border-t border-border' : ''}`}
               >
-                <RowHint mode={vim.mode} label={hints.labels[idx]} pending={vim.pending} className="absolute left-0 top-1/2 -translate-y-1/2" />
+                <RowCap mode={vim.mode} label={hints.labels[idx]} pending={vim.pending} index={idx} />
                 <span className="w-6 shrink-0 flex items-center">
                   {isNew ? <Plus size={16} className="text-muted-foreground" />
                     : row.favicon ? <TabFavicon favicon={row.favicon} />

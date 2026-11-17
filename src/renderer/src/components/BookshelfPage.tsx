@@ -28,7 +28,7 @@ import { InlineRenameInput } from './InlineRenameInput'
 import { openDropdownAsync, type DropdownAction } from './dropdown-protocol'
 import { MoveBookshelfDialog, type BookshelfMoveTarget } from './MoveBookshelfDialog'
 import { ConfirmDialog } from './ConfirmDialog'
-import { KeyCap, RowHint, vimKeyCaps } from './KeyHints'
+import { KeyCap, RowCap, vimKeyCaps } from './KeyHints'
 import { useHintLabels, useHintTargets } from '../lib/hint-labels'
 import { isEscapeKey, usePageKeys } from '../lib/vim-mode'
 import { focusAddressFilter, useAddressFilter, type AddressFilterKeyEvent } from '../lib/address-filter'
@@ -1025,10 +1025,12 @@ export function BookshelfPage({ profileId, vimKeymap, vimMode, vimPending, hints
     : null)
   const hintLabels = useHintLabels()
 
-  /** A row's label, as a keycap before its icon. */
+  /** A row's cap at its start, always there: its label in COMMAND, its
+   *  number (1, 2, 3… down the shelf) otherwise — as the Sidebar's, without
+   *  the rule: the shelf's rows nest and stand apart. */
   const rowHint = (row: ShelfRow): React.ReactNode => {
     const label = hintsOn && !busy ? hintLabels.get(hintId(row)) : undefined
-    return label ? <RowHint mode={vimMode} label={label} pending={vimPending} className="shrink-0" /> : null
+    return <RowCap mode={vimMode} label={label} pending={vimPending} index={rows.findIndex((r) => r.id === row.id)} rule={false} />
   }
 
   // ── Render ──
@@ -1176,6 +1178,8 @@ export function BookshelfPage({ profileId, vimKeymap, vimMode, vimPending, hints
           }}
           onContextMenu={(e) => { setCursorId(g.id); void openGroupMenu(g, contextMenuPoint(e)) }}
         >
+          {/* Its cap first, as on every row. */}
+          {rowHint(row)}
           <span
             data-group-badge=""
             className="shrink-0 w-5 h-5 inline-flex items-center justify-center rounded text-[11px] font-semibold tabular-nums leading-none"
@@ -1183,8 +1187,6 @@ export function BookshelfPage({ profileId, vimKeymap, vimMode, vimPending, hints
           >
             {all}
           </span>
-          {/* Its label between the count and the name, as the Sidebar's. */}
-          {rowHint(row)}
           <span
             data-group-pill=""
             className="inline-flex items-center gap-1 min-w-0 max-w-full pl-1.5 pr-3 py-1 rounded-md text-sm font-medium overflow-hidden"
