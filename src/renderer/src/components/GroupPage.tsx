@@ -187,9 +187,15 @@ export function GroupPage({ group, vimMode, vimPending, hintsOn }: Props) {
           </div>
         )}
       >
-        <span className="shrink-0 text-xs font-medium text-muted-foreground tabular-nums">
-          {filtered ? `${rows.length} of ${count}` : count} {count === 1 ? 'tab' : 'tabs'}
-        </span>
+        {/* What's listed and how many, as Search Everything's chip of the
+            kind shown: the icon, Tabs, the count dimmed. */}
+        <div className="flex h-8 shrink-0 items-center rounded-md bg-secondary p-0.5">
+          <span className="flex h-7 items-center gap-1.5 rounded bg-background px-2.5 text-xs font-medium text-foreground shadow-sm">
+            <Globe size={13} />
+            Tabs
+            <span className="tabular-nums opacity-50">{filtered ? `${rows.length}/${count}` : count}</span>
+          </span>
+        </div>
         <ColumnsSwitch columns={columns} onChange={setColumns} keyFree={columnsKeyFree} vimMode={vimMode} className="ml-auto" />
       </ListPageHeader>
       <div>
@@ -217,7 +223,7 @@ export function GroupPage({ group, vimMode, vimPending, hintsOn }: Props) {
                       and its rule, as the Sidebar's. */}
                   <RowCap mode={vimMode} label={hintLabels.get(hintId(tab.id))} pending={vimPending} index={idx} />
                   <span className="flex w-6 shrink-0 items-center">
-                    {tab.favicon ? <TabFavicon favicon={tab.favicon} /> : <EntityIcon icon={Globe} mode={vimMode} />}
+                    {tab.favicon ? <TabFavicon favicon={tab.favicon} /> : <EntityIcon icon={Globe} mode={vimMode} index={idx} count={rows.length} />}
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="flex min-w-0 items-center gap-1.5">

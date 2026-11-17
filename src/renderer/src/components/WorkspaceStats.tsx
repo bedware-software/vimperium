@@ -49,11 +49,13 @@ function useStats() {
   return { profiles, profile, workspace, profileTabs, allTabs, allWorkspaces, allGroups }
 }
 
-/** The same numbers as rows of a card: Settings → About. */
-export function WorkspaceStatsCard() {
+/** The same numbers as rows of a card: Settings → About. `bare`: the rows
+ *  alone, with no card round them — for a panel that is one already (a
+ *  blank tab's). */
+export function WorkspaceStatsCard({ bare = false }: { bare?: boolean } = {}) {
   const { profiles, profile, workspace, profileTabs, allTabs, allWorkspaces, allGroups } = useStats()
   const row = (icon: ReactNode, label: string, name: string | null, counts: ReactNode) => (
-    <div className="flex items-center justify-between gap-4 px-4 py-3">
+    <div className={`flex items-center justify-between gap-4 ${bare ? 'py-2' : 'px-4 py-3'}`}>
       <div className="flex min-w-0 items-center gap-2 text-sm font-medium text-foreground">
         <span className="shrink-0 text-muted-foreground">{icon}</span>
         <span className="shrink-0">{label}</span>
@@ -63,7 +65,7 @@ export function WorkspaceStatsCard() {
     </div>
   )
   return (
-    <div className="flex flex-col divide-y divide-border border border-input rounded-md bg-card overflow-hidden">
+    <div className={`flex flex-col divide-y divide-border ${bare ? '' : 'border border-input rounded-md bg-card overflow-hidden'}`}>
       {workspace && row(<Layout size={14} />, 'This workspace', workspace.name, (
         <><Count n={tabCount(workspace)} one="tab" /><Dot /><Count n={workspace.tabGroups.length} one="group" /></>
       ))}

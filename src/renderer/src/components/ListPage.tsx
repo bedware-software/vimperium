@@ -5,8 +5,9 @@
 // top, the rows passing under it — a title's row, then a row of the page's
 // controls with the columns' switch at its end, both the list's width
 // (ColumnsSwitch.tsx' pageWidthClass), so their edges are in one line. And
-// the rows' icons, drawn top to bottom in the mode's colours — the ones
-// the light round the address bar's edge has.
+// the rows' icons: one colour each, the list's icons together running
+// through the mode's colours from the first row to the last — the ones the
+// light round the address bar's edge has.
 
 import type { ComponentType, CSSProperties, ReactNode } from 'react'
 import { pageWidthClass, type Columns } from './ColumnsSwitch'
@@ -37,41 +38,30 @@ export function ListPageHeader({ columns, title, children }: {
   const width = pageWidthClass(columns)
   return (
     <div className="sticky top-0 z-20 border-b border-border bg-background">
-      <EntityIconDefs />
       <div className={cn('mx-auto mb-3 mt-5 flex h-8 w-full min-w-0 items-center gap-3 px-4', width)}>{title}</div>
       <div className={cn('mx-auto mb-4 flex h-8 w-full items-center gap-1.5 whitespace-nowrap px-4', width)}>{children}</div>
     </div>
   )
 }
 
-const GRADIENT_ID = { command: 'entity-icon-command', insert: 'entity-icon-insert' } as const
-
-/** The gradients the rows' icons are drawn with, one per mode: the edge's
- *  three colours, top to bottom. In the icon's own units (a 24 px box), not
- *  each stroke's bounding box — a level line has no height to spread one
- *  over. */
-function EntityIconDefs() {
-  return (
-    <svg aria-hidden="true" width="0" height="0" className="absolute">
-      <defs>
-        {(['command', 'insert'] as const).map((mode) => (
-          <linearGradient key={mode} id={GRADIENT_ID[mode]} gradientUnits="userSpaceOnUse" x1="0" y1="2" x2="0" y2="22">
-            <stop offset="0" style={{ stopColor: `var(--vim-edge-${mode}-1)` }} />
-            <stop offset="0.5" style={{ stopColor: `var(--vim-edge-${mode}-2)` }} />
-            <stop offset="1" style={{ stopColor: `var(--vim-edge-${mode}-3)` }} />
-          </linearGradient>
-        ))}
-      </defs>
-    </svg>
-  )
+/** Where `at` (0 at the list's first row, 1 at its last) falls in the
+ *  mode's three colours. */
+function gradientColour(mode: VimMode, at: number): string {
+  const t = Math.min(1, Math.max(0, at))
+  const [from, to, share] = t < 0.5 ? [1, 2, t * 2] : [2, 3, (t - 0.5) * 2]
+  return `color-mix(in oklch, var(--vim-edge-${mode}-${to}) ${Math.round(share * 100)}%, var(--vim-edge-${mode}-${from}))`
 }
 
-/** A row's icon (a lucide one), drawn in the mode's gradient; in its plain
- *  colour while Vim mode is off. `style` wins: an icon with a colour of its
- *  own (a group's) passes its stroke. */
-export function EntityIcon({ icon: Icon, mode, size = 16, className, style }: {
+/** A row's icon (a lucide one), in its place's colour of the mode's
+ *  gradient: the icons down the list run from the first colour to the
+ *  last. Its plain colour while Vim mode is off. `style` wins: an icon
+ *  with a colour of its own (a group's) passes it. */
+export function EntityIcon({ icon: Icon, mode, index, count, size = 16, className, style }: {
   icon: ComponentType<{ size?: number; className?: string; style?: CSSProperties }>
   mode: VimMode | null
+  /** The row's place in its list, from 0, and how many rows there are. */
+  index: number
+  count: number
   size?: number
   className?: string
   style?: CSSProperties
@@ -80,7 +70,7 @@ export function EntityIcon({ icon: Icon, mode, size = 16, className, style }: {
     <Icon
       size={size}
       className={cn(!mode && 'text-muted-foreground/60', className)}
-      style={{ ...(mode ? { stroke: `url(#${GRADIENT_ID[mode]})` } : null), ...style }}
+      style={{ ...(mode ? { color: gradientColour(mode, count > 1 ? index / (count - 1) : 0) } : null), ...style }}
     />
   )
 }

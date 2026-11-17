@@ -713,11 +713,14 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
                       <TabFavicon favicon={item.favicon} />
                     </>
                   ) : (
-                    // The mode's gradient; a group keeps its own colour.
+                    // Its place's colour of the mode's gradient down the
+                    // list; a group keeps its own colour.
                     <EntityIcon
                       icon={TypeIcon}
                       mode={vimMode}
-                      style={item.type === 'tabGroup' && item.groupColor ? { stroke: 'var(--gc-resolved)' } : undefined}
+                      index={idx}
+                      count={results.length}
+                      style={item.type === 'tabGroup' && item.groupColor ? { color: 'var(--gc-resolved)' } : undefined}
                     />
                   )}
                 </span>
