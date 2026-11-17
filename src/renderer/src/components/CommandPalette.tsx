@@ -63,7 +63,6 @@ const COMMANDS: CommandItem[] = [
   { id: 'profile-menu', label: 'Profile Menu', category: 'Profile', keywords: 'switch list' },
   { id: 'expand-all-groups', label: 'Expand All Tab Groups', category: 'View' },
   { id: 'collapse-all-groups', label: 'Collapse All Tab Groups', category: 'View' },
-  { id: 'chrome-hints', label: 'Hints on Browser Controls', category: 'View', keywords: 'labels buttons click keyboard vimium' },
   { id: 'zoom-in', label: 'Zoom In', category: 'View', keywords: 'bigger larger page' },
   { id: 'zoom-out', label: 'Zoom Out', category: 'View', keywords: 'smaller page' },
   { id: 'zoom-reset', label: 'Actual Size', category: 'View', keywords: 'zoom reset 100' },
@@ -208,7 +207,7 @@ export function CommandPalette({ open, onOpenChange, onAction, vimKeymap }: Prop
         return !!activeTabGroupId
       }
       // Vim mode's own: the labels are typed with COMMAND's keys.
-      if (cmd.id === 'chrome-hints' || cmd.id === 'help') return !!vimKeymap
+      if (cmd.id === 'help') return !!vimKeymap
       // A tab in a group (not the group header parked with no active tab).
       if (cmd.id === 'ungroup-tab') return !!activeTab && !!activeTabGroupId
       if (cmd.id === 'split-focus' || cmd.id === 'split-close') return splitShown

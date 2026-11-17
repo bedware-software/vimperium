@@ -734,7 +734,7 @@ export function WebviewPanel({ splitPickerKeymap, splitPickerFocusTick, vimKeyma
                 hintsOn={groupHintsOn}
               />
             )
-          case 'keys': return parsedKeymap ? <KeysPage keymap={parsedKeymap} vimPending={vimPending} /> : null
+          case 'keys': return parsedKeymap ? <KeysPage keymap={parsedKeymap} vimPending={vimPending} vimMode={vimMode} /> : null
           case 'bookshelf':
             return <BookshelfPage profileId={profileId} vimKeymap={vimKeymap} vimMode={vimMode} vimPending={vimPending} hintsOn={groupHintsOn} />
           default: return <UnknownInternalPage url={activeInternalUrl} />
@@ -796,9 +796,9 @@ function UnknownInternalPage({ url }: { url: string }) {
 /**
  * Vim's COMMAND keys over an error drawn in the page's place, while the page
  * itself is hidden under it: the window's reload key (r) tries the page
- * again, its back key (h) gets away from it, Enter presses the main button.
- * The rest — continuing past a bad certificate — only the chrome hints (;)
- * reach, never a single key.
+ * again, its back key gets away from it, Enter presses the main button.
+ * The rest — continuing past a bad certificate — is the mouse's, never a
+ * single key.
  */
 function OverlayKeys({ onEnter, onReload, onBack }: {
   onEnter: () => void

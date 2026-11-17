@@ -10,7 +10,7 @@
 // app may not be secure."
 
 import { webFrame, ipcRenderer } from 'electron'
-import { KeySequencer, isCtrlToken, keyTokenFromEvent, type VimKeymap } from '../shared/vim-keys'
+import { KeySequencer, isCtrlToken, keyTokenFromEvent, runTimes, timesFor, type VimKeymap } from '../shared/vim-keys'
 import { installWebAuthnBridge } from './webauthn-bridge'
 import {
   MAIN_WORLD_LOG_PREFIX,
@@ -745,13 +745,17 @@ function installVimPage(): void {
   // field, a checkbox, a button — which stays INSERT, so the next Tab moves
   // on too rather than toggling the Sidebar (COMMAND's Tab); Esc still
   // leaves. How long after the press a focus move counts as its doing.
+  // <C-v> was typed: the next key is the page's, whatever COMMAND has on it.
+  let passNextKey = false
   let tabbedAt = -Infinity
   const TAB_MOVE_MS = 300
 
   const sequencer = new KeySequencer(
     () => keymap,
-    (command, e) => {
-      if (!e.repeat || VIM_REPEATABLE.has(command)) runCommand(command)
+    (command, e, count) => {
+      if (e.repeat && !VIM_REPEATABLE.has(command)) return
+      // A count typed before it (5j, 3x) runs it that many times.
+      runTimes(timesFor(command, count), () => runCommand(command))
     },
     // The keys of an unfinished sequence, for the window's showcmd and its
     // hint labels' typed part.
@@ -833,6 +837,7 @@ function installVimPage(): void {
   window.addEventListener('blur', () => {
     swallowedPresses.clear()
     sequencer.reset()
+    passNextKey = false
   })
   // So does the page going away mid-sequence (a navigation): no later
   // report would ever clear it.
@@ -863,6 +868,13 @@ function installVimPage(): void {
       return
     }
     if (mode !== 'command') return
+    if (passNextKey) {
+      // A modifier on its way down isn't the key yet.
+      if (e.key === 'Shift' || e.key === 'Control' || e.key === 'Alt' || e.key === 'Meta') return
+      passNextKey = false
+      ipcRenderer.send('vimperium-vim-page', { pending: '' })
+      return
+    }
     if (hints) {
       hints.onKey(e)
       // It takes every key while it's up.
@@ -948,6 +960,13 @@ function installVimPage(): void {
       case 'focus-input':
         hints = openInputHints(() => { hints = null })
         break
+      case 'next-page': followPageLink('next'); break
+      case 'prev-page': followPageLink('prev'); break
+      case 'pass-key':
+        passNextKey = true
+        // The window's showcmd says a key is awaited.
+        ipcRenderer.send('vimperium-vim-page', { pending: '<C-v>' })
+        break
       // The browser's own commands (and the Sidebar's): the renderer runs them.
       default:
         ipcRenderer.send('vimperium-vim-page', { command })
@@ -1028,6 +1047,42 @@ function installVimPage(): void {
     stopGlide()
     const target = scrollTarget()
     target.scrollTo({ top: edge === 'top' ? 0 : target.scrollHeight, behavior: 'auto' })
+  }
+}
+
+// ]] and [[: what a link to the next or the previous page says, when the
+// page doesn't mark it with rel. Whole words, any case; the arrows alone.
+const PAGE_LINK_WORDS: Record<'next' | 'prev', RegExp> = {
+  next: /^(?:next(?: page)?|older(?: posts)?|more|следующая(?: страница)?|далее|дальше|вперёд|вперед|›|»|→|>|>>)$/i,
+  prev: /^(?:prev(?:ious)?(?: page)?|newer(?: posts)?|предыдущая(?: страница)?|назад|‹|«|←|<|<<)$/i,
+}
+
+/** Follows the page's link to the next (or previous) page: one marked
+ *  rel=next / rel=prev, else a visible link or button that says so — the
+ *  last such on the page, where a results page keeps its pager. */
+function followPageLink(which: 'next' | 'prev'): void {
+  const marked = document.querySelector<HTMLElement>(`a[rel~="${which}"][href], link[rel~="${which}"][href]`)
+  if (marked instanceof HTMLLinkElement) {
+    location.href = marked.href
+    return
+  }
+  if (marked) {
+    marked.click()
+    return
+  }
+  const words = PAGE_LINK_WORDS[which]
+  const said = (el: HTMLElement): boolean => {
+    const texts = [el.innerText, el.getAttribute('aria-label'), el.getAttribute('title')]
+    return texts.some((text) => !!text && words.test(text.replace(/\s+/g, ' ').trim()))
+  }
+  const candidates = [...document.querySelectorAll<HTMLElement>('a[href], button, [role="button"], [role="link"]')]
+  for (let i = candidates.length - 1; i >= 0; i--) {
+    const el = candidates[i]
+    if (!said(el) || el.getAttribute('aria-disabled') === 'true' || (el as HTMLButtonElement).disabled) continue
+    const box = el.getBoundingClientRect()
+    if (box.width === 0 || box.height === 0) continue
+    el.click()
+    return
   }
 }
 

@@ -1,17 +1,18 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
-import { useAppStore, withoutSave, setDefaultNewTabUrl, setNewTabFocusPref, markNewTabForUrlFocus, getVisibleTabOrder, getTabCycleOrder, type NewTabFocus } from './store/app-store'
+import { useAppStore, withoutSave, setDefaultNewTabUrl, setNewTabFocusPref, markNewTabForUrlFocus, getVisibleTabOrder, getTabCycleOrder, alternateTabId, type NewTabFocus } from './store/app-store'
 import { normalizeURL, setSearchEngine } from './lib/url'
 import { setBangs, setBangsEnabled } from './lib/bangs'
 import type { Bang } from '../../shared/bangs'
-import { openAddress } from './lib/open-address'
+import { openAddress, stepUrlNumber } from './lib/open-address'
 import { log } from './lib/log'
 import { focusAndSelectUrlBar } from './lib/focus-url-bar'
 import { useVimMode, dispatchSidebarCommand, dispatchPageCommand, type VimMode } from './lib/vim-mode'
-import { HINT_CANCEL_COMMAND, hintIndex, useHintKeymap } from './lib/hint-labels'
-import { cancelChromeHints, toggleChromeHints } from './lib/chrome-hints'
-import { ChromeHintsOverlay } from './components/ChromeHintsOverlay'
+import { hintIndex, useHintKeymap } from './lib/hint-labels'
 import { WhichKeyStrip } from './components/WhichKey'
-import { parseVimKeymap, paletteKeymap, DEFAULT_VIM_KEYMAP, extensionMenuIndex, isPageCommand, isSidebarCommand, withExtensionMenuKeys } from './lib/vim-keymap'
+import { NoticeStrip } from './components/Notice'
+import { showNotice } from './lib/notice'
+import { useSidebarCursorStore } from './lib/sidebar-cursor'
+import { parseVimKeymap, paletteKeymap, DEFAULT_VIM_KEYMAP, extensionMenuIndex, isPageCommand, isSidebarCommand, withExtensionMenuKeys, withRowGoKey } from './lib/vim-keymap'
 import { Toolbar } from './components/Toolbar'
 import { Sidebar } from './components/Sidebar'
 import { WebviewPanel } from './components/WebviewPanel'
@@ -593,6 +594,12 @@ function applyTheme(theme: ThemeChoice, lightVariant: string, darkVariant: strin
   log.info('theme applied:', theme, variant)
 }
 
+/** What . does again: the changes — a tab closed, a row moved, the zoom, a
+ *  number in the address. */
+const REPEATED_BY_DOT = new Set([
+  'close-tab', 'row-move-down', 'row-move-up', 'zoom-in', 'zoom-out', 'increment-url', 'decrement-url',
+])
+
 const SIDEBAR_VISIBLE_KEY = 'vimperium-sidebar-visible'
 
 /** Vim's COMMAND keys that open Search Everything on one kind of thing,
@@ -608,6 +615,17 @@ export default function App() {
   const [ready, setReady] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [settingsTabRequest, setSettingsTabRequest] = useState<SettingsTabRequest | null>(null)
+  // A page asking for Settings on one of its panes (the keys' help: Keyboard
+  // Shortcuts).
+  useEffect(() => {
+    const onOpen = (e: Event): void => {
+      const tab = (e as CustomEvent<SettingsTabRequest['tab']>).detail
+      if (tab) setSettingsTabRequest({ tab, v: Date.now() })
+      setSettingsOpen(true)
+    }
+    window.addEventListener('vimperium-open-settings', onOpen)
+    return () => window.removeEventListener('vimperium-open-settings', onOpen)
+  }, [])
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
   // First-run Cloud Sync offer. Null until this window claims the prompt (only
   // the first window across a multi-window restore wins the claim in main).
@@ -1025,7 +1043,11 @@ export default function App() {
             bridge: typeof window.electronAPI.bookshelfAdd,
           })
           if (tab && pid && window.electronAPI.bookshelfAdd && !isInternalUrl(tab.url)) {
+            // Nothing on the page shows it went there: a notice says so.
+            const name = tab.title || tab.url
             window.electronAPI.bookshelfAdd(pid, { url: tab.url, title: tab.title, favicon: tab.favicon })
+              .then((reading) => { if (reading) showNotice('Added to the Bookshelf:', name) })
+              .catch((err) => log.warn('add-to-bookshelf failed', { err: String(err) }))
           }
           break
         }
@@ -1306,16 +1328,21 @@ export default function App() {
         case 'dark-pages-menu':
           window.dispatchEvent(new Event('vimperium-open-dark-pages-menu'))
           break
-        case 'chrome-hints': {
-          // Its labels are typed with COMMAND's keys; in INSERT they'd be
-          // typed into the field.
-          const vimNow = vimRef.current
-          if (!vimNow?.mode) {
-            log.info('chrome-hints: Vim has not started yet')
-            break
-          }
-          if (vimNow.mode === 'insert') vimNow.enterCommand(false)
-          toggleChromeHints()
+        case 'alternate-tab': {
+          // The tab shown before this one (vim's alternate buffer); again
+          // comes back.
+          const workspace = s.getActiveWorkspace()
+          const to = workspace ? alternateTabId(workspace, s.activeTabId) : null
+          if (to) s.setActiveTab(to)
+          break
+        }
+        case 'increment-url':
+        case 'decrement-url': {
+          // The last number in the address, one up or down: page 3 to 4.
+          const tab = s.getActiveTab()
+          if (!tab || isInternalUrl(tab.url)) break
+          const next = stepUrlNumber(tab.url, action === 'increment-url' ? 1 : -1)
+          if (next) openAddress(next, false, action)
           break
         }
         case 'zoom-in':
@@ -1664,19 +1691,29 @@ export default function App() {
   // pages run too.
   // COMMAND's keys, with the pinned extensions' menus on theirs (o1e…o9e,
   // made from the extensions menu's own — lib/vim-keymap.ts).
-  const mainKeys = useMemo(() => withExtensionMenuKeys(vimKeymap.main), [vimKeymap])
+  // Enter is the window's only while the Sidebar's cursor is off the row
+  // that's shown: it shows the row it's on.
+  const cursorAway = useSidebarCursorStore((s) => s.away)
+  const mainKeys = useMemo(() => {
+    const keys = withExtensionMenuKeys(vimKeymap.main)
+    return cursorAway ? withRowGoKey(keys) : keys
+  }, [vimKeymap, cursorAway])
   const hinted = useHintKeymap(vimReady ? mainKeys : null)
+  const lastChangeRef = useRef<string | null>(null)
   const runVimCommand = (command: string): void => {
     const hint = hintIndex(command)
     if (hint !== null) {
       hinted.targets[hint]?.activate()
       return
     }
-    // A key no label of ;'s starts with: they go, the key does nothing else.
-    if (command === HINT_CANCEL_COMMAND) {
-      cancelChromeHints('key')
+    // . does the last change again: a tab closed, a row moved, the zoom,
+    // a number in the address.
+    if (command === 'repeat') {
+      const last = lastChangeRef.current
+      if (last) runVimCommand(last)
       return
     }
+    if (REPEATED_BY_DOT.has(command)) lastChangeRef.current = command
     // Parked on a group: its page takes the keys it knows (j/k, i) — the
     // Bookshelf too while it holds the keyboard.
     if (dispatchPageCommand(command)) return
@@ -1710,7 +1747,8 @@ export default function App() {
         runInternalPageCommand(command)
         return
       }
-      if (command === 'focus-input') focusActivePage()
+      // pass-key too: the key it hands over is typed in the page.
+      if (command === 'focus-input' || command === 'pass-key') focusActivePage()
       window.electronAPI.vimRunInPage?.(s.activeTabId, command)
       return
     }
@@ -1718,8 +1756,8 @@ export default function App() {
       vimRef.current?.startTabWalk()
       if (dispatchSidebarCommand(command)) return
       // No Sidebar to take it: Ctrl+J/K still go through the tabs.
-      if (command === 'cursor-down-show') shortcutHandlerRef.current?.('next-tab')
-      else if (command === 'cursor-up-show') shortcutHandlerRef.current?.('prev-tab')
+      if (command === 'cursor-down-show' || command === 'row-down') shortcutHandlerRef.current?.('next-tab')
+      else if (command === 'cursor-up-show' || command === 'row-up') shortcutHandlerRef.current?.('prev-tab')
       return
     }
     shortcutHandlerRef.current?.(command)
@@ -1783,7 +1821,7 @@ export default function App() {
 
   return (
     <>
-      <Toolbar windowWorkspaceId={windowWorkspaceId} sidebarVisible={sidebarShown} pageFullscreen={pageFullscreen} vimMode={vim.mode} vimPending={vim.pending} hintsOn={!popupOpen} onToggleSidebar={toggleSidebar} onOpenSettings={() => setSettingsOpen(true)} onOpenAbout={() => { setSettingsTabRequest({ tab: 'about', v: Date.now() }); setSettingsOpen(true) }} onOpenSearch={() => openSearchPage(null)} onManageExtensions={() => { setSettingsTabRequest({ tab: 'extensions', v: Date.now() }); setSettingsOpen(true) }} onOpenDarkPagesSettings={() => { setSettingsTabRequest({ tab: 'darkPages', v: Date.now() }); setSettingsOpen(true) }} />
+      <Toolbar windowWorkspaceId={windowWorkspaceId} sidebarVisible={sidebarShown} pageFullscreen={pageFullscreen} vimMode={vim.mode} vimPending={vim.pending} hintsOn={!popupOpen} onToggleSidebar={toggleSidebar} onOpenSettings={() => setSettingsOpen(true)} onOpenAbout={() => { setSettingsTabRequest({ tab: 'about', v: Date.now() }); setSettingsOpen(true) }} onOpenSearch={() => openSearchPage(null)} onManageExtensions={(extensionId) => { setSettingsTabRequest({ tab: 'extensions', extensionId, v: Date.now() }); setSettingsOpen(true) }} onOpenDarkPagesSettings={() => { setSettingsTabRequest({ tab: 'darkPages', v: Date.now() }); setSettingsOpen(true) }} />
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         <Sidebar
           visible={sidebarShown}
@@ -1962,12 +2000,13 @@ export default function App() {
           onDone={() => setHttpAuthQueue((q) => q.slice(1))}
         />
       )}
-      {/* Vim's ; labels on the browser's own controls. */}
-      <ChromeHintsOverlay mode={vim.mode} pending={vim.pending} />
       {/* What can follow a prefix typed (o, d, n…): a strip along the
           bottom of the page area, the Sidebar shown or not — its own hint
           bar keeps to its own keys. */}
       <WhichKeyStrip keymap={vimReady ? vimKeymap.main : null} pending={vim.pending} anchorRef={webviewColumnRef} />
+      {/* What just happened, where nothing on the page says so (a page put
+          on the Bookshelf): the same place, for a moment. */}
+      <NoticeStrip anchorRef={webviewColumnRef} hidden={vimReady && vim.pending !== ''} />
     </>
   )
 }

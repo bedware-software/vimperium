@@ -659,34 +659,16 @@ export function BangsPage() {
       aria-label="Bangs"
     >
       <div className="shrink-0 border-b border-border">
-        {/* Title + global actions. */}
+        {/* The title; then where plain queries go, with the page's actions
+            at the row's end; then whether !words fire, the filter and the
+            sort — the rows a list page's header has (ListPage.tsx). */}
         <div className="mx-auto flex max-w-4xl items-center gap-3 px-6 pt-5 pb-3">
           <Zap size={18} className="text-primary shrink-0" />
           <h1 className="text-lg font-semibold tracking-tight">Bangs</h1>
           {summary && <span className="text-xs text-muted-foreground tabular-nums">{summary}</span>}
-          <div className="ml-auto flex items-center gap-1.5">
-            <button
-              onClick={() => openEditor('add')}
-              className="flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
-              title={titleWithKey('Add a bang', keyOf('add'))}
-            >
-              <Plus size={14} />
-              Add
-              {keyOf('add') && <KeyCap>{keyOf('add')}</KeyCap>}
-            </button>
-            <button
-              onClick={reset}
-              className="flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
-              title={`Put the default bangs back, dropping your changes (${keyOf('reset') ? `${keyOf('reset')} twice, or click twice` : 'click twice'})`}
-            >
-              <RotateCcw size={14} />
-              Reset
-              {keyOf('reset') && <KeyCap>{keyOf('reset')}</KeyCap>}
-            </button>
-          </div>
         </div>
 
-        {/* Where plain queries go, and whether !words fire. */}
+        {/* Where plain queries go; Add and Reset. */}
         <div className="mx-auto flex max-w-4xl flex-wrap items-center gap-x-3 gap-y-2 px-6 pb-3">
           <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
             Search engine {keyOf('engine') && <KeyCap>{keyOf('engine')}</KeyCap>}
@@ -721,19 +703,26 @@ export function BangsPage() {
               Custom
             </button>
           </div>
-          <button
-            role="switch"
-            aria-checked={bangsOn}
-            onClick={toggleBangs}
-            className={`ml-auto flex h-9 items-center gap-2 rounded-md px-2.5 text-xs font-medium transition-colors ${
-              bangsOn ? 'bg-primary/15 text-primary hover:bg-primary/20' : 'bg-secondary text-muted-foreground hover:text-foreground'
-            }`}
-            title={titleWithKey('Bangs on: !w vim goes straight to Wikipedia. Off: it goes to the search engine as typed', keyOf('bangs'))}
-          >
-            {bangsOn ? <Power size={14} /> : <PowerOff size={14} />}
-            {bangsOn ? 'Bangs on' : 'Bangs off'}
-            {keyOf('bangs') && <KeyCap>{keyOf('bangs')}</KeyCap>}
-          </button>
+          <div className="ml-auto flex items-center gap-1.5">
+            <button
+              onClick={() => openEditor('add')}
+              className="flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
+              title={titleWithKey('Add a bang', keyOf('add'))}
+            >
+              <Plus size={14} />
+              Add
+              {keyOf('add') && <KeyCap>{keyOf('add')}</KeyCap>}
+            </button>
+            <button
+              onClick={reset}
+              className="flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
+              title={`Put the default bangs back, dropping your changes (${keyOf('reset') ? `${keyOf('reset')} twice, or click twice` : 'click twice'})`}
+            >
+              <RotateCcw size={14} />
+              Reset
+              {keyOf('reset') && <KeyCap>{keyOf('reset')}</KeyCap>}
+            </button>
+          </div>
         </div>
         {customActive && (
           <div className="mx-auto max-w-4xl px-6 pb-3">
@@ -757,8 +746,22 @@ export function BangsPage() {
           </div>
         )}
 
-        {/* What the filter (the address bar) narrowed it to, and the sort. */}
+        {/* Whether !words fire; what the filter (the address bar) narrowed
+            it to; the sort. */}
         <div className="mx-auto flex max-w-4xl items-center gap-3 px-6 pb-4">
+          <button
+            role="switch"
+            aria-checked={bangsOn}
+            onClick={toggleBangs}
+            className={`flex h-9 shrink-0 items-center gap-2 rounded-md px-2.5 text-xs font-medium transition-colors ${
+              bangsOn ? 'bg-primary/15 text-primary hover:bg-primary/20' : 'bg-secondary text-muted-foreground hover:text-foreground'
+            }`}
+            title={titleWithKey('Bangs on: !w vim goes straight to Wikipedia. Off: it goes to the search engine as typed', keyOf('bangs'))}
+          >
+            {bangsOn ? <Power size={14} /> : <PowerOff size={14} />}
+            {bangsOn ? 'Bangs on' : 'Bangs off'}
+            {keyOf('bangs') && <KeyCap>{keyOf('bangs')}</KeyCap>}
+          </button>
           <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
             {query.trim()
               ? <>Filtered by “<span className="text-foreground">{query.trim()}</span>” · {visible.length} of {bangs.length}</>

@@ -64,7 +64,6 @@ export const ACTION_LABELS: Record<string, string> = {
   'extensions-menu': 'Extensions Menu',
   'manage-extensions': 'Manage Extensions',
   'site-info': 'Site Info',
-  'chrome-hints': 'Hints on Browser Controls',
   'zoom-in': 'Zoom In',
   'zoom-out': 'Zoom Out',
   'zoom-reset': 'Actual Size',

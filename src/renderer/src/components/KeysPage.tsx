@@ -21,11 +21,12 @@ import { closeHelpPanel } from '../lib/help-panel'
 import { focusAddressFilter, useAddressFilter, type AddressFilterKeyEvent } from '../lib/address-filter'
 import { isBlockKey } from '../lib/url-blocks'
 import {
-  displayKeySequence, keysFor, settingsCommandLabel, settingsCommandsInOrder, settingsKeymap, vimCommandLabel,
+  displayKeySequence, keysFor, keyTokenFromEvent, settingsCommandLabel, settingsCommandsInOrder, settingsKeymap, vimCommandLabel,
   type ParsedVimKeymap, type VimKeymap,
 } from '../lib/vim-keymap'
-import { isEscapeKey, usePageKeys } from '../lib/vim-mode'
+import { isEscapeKey, usePageKeys, type VimMode } from '../lib/vim-mode'
 import { closePage } from '../lib/page-nav'
+import { useReservedHintKeys } from '../lib/hint-labels'
 import { SEQUENCE_JOIN } from '../../../shared/vim-keys'
 import { LEAVE_INSERT_CAP } from './KeyHints'
 import { cn } from '../lib/utils'
@@ -34,6 +35,18 @@ export interface KeysPageProps {
   keymap: ParsedVimKeymap
   /** Keys typed so far of a sequence: rows they can still become stay lit. */
   vimPending: string
+  /** The window's Vim mode: its key to Settings shows in COMMAND. */
+  vimMode?: VimMode | null
+}
+
+/** In COMMAND: Settings → Keyboard Shortcuts. The page's own key, as c is
+ *  the lists' (ColumnsSwitch.tsx) — no line of the keymap. */
+const SETTINGS_KEY = 's'
+const SETTINGS_KEYS = [SETTINGS_KEY] as const
+
+/** Settings, on Keyboard Shortcuts (App.tsx listens). */
+function openKeySettings(): void {
+  window.dispatchEvent(new CustomEvent('vimperium-open-settings', { detail: 'shortcuts' }))
 }
 
 /** A line of j/k, as a web page's (VIM_SCROLL_STEP in the preload). */
@@ -61,7 +74,7 @@ function sectionNote(context: HelpContext, keymap: ParsedVimKeymap): string | nu
     case 'search':
       return `Their COMMAND mode, out of the box (${LEAVE_INSERT_CAP}); Esc closes from either${typesAgain(keymap.search)}`
     case 'find':
-      return `Its COMMAND mode, out of typing (Enter or ${LEAVE_INSERT_CAP}); Esc closes from either${typesAgain(keymap.find)} ? shows its keys.`
+      return `Its COMMAND mode, out of typing (Enter or ${LEAVE_INSERT_CAP}); Esc closes from either${typesAgain(keymap.find)}`
     case 'url': {
       const twice = ['url-copy', 'url-change']
         .map((command) => singleKeys(keymap.url, command).find((key) => !isBlockKey(key)))
@@ -111,8 +124,10 @@ function splitInTwo(sections: ShownSection[], withNotes: boolean, keymap: Parsed
   return [sections.slice(0, best), sections.slice(best)]
 }
 
-export function KeysPage({ keymap, vimPending }: KeysPageProps) {
+export function KeysPage({ keymap, vimPending, vimMode = null }: KeysPageProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
+  // Its own key starts no row's label (the Sidebar's show beside it).
+  useReservedHintKeys(SETTINGS_KEYS)
 
   const query = useAddressFilter('keys', {
     label: 'Keys',
@@ -193,8 +208,14 @@ export function KeysPage({ keymap, vimPending }: KeysPageProps) {
   // COMMAND's keys on the page: the scroll keys scroll it, i and gi type in
   // the filter.
   usePageKeys({
-    // Esc closes the page: where you were shows again.
-    intercept: (e) => isEscapeKey(e) && closePage('keys'),
+    // Esc closes the page: where you were shows again. s is Settings'
+    // Keyboard Shortcuts, where the keys are edited.
+    intercept: (e) => {
+      if (isEscapeKey(e)) return closePage('keys')
+      if (e.metaKey || e.ctrlKey || e.altKey || keyTokenFromEvent(e) !== SETTINGS_KEY) return false
+      openKeySettings()
+      return true
+    },
     command: (command) => {
       const el = scrollRef.current
       if (!el) return false
@@ -270,7 +291,11 @@ export function KeysPage({ keymap, vimPending }: KeysPageProps) {
               {query ? `${found} of ${total}` : total}
             </span>
             <span className="ml-auto hidden truncate text-xs text-muted-foreground sm:block">
-              Esc or ? closes · Settings → Keyboard Shortcuts edits them
+              Esc or ? closes ·{' '}
+              <button type="button" tabIndex={-1} onClick={openKeySettings} className="hover:text-foreground">
+                Settings → Keyboard Shortcuts edits them
+              </button>
+              {vimMode === 'command' && <kbd className="ml-1.5 font-mono">{SETTINGS_KEY}</kbd>}
             </span>
           </div>
           <div ref={scrollRef} data-vim-scroll="" className="@container min-h-0 flex-1 overflow-y-auto">

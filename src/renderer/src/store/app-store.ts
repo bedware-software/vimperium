@@ -212,6 +212,12 @@ function dropFromTabHistory(workspaceId: string, tabId: string): void {
   }
 }
 
+/** The tab shown before `currentId` in `workspace` — vim's alternate
+ *  buffer (<C-6>); null with nowhere to go back to. */
+export function alternateTabId(workspace: Workspace, currentId: string | null): string | null {
+  return findHistoricalTabId(workspace, currentId ?? undefined)
+}
+
 /** Most-recent tab in this workspace's history that still exists, excluding `excludeId`. */
 function findHistoricalTabId(w: Workspace, excludeId?: string): string | null {
   const hist = tabHistoryByWorkspace.get(w.id)

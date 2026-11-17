@@ -141,6 +141,11 @@ export interface DropdownSpec {
   // picks it at once. On a list's row r renames it, d deletes it, Shift+J/K
   // move it (with `reorder`); n is New…, 1–9 pick a row at once.
   keyboard?: boolean
+  // A menu opened from the keyboard that has neighbours (a pinned
+  // extension's, among the toolbar's): h and l pick these actions, which
+  // the opener answers by opening the menu before or after this one. Not
+  // rows of the menu. Without colour swatches only — h/l are theirs.
+  sideways?: { prev?: string; next?: string }
 }
 
 export type DropdownEventBody =

@@ -59,7 +59,8 @@ interface Props {
   onOpenSettings: () => void
   onOpenAbout: () => void
   onOpenSearch: () => void
-  onManageExtensions: () => void
+  /** Settings → Extensions; with an id, that extension's details open. */
+  onManageExtensions: (extensionId?: string) => void
   /** Settings, at Dark pages. */
   onOpenDarkPagesSettings: () => void
 }
@@ -355,7 +356,8 @@ function ExtensionActions({
   onManageExtensions,
 }: {
   activeTabId: string | null
-  onManageExtensions: () => void
+  /** Settings → Extensions; with an id, that extension's details open. */
+  onManageExtensions: (extensionId?: string) => void
 }) {
   const [extensions, setExtensions] = useState<ExtensionInfo[]>([])
   const [actionState, setActionState] = useState<BrowserActionState>({
@@ -503,22 +505,38 @@ function ExtensionActions({
     return openExtensionMenu(ext, { position: { x: e.clientX, y: e.clientY } })
   }
 
-  /** An extension's own menu — pin, options, disable, remove: at the pointer
-   *  (a right click on its button), or hung off its button with the
-   *  keyboard on it (its key: o1e, o2e…). */
+  /** An extension's own menu — what a click on it does, its keyboard
+   *  shortcuts, pin, options, disable, remove: at the pointer (a right
+   *  click on its button), or hung off its button with the keyboard on it
+   *  (its key: o1e, o2e…), where h and l go to the pinned extension before
+   *  and after it. */
   const openExtensionMenu = async (
     ext: ExtensionInfo,
     place: { position: { x: number; y: number } } | { anchor: { x: number; y: number; width: number; height: number }; keyboard: true },
   ): Promise<void> => {
     const api = (window as any).electronAPI
     const isPinned = ext.pinned ?? true
-    const actions: DropdownAction[] = [
-      {
-        id: isPinned ? 'unpin' : 'pin',
-        label: isPinned ? 'Unpin from toolbar' : 'Pin to toolbar',
-        iconName: isPinned ? 'PinOff' : 'Pin',
-      },
-    ]
+    // Whether it has commands to give keys to (Settings → Extensions).
+    let hasCommands = false
+    try {
+      const list: Array<{ extensionId: string; commands: unknown[] }> = (await api?.listExtensionCommands?.()) ?? []
+      hasCommands = (list.find((e) => e.extensionId === ext.id)?.commands.length ?? 0) > 0
+    } catch (err) {
+      log.warn('extension menu: listing its commands failed', err)
+    }
+    const actions: DropdownAction[] = []
+    if (ext.hasAction) {
+      actions.push({ id: 'open', label: `Open ${ext.name}`, iconName: 'Puzzle' })
+    }
+    if (hasCommands) {
+      actions.push({ id: 'shortcuts', label: 'Keyboard shortcuts…', iconName: 'Settings' })
+    }
+    actions.push({
+      id: isPinned ? 'unpin' : 'pin',
+      label: isPinned ? 'Unpin from toolbar' : 'Pin to toolbar',
+      iconName: isPinned ? 'PinOff' : 'Pin',
+      ...(actions.length > 0 ? { divider: 'before' as const } : {}),
+    })
     if (ext.hasOptionsPage) {
       actions.push({ id: 'options', label: 'Options', iconName: 'Settings' })
     }
@@ -526,15 +544,33 @@ function ExtensionActions({
     actions.push({ id: 'remove', label: 'Remove from Vimperium', iconName: 'Trash2', destructive: true })
     actions.push({ id: 'manage', label: 'Manage extensions', iconName: 'Puzzle', divider: 'before' })
 
+    // From the keyboard: its neighbours among the pinned ones.
+    const at = 'keyboard' in place ? visible.findIndex((e) => e.id === ext.id) : -1
+    const before = at > 0 ? visible[at - 1] : undefined
+    const after = at !== -1 ? visible[at + 1] : undefined
+
     const result = await openDropdownAsync({
       kind: 'menu',
       ...place,
       ...readThemeAttrs(),
       header: ext.name,
       actions,
+      ...(before || after ? { sideways: { ...(before ? { prev: 'side:prev' } : {}), ...(after ? { next: 'side:next' } : {}) } } : {}),
     })
     if (!result || result.type !== 'action') return
     switch (result.actionId) {
+      case 'open':
+        handleClick(ext)
+        break
+      case 'shortcuts':
+        onManageExtensions(ext.id)
+        break
+      case 'side:prev':
+      case 'side:next': {
+        const to = result.actionId === 'side:prev' ? before : after
+        if (to) await openExtensionMenu(to, { anchor: buttonAnchor(to.id), keyboard: true })
+        break
+      }
       case 'pin':
         await api?.setExtensionPinned?.(ext.id, true)
         break
@@ -590,7 +626,7 @@ function ExtensionActions({
           reliable entry point, mirroring Chrome's puzzle-piece menu. */}
       <button
         ref={manageRef}
-        onClick={onManageExtensions}
+        onClick={() => onManageExtensions()}
         title="Manage extensions"
         className="relative h-8 w-8 shrink-0 flex items-center justify-center rounded-md bg-secondary hover:bg-muted text-secondary-foreground transition-colors"
       >

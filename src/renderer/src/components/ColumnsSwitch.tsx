@@ -4,9 +4,13 @@
 // pair of buttons, or c in COMMAND — the page's own key, ahead of the
 // keymap while no binding of the user's starts with it; no row's label
 // starts with it then (lib/hint-labels.ts). Each page remembers its own.
+//
+// A list of short rows (Search Everything's workspaces and tab groups)
+// takes as many columns as fit in place of two (`many`); one that's never
+// long (its profiles) stays in one column, its switch there but locked.
 
 import { useEffect, useMemo, useState } from 'react'
-import { Columns2, Rows3 } from 'lucide-react'
+import { Columns2, LayoutGrid, Rows3 } from 'lucide-react'
 import { SEQUENCE_JOIN, keyTokenFromEvent } from '../../../shared/vim-keys'
 import { useWindowVimKeymap } from '../lib/window-vim-keymap'
 import { useReservedHintKeys } from '../lib/hint-labels'
@@ -66,21 +70,42 @@ export function usePageColumns(storageKey: string): {
 }
 
 /** The buttons, the key's cap before them while the keys are COMMAND's. */
-export function ColumnsSwitch({ columns, onChange, keyFree, vimMode, className }: {
+export function ColumnsSwitch({ columns, onChange, keyFree, vimMode, many = false, locked = false, className }: {
   columns: Columns
   onChange: (columns: Columns) => void
   keyFree: boolean
   vimMode: VimMode | null
+  /** The wide layout is as many columns as fit, not two. */
+  many?: boolean
+  /** One column and no other: the switch shows, dimmed, and does nothing. */
+  locked?: boolean
   className?: string
 }) {
+  const wide = many ? 'As many columns as fit' : 'Two columns'
+  if (locked) {
+    return (
+      <div
+        className={cn('flex shrink-0 cursor-not-allowed items-center gap-2 opacity-40', className)}
+        title="Always one column here"
+        aria-disabled="true"
+      >
+        {vimMode === 'command' && keyFree && <kbd className="shrink-0 font-mono text-[11px]">{COLUMNS_KEY}</kbd>}
+        <div className="flex h-8 shrink-0 items-center rounded-md bg-secondary p-0.5">
+          <span className="flex h-7 w-8 items-center justify-center rounded text-muted-foreground">
+            <Rows3 size={14} />
+          </span>
+        </div>
+      </div>
+    )
+  }
   return (
     <div className={cn('flex shrink-0 items-center gap-2', className)}>
       {vimMode === 'command' && keyFree && (
-        <kbd className="shrink-0 font-mono text-[11px]" title="One column / two">{COLUMNS_KEY}</kbd>
+        <kbd className="shrink-0 font-mono text-[11px]" title={`One column / ${wide.toLowerCase()}`}>{COLUMNS_KEY}</kbd>
       )}
       <div role="radiogroup" aria-label="Layout" className="flex h-8 shrink-0 items-center rounded-md bg-secondary p-0.5">
         {([1, 2] as const).map((n) => {
-          const Icon = n === 1 ? Rows3 : Columns2
+          const Icon = n === 1 ? Rows3 : many ? LayoutGrid : Columns2
           const active = columns === n
           return (
             <button
@@ -90,7 +115,7 @@ export function ColumnsSwitch({ columns, onChange, keyFree, vimMode, className }
               aria-checked={active}
               tabIndex={-1}
               onClick={() => onChange(n)}
-              title={`${n === 1 ? 'One column' : 'Two columns'}${keyFree ? ` (${COLUMNS_KEY})` : ''}`}
+              title={`${n === 1 ? 'One column' : wide}${keyFree ? ` (${COLUMNS_KEY})` : ''}`}
               className={cn(
                 'flex h-7 w-8 items-center justify-center rounded transition-colors',
                 active ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',

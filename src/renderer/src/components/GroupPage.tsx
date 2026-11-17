@@ -5,6 +5,12 @@
 // the page's whole width.
 // Enter on the selected one, or a click, shows that tab.
 //
+// Its header: the group's pill, as the Sidebar's, and after it the badge
+// with how many tabs it has — how many of them are left, 11/21, while
+// something narrows them. Under it, where Search Everything has its kinds:
+// the sites most of its tabs are on, up to four — a click on one (its
+// digit in COMMAND) keeps that site's tabs only, again shows them all.
+//
 // The filter is the address bar (lib/address-filter.ts): while the group
 // page shows, the bar wears the group's pill and what's typed there narrows
 // its tabs; ↑/↓ typed there move the selection, Enter opens it, Esc goes
@@ -52,6 +58,21 @@ const COLUMNS_STORAGE_KEY = 'vimperium-group-page-columns'
 // Sidebar lists it too — one tab, one label in both places.
 const hintId = (tabId: string): string => `tab:${tabId}`
 
+/** How many sites the header offers. */
+const TOP_SITES = 4
+
+/** The site a tab is on: its address's host, www. aside; null for an
+ *  address that has none (a blank tab, a page of the browser's own). */
+function siteOf(url: string): string | null {
+  try {
+    const { protocol, hostname } = new URL(url)
+    if (protocol !== 'http:' && protocol !== 'https:') return null
+    return hostname.replace(/^www\./, '') || null
+  } catch {
+    return null
+  }
+}
+
 export function GroupPage({ group, vimMode, vimPending, hintsOn }: Props) {
   const [selected, setSelected] = useState(0)
   const { columns, setColumns, keyFree: columnsKeyFree, onKey: columnsKey } = usePageColumns(COLUMNS_STORAGE_KEY)
@@ -68,17 +89,46 @@ export function GroupPage({ group, vimMode, vimPending, hintsOn }: Props) {
     onEnter: () => open(selected),
   })
 
-  useEffect(() => { setSelected(0) }, [group.id])
+  // The sites most of its tabs are on: the most tabs first, the group's
+  // order among equals.
+  const sites = useMemo(() => {
+    const found = new Map<string, { site: string; count: number; favicon: string }>()
+    for (const tab of group.tabs) {
+      const site = siteOf(tab.url)
+      if (!site) continue
+      const entry = found.get(site)
+      if (entry) {
+        entry.count++
+        if (!entry.favicon && tab.favicon) entry.favicon = tab.favicon
+      } else {
+        found.set(site, { site, count: 1, favicon: tab.favicon || '' })
+      }
+    }
+    return [...found.values()].sort((a, b) => b.count - a.count).slice(0, TOP_SITES)
+  }, [group.tabs])
 
-  const rows = useMemo(() => (query.trim()
-    ? fuzzyFilter(query, group.tabs, (t) => [
-      { value: t.title, weight: 1 },
-      { value: t.comment, weight: 0.9 },
-      { value: t.url, weight: 0.6 },
-    ])
-    : group.tabs), [query, group.tabs])
+  // The one whose tabs are kept; none once its last tab is gone.
+  const [pickedSite, setPickedSite] = useState<string | null>(null)
+  const site = pickedSite !== null && sites.some((s) => s.site === pickedSite) ? pickedSite : null
+  const toggleSite = (next: string): void => setPickedSite(site === next ? null : next)
 
-  useEffect(() => { setSelected(0) }, [query])
+  useEffect(() => {
+    setSelected(0)
+    setPickedSite(null)
+  }, [group.id])
+
+  const rows = useMemo(() => {
+    const onSite = site ? group.tabs.filter((t) => siteOf(t.url) === site) : group.tabs
+    return query.trim()
+      ? fuzzyFilter(query, onSite, (t) => [
+        { value: t.title, weight: 1 },
+        { value: t.comment, weight: 0.9 },
+        { value: t.url, weight: 0.6 },
+      ])
+      : onSite
+  }, [query, site, group.tabs])
+
+  useEffect(() => { setSelected(0) }, [query, site])
   useEffect(() => {
     listRef.current?.querySelector(`[data-index="${selected}"]`)?.scrollIntoView({ block: 'nearest' })
   }, [selected, columns])
@@ -114,10 +164,15 @@ export function GroupPage({ group, vimMode, vimPending, hintsOn }: Props) {
     return arrowKey(e.key)
   }
 
-  /** Enter and c, typed outside the filter. */
+  /** Enter, c and the sites' digits, typed outside the filter. */
   const rowKey = (e: KeyboardEvent): boolean => {
     if (e.metaKey || e.ctrlKey || e.altKey) return false
     if (columnsKey(e)) return true
+    const digit = /^[1-9]$/.test(e.key) ? sites[Number(e.key) - 1] : undefined
+    if (digit) {
+      toggleSite(digit.site)
+      return true
+    }
     return keyTokenFromEvent(e) === '<CR>' && open(selected)
   }
 
@@ -167,7 +222,7 @@ export function GroupPage({ group, vimMode, vimPending, hintsOn }: Props) {
   }, [])
 
   const count = group.tabs.length
-  const filtered = query.trim() !== ''
+  const filtered = query.trim() !== '' || site !== null
 
   return (
     // The page's frame is the one Search Everything has (ListPage.tsx): the
@@ -179,23 +234,54 @@ export function GroupPage({ group, vimMode, vimPending, hintsOn }: Props) {
           <div
             data-group-container=""
             style={{ ['--gc' as string]: group.color }}
-            className="flex min-w-0 items-center"
+            className="flex min-w-0 items-center gap-2"
           >
             <h1 data-group-pill="" className="min-w-0 truncate rounded-lg px-3 py-0.5 text-lg font-semibold tracking-tight">
               {group.name || 'Unnamed group'}
             </h1>
+            {/* How many tabs, in the group's colour as the Sidebar's badge;
+                after the pill, so the pill stays put as it widens. */}
+            <span
+              data-group-badge=""
+              title={filtered ? `${rows.length} of ${count} ${count === 1 ? 'tab' : 'tabs'}` : `${count} ${count === 1 ? 'tab' : 'tabs'}`}
+              className="inline-flex h-7 min-w-7 shrink-0 items-center justify-center rounded-lg px-2 text-sm font-semibold tabular-nums leading-none"
+            >
+              {filtered ? `${rows.length}/${count}` : count}
+            </span>
           </div>
         )}
       >
-        {/* What's listed and how many, as Search Everything's chip of the
-            kind shown: the icon, Tabs, the count dimmed. */}
-        <div className="flex h-8 shrink-0 items-center rounded-md bg-secondary p-0.5">
-          <span className="flex h-7 items-center gap-1.5 rounded bg-background px-2.5 text-xs font-medium text-foreground shadow-sm">
-            <Globe size={13} />
-            Tabs
-            <span className="tabular-nums opacity-50">{filtered ? `${rows.length}/${count}` : count}</span>
-          </span>
-        </div>
+        {/* The sites most of its tabs are on, as Search Everything's kinds:
+            one picked keeps that site's tabs, picked again shows them all. */}
+        {sites.length > 0 && (
+          <div className="flex h-8 min-w-0 items-center rounded-md bg-secondary p-0.5" role="group" aria-label="Sites">
+            {sites.map((entry, i) => {
+              const active = site === entry.site
+              return (
+                <button
+                  key={entry.site}
+                  type="button"
+                  aria-pressed={active}
+                  tabIndex={-1}
+                  onClick={() => toggleSite(entry.site)}
+                  title={`${entry.site}: ${entry.count} ${entry.count === 1 ? 'tab' : 'tabs'} (${i + 1} in COMMAND)`}
+                  className={cn(
+                    'flex h-7 min-w-0 items-center gap-1.5 rounded px-2.5 text-xs font-medium transition-colors',
+                    active ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  {entry.favicon
+                    ? <TabFavicon favicon={entry.favicon} className="h-[13px] w-[13px] shrink-0 rounded-sm" />
+                    : <Globe size={13} className="shrink-0" />}
+                  <span className="min-w-0 truncate">{entry.site}</span>
+                  <span className="tabular-nums opacity-50">{entry.count}</span>
+                  {/* Its key, while the keys are COMMAND's. */}
+                  {vimMode === 'command' && <kbd className="font-mono text-[10px]">{i + 1}</kbd>}
+                </button>
+              )
+            })}
+          </div>
+        )}
         <ColumnsSwitch columns={columns} onChange={setColumns} keyFree={columnsKeyFree} vimMode={vimMode} className="ml-auto" />
       </ListPageHeader>
       <div>

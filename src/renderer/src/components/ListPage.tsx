@@ -22,9 +22,24 @@ export const LIST_PAGE_ROOT = 'absolute inset-0 z-50 overflow-y-auto [scrollbar-
 export const LIST_ROW_SCROLL = 'scroll-mb-4 scroll-mt-[7.75rem]'
 
 /** The list's box under the header: the page's width, the same padding
- *  above and below; a grid in two columns. */
-export function listBoxClass(columns: Columns, grid = true): string {
-  return cn('mx-auto w-full px-4 py-4', pageWidthClass(columns), grid && columns === 2 && 'grid grid-cols-2 content-start gap-x-2')
+ *  above and below; a grid in two columns, or in as many as fit. */
+export function listBoxClass(columns: Columns, grid = true, many = false): string {
+  return cn(
+    'mx-auto w-full px-4 py-4',
+    pageWidthClass(columns),
+    grid && columns === 2 && 'grid content-start gap-x-2',
+    // `many`: as many columns as fit, all one width — short rows fill the
+    // page (ColumnsSwitch.tsx).
+    grid && columns === 2 && (many ? 'grid-cols-[repeat(auto-fill,minmax(16rem,1fr))]' : 'grid-cols-2'),
+  )
+}
+
+/** How many columns a list's box (listBoxClass) lays its rows in now. */
+export function listColumnCount(box: Element | null): number {
+  if (!box) return 1
+  const style = getComputedStyle(box)
+  if (style.display !== 'grid') return 1
+  return Math.max(1, style.gridTemplateColumns.split(' ').filter(Boolean).length)
 }
 
 /** The header: `title` (an icon and a heading, a group's pill) on the first

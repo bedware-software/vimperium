@@ -32,6 +32,18 @@ const VIM_COMMAND_LABELS: Record<string, string> = {
   help: 'Show or hide the keys help',
   'cursor-down-show': 'Next row (tab or group), showing it',
   'cursor-up-show': 'Previous row (tab or group), showing it',
+  'next-page': "The page's Next link",
+  'prev-page': "The page's Previous link",
+  'increment-url': 'Add one to the number in the address',
+  'decrement-url': 'Take one off the number in the address',
+  'pass-key': 'Hand the next key to the page',
+  'alternate-tab': 'The tab you were on before',
+  repeat: 'Do the last change again',
+  'row-down': 'Cursor to the row below (Enter shows it)',
+  'row-up': 'Cursor to the row above (Enter shows it)',
+  'row-select-down': 'Select the row below too',
+  'row-select-up': 'Select the row above too',
+  'row-go': 'Show the row the cursor is on',
   'row-move-down': 'Move the tab (or group) down',
   'row-move-up': 'Move the tab (or group) up',
   'row-fold': 'Fold the group, onto its header',
@@ -88,7 +100,6 @@ const VIM_COMMAND_LABELS: Record<string, string> = {
   'extensions-menu': ACTION_LABELS['extensions-menu'],
   'site-info': ACTION_LABELS['site-info'],
   'dark-pages-menu': ACTION_LABELS['dark-pages-menu'],
-  'chrome-hints': ACTION_LABELS['chrome-hints'],
   'zoom-in': ACTION_LABELS['zoom-in'],
   'zoom-out': ACTION_LABELS['zoom-out'],
   'zoom-reset': ACTION_LABELS['zoom-reset'],
@@ -108,6 +119,11 @@ export function vimCommandLabel(command: string): string {
 export const SIDEBAR_COMMANDS = [
   'cursor-down-show',
   'cursor-up-show',
+  'row-down',
+  'row-up',
+  'row-select-down',
+  'row-select-up',
+  'row-go',
   'row-move-down',
   'row-move-up',
   'row-fold',
@@ -161,6 +177,7 @@ const NAMED_KEYS: Record<string, string> = {
   bs: '<BS>', backspace: '<BS>',
   del: '<Del>', delete: '<Del>',
   up: '<Up>', down: '<Down>', left: '<Left>', right: '<Right>',
+  's-up': '<S-Up>', 's-down': '<S-Down>', 's-left': '<S-Left>', 's-right': '<S-Right>',
   home: '<Home>', end: '<End>',
   pageup: '<PageUp>', pagedown: '<PageDown>',
   lt: '<', bslash: '\\', bar: '|',
@@ -209,6 +226,8 @@ const TOKEN_DISPLAY: Record<string, string> = {
   '<CR>': 'Enter', '<Esc>': 'Esc', '<Space>': 'Space', '<Tab>': 'Tab', '<S-Tab>': 'Shift+Tab',
   '<BS>': 'Backspace', '<Del>': 'Del', '<Up>': '↑', '<Down>': '↓', '<Left>': '←', '<Right>': '→',
   '<Home>': 'Home', '<End>': 'End', '<PageUp>': 'PgUp', '<PageDown>': 'PgDn',
+  '<S-Up>': isMac ? '⇧↑' : 'Shift+↑', '<S-Down>': isMac ? '⇧↓' : 'Shift+↓',
+  '<S-Left>': isMac ? '⇧←' : 'Shift+←', '<S-Right>': isMac ? '⇧→' : 'Shift+→',
 }
 
 /** How a written sequence reads on a keycap: `<CR>` as Enter, `<C-j>` as
@@ -474,6 +493,14 @@ export function extensionMenuIndex(command: string): number | null {
   if (!command.startsWith(EXTENSION_MENU_PREFIX)) return null
   const n = Number(command.slice(EXTENSION_MENU_PREFIX.length))
   return Number.isInteger(n) && n >= 1 && n <= EXTENSION_MENU_KEYS ? n : null
+}
+
+/** `map` with Enter showing the row the Sidebar's cursor is on — for while
+ *  the cursor is off the row that's shown (lib/sidebar-cursor.ts). A map
+ *  that binds Enter itself keeps its own. */
+export function withRowGoKey(map: VimKeymap): VimKeymap {
+  if (map.has('<CR>')) return map
+  return new Map(map).set('<CR>', 'row-go')
 }
 
 /** `map` with the pinned extensions' menus on their keys. A key the map

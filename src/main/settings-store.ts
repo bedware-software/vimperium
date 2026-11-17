@@ -147,7 +147,7 @@ function normalizeVimKeymap(raw: unknown): string | null {
 
 /** The Vim keymap version this build writes: v19, the one
  *  migrateVimKeymap below moves a saved keymap to. */
-export const VIM_KEYMAP_VERSION = 19
+export const VIM_KEYMAP_VERSION = 20
 
 /** Settings with the keymap's version stamp set for what's stored on this
  *  device: none without a keymap text, else the current version — every
@@ -300,7 +300,6 @@ export const DEFAULT_KEYBINDINGS: Record<string, string[]> = {
   'site-info': [],
   'dark-pages-menu': [],
   'dark-pages-settings': [],
-  'chrome-hints': [],
   'zoom-in': [],
   'zoom-out': [],
   'zoom-reset': [],
@@ -528,13 +527,13 @@ function migrateNewKeybindingDefaults(): void {
  * reopens; v14: nw a new workspace (was nv), nn a new tab beside nt; v15:
  * dw deletes the workspace (was dv), the Sidebar's rows labelled (no
  * <C-1>…<C-9>) and m their menu (was <C-m>) — see
- * src/shared/vim-default-keymap.ts): a keymap saved under v1 to v18 keeps what its owner changed and takes the new defaults for
+ * src/shared/vim-default-keymap.ts): a keymap saved under v1 to v19 keeps what its owner changed and takes the new defaults for
  * everything else.
  * Once.
  */
 function migrateVimKeymap(): void {
   const raw = store as unknown as { get(key: string): unknown; set(key: string, value: unknown): void }
-  const marker = 'vim-keymap-v19'
+  const marker = 'vim-keymap-v20'
   const migratedList = raw.get('migratedKeybindingDefaults')
   const migrated = new Set(Array.isArray(migratedList) ? (migratedList as string[]) : [])
   if (migrated.has(marker)) return
@@ -548,7 +547,7 @@ function migrateVimKeymap(): void {
   if (saved && typeof saved.vimKeymap === 'string' && !alreadyCurrent) {
     // The text's own stamp, when a newer build wrote it (Cloud Sync brought
     // it before this device had that build), says better than the markers.
-    const byMarker = migrated.has('vim-keymap-v18') ? 18 : migrated.has('vim-keymap-v17') ? 17 : migrated.has('vim-keymap-v16') ? 16 : migrated.has('vim-keymap-v15') ? 15 : migrated.has('vim-keymap-v14') ? 14 : migrated.has('vim-keymap-v13') ? 13 : migrated.has('vim-keymap-v12') ? 12 : migrated.has('vim-keymap-v11') ? 11 : migrated.has('vim-keymap-v10') ? 10 : migrated.has('vim-keymap-v9') ? 9 : migrated.has('vim-keymap-v8') ? 8 : migrated.has('vim-keymap-v7') ? 7 : migrated.has('vim-keymap-v6') ? 6 : migrated.has('vim-keymap-v5') ? 5 : migrated.has('vim-keymap-v4') ? 4 : migrated.has('vim-keymap-v3') ? 3 : migrated.has('vim-keymap-v2') ? 2 : 1
+    const byMarker = migrated.has('vim-keymap-v19') ? 19 : migrated.has('vim-keymap-v18') ? 18 : migrated.has('vim-keymap-v17') ? 17 : migrated.has('vim-keymap-v16') ? 16 : migrated.has('vim-keymap-v15') ? 15 : migrated.has('vim-keymap-v14') ? 14 : migrated.has('vim-keymap-v13') ? 13 : migrated.has('vim-keymap-v12') ? 12 : migrated.has('vim-keymap-v11') ? 11 : migrated.has('vim-keymap-v10') ? 10 : migrated.has('vim-keymap-v9') ? 9 : migrated.has('vim-keymap-v8') ? 8 : migrated.has('vim-keymap-v7') ? 7 : migrated.has('vim-keymap-v6') ? 6 : migrated.has('vim-keymap-v5') ? 5 : migrated.has('vim-keymap-v4') ? 4 : migrated.has('vim-keymap-v3') ? 3 : migrated.has('vim-keymap-v2') ? 2 : 1
     const from = (typeof stamp === 'number' && Number.isInteger(stamp) && stamp > byMarker
       ? Math.min(stamp, VIM_KEYMAP_VERSION - 1)
       : byMarker) as Parameters<typeof migrateVimKeymapText>[1]
@@ -572,6 +571,7 @@ function migrateVimKeymap(): void {
   migrated.add('vim-keymap-v16')
   migrated.add('vim-keymap-v17')
   migrated.add('vim-keymap-v18')
+  migrated.add('vim-keymap-v19')
   migrated.add(marker)
   raw.set('migratedKeybindingDefaults', [...migrated])
 }
@@ -587,6 +587,7 @@ type VimKeymapVersion = Parameters<typeof migrateVimKeymapText>[1] | typeof VIM_
  *  Versions that added no command read as the newest that looks the same:
  *  v8 to v10 as v10, v3 to v5 as v5, v14 to v19 as v13. */
 const VIM_KEYMAP_VERSION_MARKS: ReadonlyArray<readonly [VimKeymapVersion, readonly string[]]> = [
+  [20, ['row-down', 'row-up', 'row-select-down', 'row-select-up', 'alternate-tab', 'repeat', 'next-page', 'prev-page', 'increment-url', 'decrement-url', 'pass-key']],
   [13, [
     'new-group', 'new-profile', 'close-group', 'app-menu', 'extensions-menu', 'site-info',
     'dark-pages-menu', 'profile-menu', 'workspace-menu', 'chrome-hints', 'zoom-in', 'zoom-out', 'zoom-reset',

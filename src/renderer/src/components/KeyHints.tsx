@@ -4,7 +4,7 @@
 // <key> <key>" items in the toolbar tone, each key its own cap, always along
 // the bottom.
 
-import { Fragment, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { cn } from '../lib/utils'
 import { displayKeySequence, keysFor, type VimKeymap } from '../lib/vim-keymap'
 import type { WhichKeyEntry } from '../lib/which-key'
@@ -76,32 +76,23 @@ export function KeysPrompt({ mode, shown, className }: {
   )
 }
 
-/** The Sidebar's keys, at the bottom of it while the keys' help is open: a
- *  column of what each does and its keys, as narrow as the Sidebar is —
- *  one per line, never wrapping into a jumble. */
-export function SidebarHintBar({ keymap }: { keymap: VimKeymap }) {
+/** The Sidebar's keys, as a hint bar's entries: what each does and its
+ *  caps, the unbound ones left out. A blank tab's strip shows them
+ *  (BlankPage.tsx). */
+export function sidebarHints(keymap: VimKeymap): Array<{ label: string; keys: string[] }> {
   const caps = (...commands: string[]): string[] => vimKeyCaps(keymap, ...commands)
   const rows: Array<[string, string[]]> = [
-    ['Switch tabs', caps('cursor-down-show', 'cursor-up-show')],
-    ['Move the tab or group', caps('row-move-down', 'row-move-up')],
+    ['Pick a row', caps('row-down', 'row-up')],
+    ['Show it', keymap.has('<CR>') ? [] : ['Enter']],
+    ['Pick more', caps('row-select-down', 'row-select-up')],
+    ['Move the row', caps('row-move-down', 'row-move-up')],
     ['Fold / unfold', caps('row-fold', 'row-unfold')],
     ['Row menu', caps('row-menu')],
     ['New tab', caps('new-tab')],
     ['Close the tab', caps('close-tab')],
-    ['Show / hide', caps('toggle-sidebar')],
+    ['Sidebar', caps('toggle-sidebar')],
   ]
-  return (
-    <div className="shrink-0 border-t border-border px-2.5 py-2 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
-      {rows.filter(([, keys]) => keys.length > 0).map(([label, keys]) => (
-        <Fragment key={label}>
-          <span className="truncate">{label}</span>
-          <span className="flex items-center justify-end gap-1">
-            {keys.map((k) => <kbd key={k} className="font-mono">{k}</kbd>)}
-          </span>
-        </Fragment>
-      ))}
-    </div>
-  )
+  return rows.filter(([, keys]) => keys.length > 0).map(([label, keys]) => ({ label, keys }))
 }
 
 /** The caps for `commands` as `map` binds them — each command's first key,

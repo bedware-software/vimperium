@@ -45,6 +45,8 @@ export function keyTokenFromEvent(e: KeyEventLike): string | null {
   }
   if (e.key === 'Tab') return e.shiftKey ? '<S-Tab>' : '<Tab>'
   const named = NAMED_EVENT_KEYS[e.key]
+  // The arrows count Shift: <S-Down> extends what <Down> moves.
+  if (named && e.shiftKey && /^Arrow/.test(e.key)) return `<S-${named.slice(1)}`
   if (named) return named
   if (/^F([1-9]|1[0-2])$/.test(e.key)) return `<${e.key}>`
   if (e.key.length !== 1) return null
@@ -63,6 +65,7 @@ export function keyTokenFromEvent(e: KeyEventLike): string | null {
  *  window's mode along. */
 const PAGE_COMMANDS = new Set([
   'scroll-down', 'scroll-up', 'half-page-down', 'half-page-up', 'page-top', 'page-bottom', 'focus-input',
+  'next-page', 'prev-page', 'pass-key',
 ])
 
 export function isPageCommand(command: string): boolean {
@@ -72,6 +75,32 @@ export function isPageCommand(command: string): boolean {
 /** A Ctrl chord's token (`<C-l>`). */
 export function isCtrlToken(token: string): boolean {
   return token.startsWith('<C-')
+}
+
+/** Commands a count repeats (5j, 3x): moving and what's worth doing
+ *  several times over. Any other runs once whatever the count — nobody
+ *  means five new workspaces. */
+const COUNT_COMMANDS = new Set([
+  'scroll-down', 'scroll-up', 'half-page-down', 'half-page-up',
+  'close-tab', 'reopen-closed-tab', 'next-tab', 'prev-tab',
+  'cursor-down-show', 'cursor-up-show', 'row-down', 'row-up', 'row-select-down', 'row-select-up',
+  'row-move-down', 'row-move-up', 'zoom-in', 'zoom-out', 'increment-url', 'decrement-url', 'repeat',
+])
+
+/** The most a count repeats a command. */
+export const MAX_COUNT = 50
+
+/** How many times `command` runs for the count typed before it. */
+export function timesFor(command: string, count: number): number {
+  return COUNT_COMMANDS.has(command) ? Math.max(1, Math.min(MAX_COUNT, count)) : 1
+}
+
+/** Runs `run` `times` times: once now, the rest a beat apart each — what
+ *  a command changes (the Sidebar's cursor, the active tab) is in place
+ *  before it runs again. */
+export function runTimes(times: number, run: () => void): void {
+  run()
+  if (times > 1) setTimeout(() => runTimes(times - 1, run), 12)
 }
 
 export type KeymapMatch =
@@ -97,33 +126,51 @@ export function matchKeys(map: VimKeymap, tokens: readonly string[]): KeymapMatc
  * A pending sequence waits for its next key however long, as vim's does
  * with `notimeout`: a key that doesn't continue it, Esc, or the caller's
  * reset() (the keys going elsewhere) drops it.
+ *
+ * Digits typed before a sequence are its count (5j, 3x), as vim's — where
+ * the keymap binds nothing that starts with that digit; 0 only after
+ * another digit. `onCommand` gets it (1 without one); what it repeats is
+ * the caller's to say ({@link timesFor}).
  */
 export class KeySequencer {
   private tokens: string[] = []
+  private count = ''
 
   constructor(
     private keymap: () => VimKeymap,
-    private onCommand: (command: string, e: KeyEventLike & { repeat: boolean }) => void,
+    private onCommand: (command: string, e: KeyEventLike & { repeat: boolean }, count: number) => void,
     private onPending: (pending: string) => void = () => {},
   ) {}
 
   reset(): void {
-    if (this.tokens.length === 0) return
+    if (this.tokens.length === 0 && !this.count) return
     this.tokens = []
+    this.count = ''
     this.onPending('')
   }
 
   feed(e: KeyEventLike & { repeat: boolean }): boolean {
     const token = keyTokenFromEvent(e)
     if (!token) return false
-    if (token === '<Esc>' && this.tokens.length > 0) {
+    if (token === '<Esc>' && (this.tokens.length > 0 || this.count)) {
       this.reset()
+      return true
+    }
+    // A count: digits ahead of the sequence, where no binding has them.
+    if (
+      this.tokens.length === 0 && /^[0-9]$/.test(token) && (this.count || token !== '0')
+      && matchKeys(this.keymap(), [token]).kind === 'none'
+    ) {
+      if (!e.repeat && this.count.length < 3) {
+        this.count += token
+        this.onPending(this.count)
+      }
       return true
     }
     if (this.resolve([...this.tokens, token], e)) return true
     // Not a continuation: drop what was pending and try the key on its own.
     // A Ctrl chord nothing binds (Ctrl+C) still reaches whoever has the keys.
-    const hadPending = this.tokens.length > 0
+    const hadPending = this.tokens.length > 0 || this.count !== ''
     this.reset()
     return this.resolve([token], e) || (hadPending && !isCtrlToken(token))
   }
@@ -131,13 +178,16 @@ export class KeySequencer {
   private resolve(tokens: string[], e: KeyEventLike & { repeat: boolean }): boolean {
     const match = matchKeys(this.keymap(), tokens)
     if (match.kind === 'command') {
+      const count = this.count ? Number(this.count) : 1
       this.reset()
-      this.onCommand(match.command, e)
+      this.onCommand(match.command, e, count)
       return true
     }
     if (match.kind === 'pending') {
       if (e.repeat) return true
       this.tokens = tokens
+      // The sequence alone: what's shown for it (which-key, the labels'
+      // typed part) goes by the keymap's own keys.
       this.onPending(tokens.join(''))
       return true
     }

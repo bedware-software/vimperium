@@ -453,7 +453,14 @@ export function DropdownMenuContent({
           return stops[Math.max(0, Math.min(stops.length - 1, at + step))]
         })
       } else if (move === 'h' || move === 'l') {
-        if (colors.length === 0) return
+        if (colors.length === 0) {
+          // No swatches: the menu's neighbours, if it has them.
+          const side = move === 'h' ? spec.sideways?.prev : spec.sideways?.next
+          if (!side) return
+          e.preventDefault()
+          onEmit({ type: 'action', actionId: side })
+          return
+        }
         e.preventDefault()
         setKeyFocus((prev) => {
           // Entering the strip starts from the group's current colour.

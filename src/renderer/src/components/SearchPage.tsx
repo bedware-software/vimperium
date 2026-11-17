@@ -28,8 +28,8 @@ import { focusAddressFilter, useAddressFilter, type AddressFilterKeyEvent } from
 import { closePage, closePageTab, useSearchPageRequest, type SearchFilter } from '../lib/page-nav'
 import { internalPageOf } from '../lib/internal-pages'
 import { useHintLabels, useHintTargets, useReservedHintKeys } from '../lib/hint-labels'
-import { ColumnsSwitch, usePageColumns } from './ColumnsSwitch'
-import { EntityIcon, LIST_PAGE_ROOT, LIST_ROW_SCROLL, ListPageHeader, listBoxClass } from './ListPage'
+import { ColumnsSwitch, usePageColumns, type Columns } from './ColumnsSwitch'
+import { EntityIcon, LIST_PAGE_ROOT, LIST_ROW_SCROLL, ListPageHeader, listBoxClass, listColumnCount } from './ListPage'
 import { usePageKeys } from '../lib/vim-mode'
 import { keyTokenFromEvent } from '../lib/vim-keymap'
 import type { VimKeymap } from '../lib/vim-keymap'
@@ -128,6 +128,10 @@ const TYPE_KEYS: Record<FilterType, string> = {
   tab: 't',
 }
 const TYPE_KEY_LIST = Object.values(TYPE_KEYS)
+
+/** First in the filter: search tabs by the whole path to them — profile,
+ *  workspace, group — and not only by their title and address. */
+const HIERARCHY_PREFIX = '>'
 const SCOPE_KEY_CAP = 'Tab'
 const HALF_PAGE_ROWS = 10
 
@@ -201,10 +205,15 @@ function SearchBreadcrumb({ item }: { item: SearchableItem }) {
   // A group's own row already wears the colour on its label, so the group
   // crumb is only a pill where the label is something else (a tab).
   const pillGroupCrumb = !!item.groupColor && item.type !== 'tabGroup'
+  // Where it is, without itself: the row's label already says its name (a
+  // workspace's, a group's, a tab's title). The whole path is still what
+  // the search goes by, and the tooltip.
+  const last = item.pathSegments[item.pathSegments.length - 1]
+  const crumbs = last?.type === item.type ? item.pathSegments.slice(0, -1) : item.pathSegments
 
   return (
     <div className="truncate text-[10px] text-muted-foreground" title={fullLabel}>
-      {item.pathSegments.map((segment, index) => (
+      {crumbs.map((segment, index) => (
         <span key={`${segment.type}-${index}`}>
           {index > 0 && <span aria-hidden="true"> / </span>}
           {segment.type === 'tabGroup' && pillGroupCrumb
@@ -212,7 +221,7 @@ function SearchBreadcrumb({ item }: { item: SearchableItem }) {
             : segment.label}
         </span>
       ))}
-      {visibleUrl && ` · ${visibleUrl}`}
+      {visibleUrl && `${crumbs.length > 0 ? ' · ' : ''}${visibleUrl}`}
     </div>
   )
 }
@@ -269,17 +278,37 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
     return out
   }, [allItems, scope, windowWorkspaceId])
 
-  const query = useAddressFilter('search', {
-    label: TYPE_LABELS[filter],
+  // > first in the filter: tabs are searched by everything on the way to
+  // them too (below). The bar's pill says so.
+  const [wholePath, setWholePath] = useState(false)
+  const typed = useAddressFilter('search', {
+    label: wholePath ? `${TYPE_LABELS[filter]} › whole path` : TYPE_LABELS[filter],
     placeholder: placeholderFor(filter, scopeApplies && windowWorkspaceId ? scopedToCurrent : null),
     onKey: (e) => barKey(e),
     onEnter: () => openAt(selected),
     onEscape: () => closePage('search'),
   })
 
+  const hierarchy = typed.trimStart().startsWith(HIERARCHY_PREFIX)
+  useEffect(() => { setWholePath(hierarchy) }, [hierarchy])
+  /** What's searched for: the filter's text, the > aside. */
+  const query = hierarchy ? typed.trimStart().slice(HIERARCHY_PREFIX.length).trim() : typed
+
   const results = useMemo(() => {
     if (!query.trim()) return items.slice(0, 250)
     return fuzzyFilter(query, items, (item) => {
+      // A tab goes by what it is — its title, its comment, its address —
+      // not by where it is: its profile's, workspace's and group's names
+      // brought up too many tabs nobody meant. > first in the filter
+      // searches those as well, as every other kind always is (a workspace
+      // by its profile and its name, a group by all three).
+      if (item.type === 'tab' && !hierarchy) {
+        return [
+          { value: item.name, weight: 1 },
+          { value: item.comment, weight: 0.9 },
+          { value: item.url && item.url !== 'about:blank' ? item.url : undefined, weight: 0.5 },
+        ]
+      }
       // Combined haystack so queries can subsequence across path + url + comment
       // (path already contains profile / workspace / group / title).
       const haystack = [item.path, item.url, item.comment]
@@ -296,7 +325,7 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
         { value: haystack, weight: 0.5 },
       ]
     })
-  }, [query, items])
+  }, [query, items, hierarchy])
 
   // A request (ot ow og op, the toolbar's search): its kind, typing at once.
   // The kind asked for isn't remembered as the one to open on next time.
@@ -332,7 +361,17 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
     saveFilter(next)
   }
   // One column or two (the wide layout), as a group's page has.
-  const { columns, setColumns, keyFree: columnsKeyFree, onKey: columnsKey } = usePageColumns('vimperium-search-page-columns')
+  const { columns: pickedColumns, setColumns, keyFree: columnsKeyFree, onKey: pageColumnsKey } = usePageColumns('vimperium-search-page-columns')
+  // Profiles are few: one column, the switch locked. Workspaces and tab
+  // groups are short: the wide layout is as many columns as fit. Tabs'
+  // titles are long: two.
+  const columnsLocked = filter === 'profile'
+  const manyColumns = filter === 'workspace' || filter === 'tabGroup'
+  const columns: Columns = columnsLocked ? 1 : pickedColumns
+  const columnsKey = (e: KeyboardEvent): boolean => !columnsLocked && pageColumnsKey(e)
+  const boxRef = useRef<HTMLDivElement>(null)
+  /** How many rows a line of the layout holds now. */
+  const perLine = (): number => (columns === 1 ? 1 : listColumnCount(boxRef.current))
   // No result's label starts with a kind's key.
   useReservedHintKeys(TYPE_KEY_LIST)
   // The Sidebar's row says what's searched.
@@ -359,10 +398,10 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
     if (!plain || e.shiftKey) return false
     switch (e.key) {
       // A line of the layout: the result above or below, in two columns too.
-      case 'ArrowDown': moveBy(columns); return true
-      case 'ArrowUp': moveBy(-columns); return true
-      case 'PageDown': moveBy(HALF_PAGE_ROWS * columns); return true
-      case 'PageUp': moveBy(-HALF_PAGE_ROWS * columns); return true
+      case 'ArrowDown': moveBy(perLine()); return true
+      case 'ArrowUp': moveBy(-perLine()); return true
+      case 'PageDown': moveBy(HALF_PAGE_ROWS * perLine()); return true
+      case 'PageUp': moveBy(-HALF_PAGE_ROWS * perLine()); return true
     }
     return false
   }
@@ -533,8 +572,8 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
       switch (command) {
         case 'scroll-down': moveBy(1); return true
         case 'scroll-up': moveBy(-1); return true
-        case 'half-page-down': moveBy(HALF_PAGE_ROWS * columns); return true
-        case 'half-page-up': moveBy(-HALF_PAGE_ROWS * columns); return true
+        case 'half-page-down': moveBy(HALF_PAGE_ROWS * perLine()); return true
+        case 'half-page-up': moveBy(-HALF_PAGE_ROWS * perLine()); return true
         case 'page-top': setSelected(0); return true
         case 'page-bottom': setSelected(Math.max(results.length - 1, 0)); return true
         case 'insert-mode':
@@ -622,7 +661,9 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
                 >
                   <Icon size={13} />
                   {TYPE_LABELS[type]}
-                  <span className="tabular-nums opacity-50">{counts[type]}</span>
+                  {/* How many there are; of the kind shown, how many of them
+                      the filter leaves (11/21). */}
+                  <span className="tabular-nums opacity-50">{active ? countLabel : counts[type]}</span>
                   {/* Its key, while the keys are COMMAND's. */}
                   {vimMode === 'command' && <kbd className="font-mono text-[10px]">{TYPE_KEYS[type]}</kbd>}
                 </button>
@@ -658,6 +699,8 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
             columns={columns}
             onChange={setColumns}
             keyFree={columnsKeyFree}
+            many={manyColumns}
+            locked={columnsLocked}
             vimMode={vimMode}
             className={scopeApplies && windowWorkspaceId ? 'ml-2' : 'ml-auto'}
           />
@@ -665,12 +708,7 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
 
       {/* The results: the same padding above and below, scrolled or not. */}
       <div>
-        <div className={listBoxClass(columns)} role="listbox" aria-label={TYPE_LABELS[filter]}>
-          <div className="col-span-full flex items-center gap-2 px-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            <TypeIcon size={10} />
-            <span className="flex-1">{TYPE_LABELS[filter]}</span>
-            <span className="tabular-nums">{countLabel}</span>
-          </div>
+        <div ref={boxRef} className={listBoxClass(columns, true, manyColumns)} role="listbox" aria-label={TYPE_LABELS[filter]}>
           {results.length === 0 && (
             <p className="col-span-full py-16 text-center text-sm text-muted-foreground">
               {query.trim() ? `Nothing matches “${query.trim()}”` : `No ${TYPE_LABELS[filter].toLowerCase()} here`}

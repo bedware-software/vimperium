@@ -10,7 +10,8 @@ import { openDropdownAsync, type DropdownAction, type DropdownSpec } from './dro
 import { useVimSidebar } from '../lib/vim-mode'
 import { actionHint, type HintSettings } from '../lib/shortcut-hints'
 import { type SidebarCommand, type VimKeymap } from '../lib/vim-keymap'
-import { RowHint, SidebarHintBar } from './KeyHints'
+import { RowHint } from './KeyHints'
+import { setSidebarCursorAway } from '../lib/sidebar-cursor'
 import { useHelpPanelStore } from '../lib/help-panel'
 import { useHintLabels, useHintTargets } from '../lib/hint-labels'
 import { SplitGlyph } from './SplitPanes'
@@ -541,16 +542,34 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
   // default; Ctrl+J/K move rows now) step through the rows showing each — a
   // tab's page, or parked on a group, its tabs — so it follows what's shown;
   // folding a group leaves it on the header.
-  // Activating something else (a click, a row's label, Search) or the keys ending
+  // The arrows (row-down / row-up) move it without showing anything: the row
+  // it's on is picked — selected, as a click with Cmd picks one — and Enter
+  // shows it; Shift+arrows pick every row from where it was to where it
+  // goes. Activating something else (a click, a row's label, Search, Enter)
   // brings it back to the active row.
   const [vimCursorOverride, setVimCursorOverride] = useState<string | null>(null)
-  useEffect(() => { setVimCursorOverride(null) }, [activeTabId, activeTabGroupId, vimActive])
+  // The selection is the cursor's own (the arrows made it): it goes with it.
+  const cursorSelectionRef = useRef(false)
+  useEffect(() => {
+    setVimCursorOverride(null)
+    if (cursorSelectionRef.current) {
+      cursorSelectionRef.current = false
+      setSelectedIds(new Set())
+    }
+  }, [activeTabId, activeTabGroupId])
   const activeRowId = activeTabId === null
     ? activeTabGroupId
     : visibleRowIds[rowIndexOf(activeTabId)] ?? null
   const vimCursorId = vimCursorOverride !== null && visibleRowIds.includes(vimCursorOverride)
     ? vimCursorOverride
     : activeRowId
+  // Off the row that's shown: Enter is the window's then, and shows it
+  // (lib/sidebar-cursor.ts).
+  const cursorAway = visible && vimCursorId !== null && vimCursorId !== activeRowId
+  useEffect(() => {
+    setSidebarCursorAway(cursorAway)
+    return () => setSidebarCursorAway(false)
+  }, [cursorAway])
   // Listening whenever Vim mode is on, hidden too: Ctrl+J/K still move the
   // row you're on, the show-stepping keys (when bound) still step through
   // the rows, and Ctrl+H/L fold the active tab's group. The first Ctrl+J
@@ -576,19 +595,18 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
    *  tab's, a group's and a nested tab's in one line, out of the row's flow
    *  (globals.css' label column). Always there, one width whatever the
    *  labels' length; lettered while COMMAND's labels are up, the row's
-   *  number (1, 2, 3…) the rest of the time. Vim's ; puts
-   *  its own label right over it. */
+   *  number (1, 2, 3…) the rest of the time. */
   const rowHint = (rowId: string): React.ReactNode => (
-    <span data-sidebar-hint="" data-chrome-hint-anchor="">
+    <span data-sidebar-hint="">
       <RowHint mode="command" label={rowLabel(rowId)} pending={vimPending} always index={visibleRowIds.indexOf(rowId)} />
     </span>
   )
   const findVimRow = (id: string): Element | null =>
     sidebarRef.current?.querySelector(`[data-vim-row="${CSS.escape(id)}"]`) ?? null
   useEffect(() => {
-    if (!visible || !vimActive || !vimCursorId) return
+    if (!visible || !(vimActive || cursorAway) || !vimCursorId) return
     findVimRow(vimCursorId)?.scrollIntoView({ block: 'nearest' })
-  }, [visible, vimActive, vimCursorId])
+  }, [visible, vimActive, cursorAway, vimCursorId])
 
   /** Cmd/Ctrl+Click toggles a row (tab or group header) in the selection;
    *  Shift+Click selects every visible row between the anchor and this one.
@@ -954,9 +972,53 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
       const next = visibleRowIds[(at === -1 ? (dir === 1 ? -1 : visibleRowIds.length) : at) + dir]
       if (next) showRow(next)
     }
+    // The arrows: the cursor onto a row, picked, nothing shown. Back on
+    // the row that's shown there's nothing picked.
+    const cursorTo = (id: string): void => {
+      setVimCursorOverride(id)
+      cursorSelectionRef.current = true
+      selectionAnchorRef.current = id
+      setSelectedIds(id === activeRowId ? new Set() : new Set([id]))
+    }
+    const moveCursor = (dir: 1 | -1): void => {
+      // Hidden, there's no cursor to see: the next tab shows, as before.
+      if (!visible) {
+        showNextRow(dir)
+        return
+      }
+      const next = visibleRowIds[(at === -1 ? (dir === 1 ? -1 : visibleRowIds.length) : at) + dir]
+      if (next) cursorTo(next)
+    }
+    // Shift+arrows: every row from where the picking started to the
+    // cursor's new place, tabs and groups alike.
+    const extendSelection = (dir: 1 | -1): void => {
+      if (!visible || at === -1) return
+      const next = visibleRowIds[at + dir]
+      if (!next) return
+      const anchor = selectionAnchorRef.current !== null && visibleRowIds.includes(selectionAnchorRef.current)
+        ? selectionAnchorRef.current
+        : visibleRowIds[at]
+      selectionAnchorRef.current = anchor
+      const from = visibleRowIds.indexOf(anchor)
+      const to = at + dir
+      setVimCursorOverride(next)
+      cursorSelectionRef.current = true
+      setSelectedIds(new Set(visibleRowIds.slice(Math.min(from, to), Math.max(from, to) + 1)))
+    }
     switch (cmd) {
       case 'cursor-down-show': showNextRow(1); break
       case 'cursor-up-show': showNextRow(-1); break
+      case 'row-down': moveCursor(1); break
+      case 'row-up': moveCursor(-1); break
+      case 'row-select-down': extendSelection(1); break
+      case 'row-select-up': extendSelection(-1); break
+      case 'row-go':
+        if (vimCursorId) {
+          cursorSelectionRef.current = false
+          setSelectedIds(new Set())
+          showRow(vimCursorId)
+        }
+        break
       case 'row-move-down': moveRow(1); break
       case 'row-move-up': moveRow(-1); break
       case 'row-fold': {
@@ -966,16 +1028,20 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
         const group = groupById(vimCursorId) ?? groupById(findTabGroup(vimCursorId))
         if (!group) break
         if (!group.isCollapsed) toggleTabGroupCollapse(group.id)
-        setVimCursorOverride(group.id)
+        if (visible) cursorTo(group.id)
+        else setVimCursorOverride(group.id)
         break
       }
       case 'row-unfold': {
-        // On a folded group's header it unfolds; on an unfolded one it
-        // steps onto the group's first tab, showing it.
+        // On a folded group's header it unfolds; on an unfolded one the
+        // cursor steps onto the group's first tab (hidden: it shows).
         const group = groupById(vimCursorId)
         if (!group) break
         if (group.isCollapsed) toggleTabGroupCollapse(group.id)
-        else if (group.tabs[0]) showRow(group.tabs[0].id)
+        else if (group.tabs[0]) {
+          if (visible) cursorTo(group.tabs[0].id)
+          else showRow(group.tabs[0].id)
+        }
         break
       }
       case 'row-menu': {
@@ -1036,8 +1102,6 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
       <div
         key={tab.id}
         data-sidebar-row=""
-        // Vim's ; (chrome-hints) labels it: typing the label clicks the row.
-        data-chrome-hint=""
         data-vim-row={tab.id}
         data-drop-tab-id={tab.id}
         data-drop-container={containerAttr}
@@ -1138,7 +1202,6 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
       <div
         data-sidebar-row=""
         data-sidebar-group-row=""
-        data-chrome-hint=""
         data-vim-row={group.id}
         data-drop-group-header={group.id}
         data-sidebar-index={sidebarIdx}
@@ -1345,7 +1408,7 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
                 keys' help is open, as the header's buttons show theirs. No
                 cap of its own otherwise: no label picks it. A key too long
                 for the column (Ctrl+T) goes at the row's end instead. */}
-            <span data-sidebar-hint="" data-chrome-hint-anchor="">
+            <span data-sidebar-hint="">
               {newTabKey && newTabKeyFits && <RowHint mode="command" label={newTabKey} className="opacity-70" />}
             </span>
             <Plus size={16} className="shrink-0" />
@@ -1355,7 +1418,6 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
         </div>
 
         {/* Its keys, while the keys' help is open (?) and no popup is up. */}
-        {vimKeymap && helpOpen && !hintsBlocked && <SidebarHintBar keymap={vimKeymap} />}
 
         <div
           className="absolute top-0 right-0 w-1.5 h-full cursor-col-resize hover:bg-primary/30 active:bg-primary/50 transition-colors"

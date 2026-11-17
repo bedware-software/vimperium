@@ -3,8 +3,7 @@
 // top-left corner (Find in Page has the top-right one), over the page
 // rather than pushing it down. It shows without taking the keyboard, so a
 // site asking mid-typing doesn't cut in; Esc in it, once clicked, dismisses.
-// From the keyboard its buttons are the browser's own controls: the chrome
-// hints (;) label them, as they do the toolbar's (data-chrome-hints).
+// Its buttons are the mouse's: no key reaches them until it's clicked.
 
 import type { ReactNode } from 'react'
 import { Bell, Camera, Clipboard, MapPin, Mic, Music, ShieldAlert, X, type LucideIcon } from 'lucide-react'
@@ -42,7 +41,7 @@ function PagePrompt({ open, title, height, anchorRef, onDismiss, children }: She
       placement={placement}
       onClose={onDismiss}
     >
-      <div data-chrome-hints="" className="h-full flex flex-col justify-between gap-2 p-3 bg-popover text-popover-foreground border border-border overflow-hidden">
+      <div className="h-full flex flex-col justify-between gap-2 p-3 bg-popover text-popover-foreground border border-border overflow-hidden">
         {children}
       </div>
     </DetachedWindow>

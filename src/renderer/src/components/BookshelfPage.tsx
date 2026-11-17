@@ -1076,8 +1076,6 @@ export function BookshelfPage({ profileId, vimKeymap, vimMode, vimPending, hints
       <div
         key={r.id}
         data-shelf-row={r.id}
-        // Vim's ; (chrome-hints) labels it: typing the label clicks the row.
-        data-chrome-hint=""
         data-drop-reading={r.id}
         data-drop-container={container}
         role="option"
@@ -1160,8 +1158,6 @@ export function BookshelfPage({ profileId, vimKeymap, vimMode, vimPending, hints
             come from globals.css via --gc. */}
         <div
           data-shelf-row={g.id}
-          // Vim's ; (chrome-hints) labels it: typing the label clicks the row.
-          data-chrome-hint=""
           data-drop-into={g.id}
           role="option"
           aria-selected={isCursor}
@@ -1347,7 +1343,6 @@ export function BookshelfPage({ profileId, vimKeymap, vimMode, vimPending, hints
                   <div
                     data-drop-into={ARCHIVE_ROW_ID}
                     data-shelf-row={ARCHIVE_ROW_ID}
-                    data-chrome-hint=""
                     role="option"
                     aria-selected={archiveIsCursor}
                     aria-expanded={view.archiveOpen}

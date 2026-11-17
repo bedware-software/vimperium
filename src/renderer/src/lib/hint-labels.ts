@@ -9,10 +9,7 @@
 //
 // In the main window several things can wear labels at once: each (the
 // group page) registers its rows here with useHintTargets, App numbers them
-// all in one go (useHintKeymap) and runs the picked one. One that registers
-// as exclusive (the browser's own controls, ; — lib/chrome-hints.ts) wears
-// the only labels while it's up, and takes every key: its labels may use
-// any letter, and a key no label starts with puts the labels away.
+// all in one go (useHintKeymap) and runs the picked one.
 //
 // A label says what it names where it can: drawn from the row's name —
 // "work" w, "fun" f, "Ubuntu" ub, "Тестовое собеседование" ts — from the
@@ -33,19 +30,6 @@ const HINT_KEYS = [
 ]
 
 const HINT_COMMAND = /^hint-(\d+)$/
-
-/** What an exclusive provider's keymap runs for a key no label starts
- *  with: the labels go away. */
-export const HINT_CANCEL_COMMAND = 'hint-cancel'
-
-// Every key a keydown can stand for without Ctrl (shared/vim-keys.ts'
-// keyTokenFromEvent): printable ASCII as typed, and the named keys.
-const PLAIN_TOKENS: string[] = [
-  ...Array.from({ length: 0x7e - 0x21 + 1 }, (_, i) => String.fromCharCode(0x21 + i)),
-  '<CR>', '<Esc>', '<Space>', '<Tab>', '<S-Tab>', '<BS>', '<Del>',
-  '<Up>', '<Down>', '<Left>', '<Right>', '<Home>', '<End>', '<PageUp>', '<PageDown>',
-  ...Array.from({ length: 12 }, (_, i) => `<F${i + 1}>`),
-]
 
 /** The letters a label may use with `keymap`: those no binding starts with. */
 export function hintAlphabet(keymap: VimKeymap | null): string[] {
@@ -215,23 +199,6 @@ export function withHints(keymap: VimKeymap, labels: string[]): VimKeymap {
   return map
 }
 
-/** An exclusive provider's keymap: its labels, and every other key — each
- *  one `keymap` starts a binding with (its Ctrl chords too) and each plain
- *  key — bound to {@link HINT_CANCEL_COMMAND}, so nothing else runs, not
- *  even in the page, until a label is typed or the labels go. Ctrl chords
- *  nothing binds still reach whoever has the keys (Ctrl+C copies). */
-export function hintsOnlyKeymap(keymap: VimKeymap, labels: string[]): VimKeymap {
-  const map: VimKeymap = new Map()
-  const starts = new Set(labels.map((label) => label[0]))
-  const cancel = (token: string): void => {
-    if (!starts.has(token)) map.set(token, HINT_CANCEL_COMMAND)
-  }
-  for (const seq of keymap.keys()) cancel(seq.split(SEQUENCE_JOIN)[0])
-  for (const token of PLAIN_TOKENS) cancel(token)
-  labels.forEach((label, i) => map.set([...label].join(SEQUENCE_JOIN), `hint-${i}`))
-  return map
-}
-
 /** The row a `hint-<n>` command picks, or null for any other command. */
 export function hintIndex(command: string): number | null {
   const m = HINT_COMMAND.exec(command)
@@ -268,26 +235,21 @@ export interface HintTarget {
 
 interface Provider {
   order: number
-  exclusive: boolean
   targets: HintTarget[]
 }
 
 interface TargetSnapshot {
   targets: HintTarget[]
-  /** An exclusive provider is up: its rows are the only ones listed. */
-  exclusive: boolean
 }
 
 const providers = new Map<string, Provider>()
-let snapshot: TargetSnapshot = { targets: [], exclusive: false }
+let snapshot: TargetSnapshot = { targets: [] }
 const targetListeners = new Set<() => void>()
 let labelById = new Map<string, string>()
 const labelListeners = new Set<() => void>()
 
 function rebuildTargets(): void {
-  const all = [...providers.values()]
-  const exclusive = all.some((p) => p.exclusive)
-  const shown = exclusive ? all.filter((p) => p.exclusive) : all
+  const shown = [...providers.values()]
   // A thing listed by two providers is one row to label: the first's.
   const seen = new Set<string>()
   const targets = shown.sort((a, b) => a.order - b.order).flatMap((p) => p.targets).filter((t) => {
@@ -295,18 +257,16 @@ function rebuildTargets(): void {
     seen.add(t.id)
     return true
   })
-  snapshot = { targets, exclusive }
+  snapshot = { targets }
   targetListeners.forEach((l) => l())
 }
 
 /**
  * Registers `targets` (null: none) as `name`'s rows wanting labels, ahead of
  * providers with a higher `order`. Only a change of which rows (their ids)
- * renumbers; the rows' actions are kept current without one. An
- * `exclusive` provider's rows wear the only labels while it's registered,
- * and its keymap takes every key (hintsOnlyKeymap).
+ * renumbers; the rows' actions are kept current without one.
  */
-export function useHintTargets(name: string, order: number, targets: HintTarget[] | null, exclusive = false): void {
+export function useHintTargets(name: string, order: number, targets: HintTarget[] | null): void {
   const ids = targets ? targets.map((t) => `${t.id}\t${t.name ?? ''}`).join('\n') : null
   const targetsRef = useRef(targets)
   targetsRef.current = targets
@@ -316,7 +276,6 @@ export function useHintTargets(name: string, order: number, targets: HintTarget[
     // Each one runs whatever its row does at the time it's picked.
     providers.set(name, {
       order,
-      exclusive,
       targets: current.map((t) => ({ id: t.id, name: t.name, activate: () => targetsRef.current?.find((x) => x.id === t.id)?.activate() })),
     })
     rebuildTargets()
@@ -324,7 +283,7 @@ export function useHintTargets(name: string, order: number, targets: HintTarget[
       providers.delete(name)
       rebuildTargets()
     }
-  }, [name, order, ids, exclusive])
+  }, [name, order, ids])
 }
 
 function useTargetSnapshot(): TargetSnapshot {
@@ -343,11 +302,9 @@ export function useHintTargetList(): HintTarget[] {
 }
 
 /** App: the window's COMMAND keymap with a label on every registered row,
- *  and those labels published for the rows to wear. While an exclusive
- *  provider is up, its labels take any letter and the keymap is theirs
- *  alone (hintsOnlyKeymap). */
-export function useHintKeymap(keymap: VimKeymap | null): { keymap: VimKeymap | null; targets: HintTarget[]; exclusive: boolean } {
-  const { targets, exclusive } = useTargetSnapshot()
+ *  and those labels published for the rows to wear. */
+export function useHintKeymap(keymap: VimKeymap | null): { keymap: VimKeymap | null; targets: HintTarget[] } {
+  const { targets } = useTargetSnapshot()
   const reserved = useSyncExternalStore(
     (l) => {
       reservedListeners.add(l)
@@ -356,31 +313,29 @@ export function useHintKeymap(keymap: VimKeymap | null): { keymap: VimKeymap | n
     () => reservedSnapshot,
   )
   const alphabet = useMemo(
-    () => (exclusive ? HINT_KEYS : hintAlphabet(keymap).filter((k) => !reserved.includes(k))),
-    [keymap, exclusive, reserved],
+    () => hintAlphabet(keymap).filter((k) => !reserved.includes(k)),
+    [keymap, reserved],
   )
-  // Each row keeps the label it wore while its name still gives it; the
-  // browser's own controls (;) have no names and take labels in reach order.
+  // Each row keeps the label it wore while its name still gives it.
   const previousRef = useRef(new Map<string, string>())
   const labels = useMemo(() => {
     if (!keymap) return []
-    if (exclusive) return hintLabels(targets.length, alphabet)
     return hintLabels(targets.map((t) => t.name), alphabet, targets.map((t) => previousRef.current.get(t.id)))
-  }, [keymap, targets, alphabet, exclusive])
+  }, [keymap, targets, alphabet])
   const merged = useMemo(() => {
     if (!keymap) return null
-    return exclusive ? hintsOnlyKeymap(keymap, labels) : withHints(keymap, labels)
-  }, [keymap, labels, exclusive])
+    return withHints(keymap, labels)
+  }, [keymap, labels])
   useEffect(() => {
     const next = new Map<string, string>()
     labels.forEach((label, i) => { if (targets[i]) next.set(targets[i].id, label) })
     labelById = next
     // Merged, not replaced: a row out of sight a while (COMMAND left, a
     // popup up) finds its label again.
-    if (!exclusive) previousRef.current = new Map([...previousRef.current, ...next])
+    previousRef.current = new Map([...previousRef.current, ...next])
     labelListeners.forEach((l) => l())
-  }, [labels, targets, exclusive])
-  return { keymap: merged, targets, exclusive }
+  }, [labels, targets])
+  return { keymap: merged, targets }
 }
 
 /** The labels the registered rows wear now, by their ids. */

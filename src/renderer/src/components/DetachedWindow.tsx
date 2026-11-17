@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { log } from '../lib/log'
-import { registerHintPopup } from '../lib/chrome-hints'
 import { isEscapeKey } from '../lib/vim-mode'
 import { MOTION_ATTRIBUTE, syncMotionTo } from '../lib/motion'
 
@@ -66,11 +65,6 @@ interface Props {
   fitHeight?: number
   /** Bumped to give the keyboard back to a pinned popup that's open. */
   focusTick?: number
-  /** Vim's ; (lib/chrome-hints.ts) labels the popup's controls too — a
-   *  popup that shows without the keyboard (a page prompt), whose buttons
-   *  the keys can't reach otherwise. The same as marking a root inside it
-   *  `data-chrome-hints`. */
-  chromeHints?: boolean
   /** A pinned popup dragged by its handle stays where it's dropped: its new
    *  spot, to keep as `placement`. */
   onMoved?: (placement: PopupPlacement) => void
@@ -194,7 +188,6 @@ export function DetachedWindow({
   placement,
   fitHeight,
   focusTick,
-  chromeHints = false,
   onMoved,
   onClose,
   onWindowChange,
@@ -291,18 +284,8 @@ export function DetachedWindow({
     const root = popup.document.createElement('div')
     root.style.height = '100%'
     root.style.width = '100%'
-    if (chromeHints) root.setAttribute('data-chrome-hints', '')
     popup.document.body.appendChild(root)
     setContainerEl(root)
-    // Vim's ; looks into it for a root marked data-chrome-hints; a field
-    // picked there needs the popup to take the keyboard.
-    const unregisterHints = registerHintPopup({
-      win: popup,
-      focus: () => {
-        if (popupId) window.electronAPI.detachedWindowFocus?.(popupId)
-        else popup.focus()
-      },
-    })
 
     const handleBeforeUnload = () => {
       if (!suppressBeforeUnloadRef.current) onCloseRef.current()
@@ -426,7 +409,6 @@ export function DetachedWindow({
     popup.addEventListener('blur', handleBlurClose)
 
     return () => {
-      unregisterHints()
       themeObserver.disconnect()
       popup.removeEventListener('beforeunload', handleBeforeUnload)
       popup.removeEventListener('keydown', handleKeyDown)
@@ -452,7 +434,7 @@ export function DetachedWindow({
         suppressBeforeUnloadRef.current = false
       }
     }
-  }, [open, width, height, resizable, closeOnEscape, closeOnBlur, modal, persistKey, matchRunwaPalette, chromeHints])
+  }, [open, width, height, resizable, closeOnEscape, closeOnBlur, modal, persistKey, matchRunwaPalette])
 
   // Show the popup window once React has rendered content into the portal.
   // Double-rAF on the POPUP's own frame clock ensures the popup has

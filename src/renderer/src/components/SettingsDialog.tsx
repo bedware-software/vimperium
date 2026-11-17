@@ -201,7 +201,6 @@ const DEFAULT_KEYBINDINGS: Record<string, string[]> = {
   'site-info': [],
   'dark-pages-menu': [],
   'dark-pages-settings': [],
-  'chrome-hints': [],
   'zoom-in': [],
   'zoom-out': [],
   'zoom-reset': [],
@@ -396,6 +395,9 @@ function syncStatusLabel(info: CloudSyncInfo | null): string {
  */
 export interface SettingsTabRequest {
   tab: SettingsTab
+  /** With the Extensions pane: the extension whose details (permissions,
+   *  keyboard shortcuts) open, scrolled to. */
+  extensionId?: string
   v: number
 }
 
@@ -781,6 +783,19 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
     })
     return cleanup
   }, [open])
+
+  // A request for one extension's keyboard shortcuts (its menu's entry in
+  // the toolbar): its details open, in sight.
+  useEffect(() => {
+    const id = tabRequest?.extensionId
+    if (!open || !id) return
+    setExpandedExtensions((prev) => (prev.has(id) ? prev : new Set(prev).add(id)))
+    const timer = setTimeout(() => {
+      contentEl?.querySelector(`[data-vim-item^="ext-cmd:${id}:"]`)?.scrollIntoView({ block: 'center' })
+    }, 250)
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, tabRequest?.v, contentEl])
 
   const toggleExtensionDetails = useCallback((id: string) => {
     setExpandedExtensions((prev) => {

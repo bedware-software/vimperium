@@ -12,9 +12,8 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { SEQUENCE_JOIN, type VimKeymap } from '../../../shared/vim-keys'
-import { HINT_CANCEL_COMMAND, hintIndex } from './hint-labels'
+import { hintIndex } from './hint-labels'
 import { EXTENSION_MENU_KEYS, displayKeySequence, extensionMenuIndex, vimCommandLabel } from './vim-keymap'
-import { useChromeHintsActive } from './chrome-hints'
 
 export interface WhichKeyEntry {
   /** What to type next, as caps read (the rest of the sequence). */
@@ -45,6 +44,8 @@ const SHORT_LABELS: Record<string, string> = {
   'dark-pages-menu': 'Dark pages',
   'profile-menu': 'Profile menu',
   'workspace-menu': 'Workspace menu',
+  'split-focus': 'Other pane',
+  'split-close': 'End the split',
   'toggle-sidebar': 'Sidebar',
   'toggle-bookshelf': 'Bookshelf',
   'page-top': 'Top',
@@ -63,7 +64,7 @@ export function whichKeyEntries(keymap: VimKeymap, pending: string): WhichKeyEnt
   if (!pending) return []
   const groups = new Map<string, Array<{ rest: string[]; command: string }>>()
   for (const [seq, command] of keymap) {
-    if (hintIndex(command) !== null || command === HINT_CANCEL_COMMAND) continue
+    if (hintIndex(command) !== null) continue
     // The pinned extensions' menus (o1e…o9e) are one entry, not nine.
     const extension = extensionMenuIndex(command)
     if (extension !== null && extension !== 1) continue
@@ -97,10 +98,8 @@ export function whichKeyEntries(keymap: VimKeymap, pending: string): WhichKeyEnt
 }
 
 /** The entries to show for `pending` now: none until it's been pending a
- *  moment (then at once as it grows, gc after g), none while ;'s labels are
- *  up — their letters are pending then — and none with no keymap. */
+ *  moment (then at once as it grows, gc after g), and none with no keymap. */
 export function useWhichKey(keymap: VimKeymap | null, pending: string): WhichKeyEntry[] {
-  const hintsUp = useChromeHintsActive()
   const [shownFor, setShownFor] = useState('')
   const shownRef = useRef('')
   useEffect(() => {
@@ -121,8 +120,8 @@ export function useWhichKey(keymap: VimKeymap | null, pending: string): WhichKey
     return () => clearTimeout(timer)
   }, [pending])
   return useMemo(
-    () => (keymap && !hintsUp && shownFor && shownFor === pending ? whichKeyEntries(keymap, shownFor) : []),
-    [keymap, hintsUp, shownFor, pending],
+    () => (keymap && shownFor && shownFor === pending ? whichKeyEntries(keymap, shownFor) : []),
+    [keymap, shownFor, pending],
   )
 }
 

@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { KeySequencer, SEQUENCE_JOIN, isCtrlToken, keyTokenFromEvent, type VimKeymap, type VimKeymapEntries } from '../../../shared/vim-keys'
+import { KeySequencer, SEQUENCE_JOIN, isCtrlToken, keyTokenFromEvent, runTimes, timesFor, type VimKeymap, type VimKeymapEntries } from '../../../shared/vim-keys'
 import type { SidebarCommand } from './vim-keymap'
 import { log } from './log'
+import { sidebarCursorAway } from './sidebar-cursor'
 
 // Vim mode. A window is in one of two modes:
 //   COMMAND — plain keys run the commands from Settings' keymap: scrolling
@@ -249,9 +250,11 @@ export function useKeySequence(
 
   const sequencer = useMemo(() => new KeySequencer(
     () => keymapRef.current,
-    (command, e) => {
+    (command, e, count) => {
       // Holding j/k (or Ctrl+J/K) keeps going; anything else fires once per press.
-      if (!e.repeat || REPEATABLE.has(command)) commandRef.current(command)
+      if (e.repeat && !REPEATABLE.has(command)) return
+      // A count typed before it (5j, 3x) runs it that many times.
+      runTimes(timesFor(command, count), () => commandRef.current(command))
     },
     setPending,
   ), [])
@@ -820,7 +823,10 @@ export function useVimMode({ enabled, keymap, onCommand, focusPage, isActiveTab 
       // A page this renderer draws keeps its own plain keys.
       if (isInternalPage(e.target)) return
       // One drawn in the page's place takes some ahead of the keymap.
-      if (!pendingRef.current && interceptPageKey(e)) {
+      // Not Enter while the Sidebar's cursor is off the row shown: that
+      // Enter shows the cursor's row (the keymap's, below).
+      const rowGo = sidebarCursorAway() && keyTokenFromEvent(e) === '<CR>'
+      if (!pendingRef.current && !rowGo && interceptPageKey(e)) {
         e.preventDefault()
         e.stopPropagation()
         return

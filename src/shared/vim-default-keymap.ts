@@ -10,13 +10,13 @@ export const DEFAULT_VIM_KEYMAP = `" Vim mode keys.
 " Keys: a typed character (Shift is the capital: J is Shift+J), a sequence
 " (gg), Ctrl with a letter or digit (<C-l>, <C-1>, <C-S-j> with Shift), or a
 " named key: <CR> <Esc> <Space> <Tab> <S-Tab> <BS> <Del> <Up> <Down> <Left>
-" <Right> <Home> <End> <PageUp> <PageDown> <F1>…<F12>.
+" <Right> (<S-Up> … with Shift) <Home> <End> <PageUp> <PageDown> <F1>…<F12>.
 " Keys go by position on the keyboard, so they work in any input language.
 "
 " Two modes:
 "   COMMAND  the page and the browser: scrolling, history, tabs, app
-"            commands. Typing keys not bound here do nothing; the arrows,
-"            Enter, Tab and Esc still reach the page.
+"            commands. Typing keys not bound here do nothing; Enter,
+"            Tab and Esc still reach the page (the arrows are the Sidebar's).
 "   INSERT   keys go to the page or the field you type in
 " i (or gi, picking a text field) goes into INSERT; Esc or Ctrl+[ comes back
 " to COMMAND. In a popup — Search Everything, Find, the address editor, a
@@ -26,30 +26,41 @@ export const DEFAULT_VIM_KEYMAP = `" Vim mode keys.
 " paste and undo work as ever.
 "
 " COMMAND reads like vim. The motions are vim's: j/k scroll, <C-d>/<C-u>
-" half a page, gg/G to the top and the bottom, h/l back and forward. A
-" letter that starts a pair is a verb, and the second letter says what it
+" half a page, gg/G to the top and the bottom, <C-o>/<C-i> back and
+" forward. A count goes first — 5j, 3x — and . does the last change again.
+" A letter that starts a pair is a verb, and the second letter says what it
 " acts on:
 "   n  new       nt (or nn) a tab, ng a group, nw a workspace, np a profile
 "   d  delete    dd closes the tab, dg its group, dw deletes the workspace
 "   o  open      ot ow og op search tabs, workspaces, groups, profiles;
 "                od Downloads, ob Bangs, om the menu, and the rest below
 "   t  toggle    ts the Sidebar, tb the Bookshelf
-" u undoes: it brings back what dd or dg closed. Ctrl+j/k move the tab (or
-" the group) up and down the Sidebar, Ctrl+h/l fold and unfold, and Tab
-" shows or hides it. A tab is picked by its label, not stepped to.
+" x closes the tab too, one key, and u undoes: it brings back what x, dd
+" or dg closed. <C-w> is vim's window prefix: <C-w>c closes the tab, <C-w>w
+" goes to the split's other pane, <C-w>q ends the split. The arrows move
+" the Sidebar's cursor, Ctrl+j/k move the tab (or the group) up and down
+" it, and Tab shows or hides it. A tab is picked by its label too.
 
 " ── COMMAND: the page ─────────────────────────────────────────────────
 " focus-input outlines the page's text fields: h/j/k/l (or Tab) pick one,
 " <CR> types into it, Esc cancels. + and - zoom the page, = back to its
-" actual size.
+" actual size. ]] and [[ follow the page's own next and previous links
+" (a results page's Next, a rel=next); <C-a> and <C-x> add one to the last
+" number in the address and take one off — page 3 to page 4. <C-v> hands
+" the next key to the page, for a site with shortcuts of its own.
 scroll-down         j
 scroll-up           k
 half-page-down      <C-d>
 half-page-up        <C-u>
 page-top            gg
 page-bottom         G
-back                h <C-o>
-forward             l <C-i>
+back                <C-o>
+forward             <C-i>
+next-page           ]]
+prev-page           [[
+increment-url       <C-a>
+decrement-url       <C-x>
+pass-key            <C-v>
 insert-mode         i
 focus-input         gi
 help                ?
@@ -60,11 +71,15 @@ zoom-reset          =
 " ── COMMAND: the Sidebar ──────────────────────────────────────────────
 " Each row wears a label of one to three letters (the more rows, the
 " longer): typing one shows that row — a tab's page, or a group's tabs.
+" The arrows move the Sidebar's cursor without showing anything: ↓ and ↑
+" pick the row below or above, and Enter shows the one picked (Enter is
+" the page's again once it's shown). Shift+↓/↑ pick more rows, tabs and
+" groups, from where the cursor was. ← folds the group the cursor is in
+" and goes to its header; → unfolds a folded group, or steps into an
+" unfolded one. With the Sidebar hidden ↓ and ↑ show the next tab.
 " Ctrl+j/k carry the tab (or the group) you're on a row down or up: a tab
 " steps into an unfolded group it runs into and out of its own at either
-" end. Ctrl+h folds the group the cursor is in and goes to its header;
-" Ctrl+l unfolds a folded group, or steps into an unfolded one. The
-" keyboard stays in the browser until Ctrl is let go. They work with the
+" end. The keyboard stays in the browser until Ctrl is let go. They work with the
 " Sidebar hidden too. Tab (or ts) shows or hides it; in a text field Tab
 " moves on through the form as ever. m opens the menu of the row the
 " cursor is on. cursor-down-show / cursor-up-show, when bound, step
@@ -73,19 +88,24 @@ cursor-down-show
 cursor-up-show
 row-move-down       <C-j>
 row-move-up         <C-k>
-row-fold            <C-h>
-row-unfold          <C-l>
+row-down            <Down>
+row-up              <Up>
+row-select-down     <S-Down>
+row-select-up       <S-Up>
+row-fold            <Left>
+row-unfold          <Right>
 row-menu            m
 toggle-sidebar      <Tab> ts
 
 " ── COMMAND: split view ───────────────────────────────────────────────
 " V splits the page area with a pane on the right (vim's :vsplit), S with
-" one below (:split), and offers the tabs to put there. <C-w> moves the focus to the other pane; q
-" ends the split, keeping the focused pane's tab.
+" one below (:split), and offers the tabs to put there. <C-w>w (or
+" <C-w><C-w>) moves the focus to the other pane; <C-w>q (or q) ends the
+" split, keeping the focused pane's tab.
 split-right         V
 split-down          S
-split-focus         <C-w>
-split-close         q
+split-focus         <C-w>w <C-w><C-w>
+split-close         <C-w>q q
 
 " ── COMMAND: n, new ───────────────────────────────────────────────────
 " A new group comes with a new tab in it; a new profile and a new
@@ -97,9 +117,10 @@ new-workspace       nw
 new-profile         np
 
 " ── COMMAND: d, delete ────────────────────────────────────────────────
-" dd closes the tab and dg its group, all its tabs; u brings them back,
-" the last closed first. dw deletes the workspace, once you say so.
-close-tab           dd
+" x closes the tab, as dd and <C-w>c do, and dg its group, all its tabs;
+" u brings them back, the last closed first. dw deletes the workspace,
+" once you say so.
+close-tab           x dd <C-w>c
 close-group         dg
 delete-workspace    dw
 reopen-closed-tab   u
@@ -127,19 +148,21 @@ workspace-menu      oW
 toggle-bookshelf    tb
 
 " ── COMMAND: app commands (the regular shortcuts' ids) ────────────────
-" ; labels every button of the browser's own, as f does a page's in
-" vimium; typing a label presses it. search opens Search Everything on the
+" search opens Search Everything on the
 " kind of thing it showed last (ot ow og op on one kind). e types in the
 " address bar, the address in place; E is the address editor, the address
-" block by block.
-chrome-hints        ;
+" block by block. <C-6> goes back to the tab you were on before this one
+" (vim's alternate buffer), and again returns. . does the last change
+" again: a tab closed, a row moved, the zoom, a number in the address.
+alternate-tab       <C-6>
+repeat              .
 close-window
 next-tab
 prev-tab
 focus-url           e
 edit-url            E
 search
-command-palette     <C-p>
+command-palette     <C-p> :
 copy-url            y
 paste-url
 paste-url-new-tab   P
@@ -309,7 +332,17 @@ export function contextOf(command: string): VimContext {
 // Bookshelf on nb (n new, as nt and ng). v18 put the filters back on p w g
 // t, the letters they're named by. v19 put the address bar back on e, the
 // address editor on E, and Ctrl+j/k on moving the row (were stepping
-// through the rows, which labels do now; moving was Ctrl+Shift+j/k). A saved
+// through the rows, which labels do now; moving was Ctrl+Shift+j/k). v20
+// gave the Sidebar a cursor of its own on the arrows — ↓/↑ pick a row
+// without showing it (row-down, row-up; Enter shows it), Shift+↓/↑ pick
+// more (row-select-down, row-select-up) — and put folding on ←/→ (was
+// Ctrl+h/l); it made <C-w> vim's window prefix (<C-w>w the other pane, was
+// <C-w> alone; <C-w>q ends the split beside q; <C-w>c closes the tab) and
+// gave close-tab x, took history off h and l (<C-o>/<C-i> only), put the
+// Command Palette on : too, dropped the browser's own buttons' labels
+// (chrome-hints, ;) and added <C-6> (alternate-tab), . (repeat), ]] and [[
+// (next-page, prev-page), <C-a>/<C-x> (increment-url, decrement-url) and
+// <C-v> (pass-key). A saved
 // keymap keeps every binding its owner changed — unless it now clashes with
 // another binding, then it takes the new default — and the new defaults for
 // the rest, including commands it couldn't know about. A key a version
@@ -504,6 +537,25 @@ const V18_DEFAULT_KEYS: Record<string, string> = {
   'row-move-up': '<C-S-k>',
 }
 
+/** v19 defaults of the commands v20 rebound: folding, on the arrows now. */
+const V19_DEFAULT_KEYS: Record<string, string> = {
+  'row-fold': '<C-h>',
+  'row-unfold': '<C-l>',
+  back: 'h <C-o>',
+  forward: 'l <C-i>',
+  'close-tab': 'dd',
+  'split-focus': '<C-w>',
+  'split-close': 'q',
+  'command-palette': '<C-p>',
+}
+
+/** Commands v20 added: the Sidebar's cursor. Their keys yield to an
+ *  owner's as v12's do. */
+const NEW_IN_V20 = new Set([
+  'row-down', 'row-up', 'row-select-down', 'row-select-up',
+  'alternate-tab', 'repeat', 'next-page', 'prev-page', 'increment-url', 'decrement-url', 'pass-key',
+])
+
 /** v17 defaults of the commands v18 rebound: Search Everything's filters,
  *  back on p w g t. */
 const V17_DEFAULT_KEYS: Record<string, string> = {
@@ -621,7 +673,7 @@ function sameKeys(a: string, b: string): boolean {
 }
 
 /**
- * Carries a keymap saved under older defaults (v1 to v18) over to the
+ * Carries a keymap saved under older defaults (v1 to v19) over to the
  * current ones: the default text, with each binding the owner changed (or
  * removed) as they had it. Null when that comes out as the plain default —
  * nothing to keep. `log` hears each key the migration had to decide on for
@@ -630,7 +682,7 @@ function sameKeys(a: string, b: string): boolean {
  */
 export function migrateVimKeymap(
   saved: string,
-  fromVersion: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18,
+  fromVersion: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19,
   log: (message: string) => void = () => {},
 ): string | null {
   // What the owner had, by the old name.
@@ -660,11 +712,12 @@ export function migrateVimKeymap(
     (fromVersion <= 16 ? V16_DEFAULT_KEYS[command] : undefined) ??
     (fromVersion <= 17 ? V17_DEFAULT_KEYS[command] : undefined) ??
     (fromVersion <= 18 ? V18_DEFAULT_KEYS[command] : undefined) ??
+    (fromVersion <= 19 ? V19_DEFAULT_KEYS[command] : undefined) ??
     fallback
   // Whether the saved keymap's version had the command: one it lacks isn't
   // missing because its owner unbound it.
   const existed = (command: string): boolean =>
-    (fromVersion <= 12 && NEW_IN_V13.has(command)) || (fromVersion <= 11 && NEW_IN_V12.has(command)) || (fromVersion <= 10 && NEW_IN_V11.has(command)) || (fromVersion <= 7 && NEW_IN_V8.has(command)) || (fromVersion <= 6 && NEW_IN_V7.has(command)) || (fromVersion <= 5 && NEW_IN_V6.has(command)) ? false
+    (fromVersion <= 19 && NEW_IN_V20.has(command)) || (fromVersion <= 12 && NEW_IN_V13.has(command)) || (fromVersion <= 11 && NEW_IN_V12.has(command)) || (fromVersion <= 10 && NEW_IN_V11.has(command)) || (fromVersion <= 7 && NEW_IN_V8.has(command)) || (fromVersion <= 6 && NEW_IN_V7.has(command)) || (fromVersion <= 5 && NEW_IN_V6.has(command)) ? false
     : fromVersion >= 3
       ? !(command in RENAMED_IN_V3)
       : !NEW_IN_V3.has(command) && !(fromVersion === 1 && NEW_IN_V2.has(command))
@@ -684,7 +737,8 @@ export function migrateVimKeymap(
     (fromVersion <= 15 && command in V15_DEFAULT_KEYS) ||
     (fromVersion <= 16 && command in V16_DEFAULT_KEYS) ||
     (fromVersion <= 17 && command in V17_DEFAULT_KEYS) ||
-    (fromVersion <= 18 && command in V18_DEFAULT_KEYS)
+    (fromVersion <= 18 && command in V18_DEFAULT_KEYS) ||
+    (fromVersion <= 19 && command in V19_DEFAULT_KEYS)
 
   const lines = DEFAULT_VIM_KEYMAP.split('\n')
   // command → [line index, keys] for every binding line, as it stands.
@@ -769,6 +823,8 @@ export function migrateVimKeymap(
     ...(fromVersion <= 16 ? Object.keys(V16_DEFAULT_KEYS) : []),
     ...(fromVersion <= 17 ? Object.keys(V17_DEFAULT_KEYS) : []),
     ...(fromVersion <= 18 ? Object.keys(V18_DEFAULT_KEYS) : []),
+    ...(fromVersion <= 19 ? NEW_IN_V20 : []),
+    ...(fromVersion <= 19 ? Object.keys(V19_DEFAULT_KEYS) : []),
   ])
   // Commands that lost every key that way, with what took them ("dd (your
   // d, half-page-down)").
