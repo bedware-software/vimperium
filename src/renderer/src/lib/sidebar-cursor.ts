@@ -8,7 +8,21 @@ import { create } from 'zustand'
 /** Enter's command while the cursor is away: show the row it's on. */
 export const ROW_GO_COMMAND = 'row-go'
 
-export const useSidebarCursorStore = create<{ away: boolean }>(() => ({ away: false }))
+/** Esc's command while rows are picked: none picked, the cursor back on
+ *  the row that's shown. */
+export const ROW_UNSELECT_COMMAND = 'row-unselect'
+
+export const useSidebarCursorStore = create<{ away: boolean; picked: boolean }>(() => ({ away: false, picked: false }))
+
+/** Rows are picked in the Sidebar (the arrows, Shift+arrows, a click with
+ *  Cmd or Shift): one Esc unpicks them — the window's key only then. */
+export function setSidebarRowsPicked(picked: boolean): void {
+  if (useSidebarCursorStore.getState().picked !== picked) useSidebarCursorStore.setState({ picked })
+}
+
+export function sidebarRowsPicked(): boolean {
+  return useSidebarCursorStore.getState().picked
+}
 
 export function setSidebarCursorAway(away: boolean): void {
   if (useSidebarCursorStore.getState().away !== away) useSidebarCursorStore.setState({ away })

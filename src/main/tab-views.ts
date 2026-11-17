@@ -74,6 +74,9 @@ export type TabEvent =
       activeMatchOrdinal: number
       matches: number
       finalUpdate: boolean
+      /** The active match is on something a click opens — a link, a
+       *  button: its address (or '' with none). Only on the final update. */
+      link?: string
     }
   // Page HTML fullscreen (video playback). The fullscreen element fills
   // only the tab's view rect, so the window chrome stays on screen — the
@@ -837,16 +840,39 @@ function wireEvents(rec: TabRecord): void {
   wc.on('did-finish-load', () =>
     emit({ type: 'did-finish-load', tabId: rec.tabId, url: wc.getURL() })
   )
-  wc.on('found-in-page', (_e, result) =>
-    emit({
-      type: 'found-in-page',
+  wc.on('found-in-page', (_e, result) => {
+    const found = {
+      type: 'found-in-page' as const,
       tabId: rec.tabId,
       requestId: result.requestId,
       activeMatchOrdinal: result.activeMatchOrdinal,
       matches: result.matches,
       finalUpdate: result.finalUpdate,
+    }
+    const area = result.selectionArea
+    if (!result.finalUpdate || result.matches === 0 || !area) {
+      emit(found)
+      return
+    }
+    // Whether the active match is on something a click opens (Find's Enter
+    // clicks it, and says so): what's under the match's middle, asked of
+    // the page. The match's box is in the view's points; the page counts in
+    // its own, zoom aside.
+    const zoom = wc.getZoomFactor() || 1
+    const x = (area.x + area.width / 2) / zoom
+    const y = (area.y + area.height / 2) / zoom
+    wc.executeJavaScript(`(() => {
+      const el = document.elementFromPoint(${x}, ${y})
+      const hit = el && el.closest('a[href], area[href], button, summary, [role="link"], [role="button"], [role="tab"], [role="menuitem"], input[type="submit"], input[type="button"], [onclick]')
+      if (!hit) return null
+      return typeof hit.href === 'string' ? hit.href : ''
+    })()`).then((link: unknown) => {
+      emit(typeof link === 'string' ? { ...found, link } : found)
+    }).catch((err: unknown) => {
+      log.warn('find: asking the page about the match failed', { tabId: rec.tabId, err: String(err) })
+      emit(found)
     })
-  )
+  })
 
   // window.open() handler. Two paths:
   //

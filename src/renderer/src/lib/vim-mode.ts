@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { KeySequencer, SEQUENCE_JOIN, isCtrlToken, keyTokenFromEvent, runTimes, timesFor, type VimKeymap, type VimKeymapEntries } from '../../../shared/vim-keys'
 import type { SidebarCommand } from './vim-keymap'
 import { log } from './log'
-import { sidebarCursorAway } from './sidebar-cursor'
+import { sidebarCursorAway, sidebarRowsPicked } from './sidebar-cursor'
 
 // Vim mode. A window is in one of two modes:
 //   COMMAND — plain keys run the commands from Settings' keymap: scrolling
@@ -826,7 +826,10 @@ export function useVimMode({ enabled, keymap, onCommand, focusPage, isActiveTab 
       // Not Enter while the Sidebar's cursor is off the row shown: that
       // Enter shows the cursor's row (the keymap's, below).
       const rowGo = sidebarCursorAway() && keyTokenFromEvent(e) === '<CR>'
-      if (!pendingRef.current && !rowGo && interceptPageKey(e)) {
+      // Nor Esc while rows are picked there: that Esc unpicks them, and the
+      // next one is the page's (closing it).
+      const rowUnselect = sidebarRowsPicked() && keyTokenFromEvent(e) === '<Esc>'
+      if (!pendingRef.current && !rowGo && !rowUnselect && interceptPageKey(e)) {
         e.preventDefault()
         e.stopPropagation()
         return

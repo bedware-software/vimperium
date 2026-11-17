@@ -59,6 +59,36 @@ export function ListPageHeader({ columns, title, children }: {
   )
 }
 
+/** The scope switch of a page's controls row: this workspace (or profile)
+ *  or every one. Tab flips it — the page's key, typed in the filter or out
+ *  of it; the cap here only says so. */
+export function PageScopeSwitch({ on, label, onToggle, title, className }: {
+  /** On while the list is narrowed to where you are. */
+  on: boolean
+  label: string
+  onToggle: () => void
+  title?: string
+  className?: string
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      tabIndex={-1}
+      onClick={onToggle}
+      title={title}
+      className={cn('flex h-7 shrink-0 items-center gap-1.5 px-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground', className)}
+    >
+      {label}
+      <span className={cn('relative inline-flex h-3.5 w-6 shrink-0 items-center rounded-full px-0.5 transition-colors', on ? 'bg-primary' : 'bg-muted-foreground/30')}>
+        <span className={cn('h-2.5 w-2.5 rounded-full bg-white shadow-sm transition-transform', on ? 'translate-x-[10px]' : 'translate-x-0')} />
+      </span>
+      <span className="opacity-50">Tab</span>
+    </button>
+  )
+}
+
 /** Where `at` (0 at the list's first row, 1 at its last) falls in the
  *  mode's three colours. */
 function gradientColour(mode: VimMode, at: number): string {

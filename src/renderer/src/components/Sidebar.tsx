@@ -1,5 +1,5 @@
 import { Fragment, useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } from 'react'
-import { useAppStore, getSidebarOrder, GROUP_COLORS } from '../store/app-store'
+import { useAppStore, getSidebarOrder, GROUP_COLORS, alternateTabId } from '../store/app-store'
 import { log } from '../lib/log'
 import { InlineRenameInput } from './InlineRenameInput'
 import { InputDialog } from './InputDialog'
@@ -10,8 +10,8 @@ import { openDropdownAsync, type DropdownAction, type DropdownSpec } from './dro
 import { useVimSidebar } from '../lib/vim-mode'
 import { actionHint, type HintSettings } from '../lib/shortcut-hints'
 import { type SidebarCommand, type VimKeymap } from '../lib/vim-keymap'
-import { RowHint } from './KeyHints'
-import { setSidebarCursorAway } from '../lib/sidebar-cursor'
+import { RowHint, vimKeyCaps } from './KeyHints'
+import { setSidebarCursorAway, setSidebarRowsPicked } from '../lib/sidebar-cursor'
 import { useHelpPanelStore } from '../lib/help-panel'
 import { useHintLabels, useHintTargets } from '../lib/hint-labels'
 import { SplitGlyph } from './SplitPanes'
@@ -570,6 +570,26 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
     setSidebarCursorAway(cursorAway)
     return () => setSidebarCursorAway(false)
   }, [cursorAway])
+  // Rows picked: one Esc unpicks them (COMMAND's, bound while there are
+  // some; the plain key without Vim mode).
+  const rowsPicked = visible && selectedIds.size > 0
+  useEffect(() => {
+    setSidebarRowsPicked(rowsPicked)
+    return () => setSidebarRowsPicked(false)
+  }, [rowsPicked])
+  useEffect(() => {
+    if (!rowsPicked) return
+    const onKeyDown = (e: KeyboardEvent): void => {
+      if (e.key !== 'Escape' || e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return
+      const target = e.target
+      if (target instanceof HTMLElement && (target.isContentEditable || target.closest('input, textarea, select'))) return
+      cursorSelectionRef.current = false
+      setSelectedIds(new Set())
+      setVimCursorOverride(null)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [rowsPicked])
   // Listening whenever Vim mode is on, hidden too: Ctrl+J/K still move the
   // row you're on, the show-stepping keys (when bound) still step through
   // the rows, and Ctrl+H/L fold the active tab's group. The first Ctrl+J
@@ -1019,6 +1039,11 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
           showRow(vimCursorId)
         }
         break
+      case 'row-unselect':
+        cursorSelectionRef.current = false
+        setSelectedIds(new Set())
+        setVimCursorOverride(null)
+        break
       case 'row-move-down': moveRow(1); break
       case 'row-move-up': moveRow(-1); break
       case 'row-fold': {
@@ -1084,6 +1109,11 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
     )
   }
 
+  // The tab you were on before this one: alternate-tab goes back to it,
+  // and its row says so.
+  const alternateId = workspace && activeTabId ? alternateTabId(workspace, activeTabId) : null
+  const alternateKeys = vimKeymap ? vimKeyCaps(vimKeymap, 'alternate-tab')[0] ?? '' : ''
+
   const isDraggingTab = dragging?.type === 'tab'
   const isDraggingGroup = dragging?.type === 'group'
 
@@ -1091,6 +1121,7 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
     const isBeingDragged = dragging?.ids.includes(tab.id) ?? false
     const selected = selectedIds.has(tab.id)
     const active = tab.id === activeTabId
+    const alternate = tab.id === alternateId
     const splitPane = split ? (tab.id === split.first ? 'first' : tab.id === split.second ? 'second' : null) : null
     const splitVisible = !active && splitPane !== null && splitOnScreen
     const showBefore = containerId === null
@@ -1151,13 +1182,24 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
           </span>
         )}
         {tab.comment && <CommentChip comment={tab.comment} />}
-        <span className="min-w-title-stub flex-1 truncate text-xs" title={tab.title}>
+        <span className={`min-w-title-stub flex-1 truncate text-xs ${alternate ? 'pr-5' : ''}`} title={tab.title}>
           {tab.title}
         </span>
         {/* Right-edge slot: the hover-only close X, keeping the full 24×24
-            click target so it stays easy to hit. */}
+            click target so it stays easy to hit. Under it, on the tab you
+            were on before (alternate-tab's, vim's alternate buffer): its
+            mark, #. */}
         <div className="absolute right-1 top-0 bottom-0 flex items-center">
           <div className="relative h-6 w-6 flex items-center justify-center">
+            {alternate && (
+              <span
+                aria-label="The tab you were on before"
+                title={`The tab you were on before${alternateKeys ? ` (${alternateKeys})` : ''}`}
+                className="font-mono text-xs font-semibold text-primary"
+              >
+                #
+              </span>
+            )}
             <button
               onMouseDown={(e) => e.stopPropagation()}
               onClick={(e) => {

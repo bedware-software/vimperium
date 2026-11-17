@@ -25,7 +25,7 @@ import { WorkspaceStats } from './WorkspaceStats'
 import { HEADER_HINT_BOTTOM_RIGHT, HeaderHintsContext, useHeaderHint, useHeaderKeyHint } from './HeaderHint'
 import { useWindowVimKeymap } from '../lib/window-vim-keymap'
 import { EXTENSION_MENU_KEYS, extensionMenuKey } from '../lib/vim-keymap'
-import { useHelpPanelStore } from '../lib/help-panel'
+import { toggleHelpPanel, useHelpPanelStore } from '../lib/help-panel'
 import { useUrlEditorStore } from '../lib/url-editor'
 import { actionHint, type HintSettings } from '../lib/shortcut-hints'
 import { BANGS_URL, DOWNLOADS_URL, internalPageOf } from '../lib/internal-pages'
@@ -368,6 +368,9 @@ function ExtensionActions({
   // the icon can render a pressed state and so a second click on the same
   // icon hits the toggle path.
   const [openPopupId, setOpenPopupId] = useState<string | null>(null)
+  // The extension whose own menu is up: its button is lit, so h / l in the
+  // menu show which one it went on to.
+  const [menuExtId, setMenuExtId] = useState<string | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const buttonRefs = useRef<Map<string, HTMLButtonElement>>(new Map())
   const manageRef = useRef<HTMLButtonElement>(null)
@@ -549,6 +552,7 @@ function ExtensionActions({
     const before = at > 0 ? visible[at - 1] : undefined
     const after = at !== -1 ? visible[at + 1] : undefined
 
+    setMenuExtId(ext.id)
     const result = await openDropdownAsync({
       kind: 'menu',
       ...place,
@@ -557,6 +561,8 @@ function ExtensionActions({
       actions,
       ...(before || after ? { sideways: { ...(before ? { prev: 'side:prev' } : {}), ...(after ? { next: 'side:next' } : {}) } } : {}),
     })
+    // Its neighbour's menu, opened below, lights its own button.
+    setMenuExtId((id) => (id === ext.id ? null : id))
     if (!result || result.type !== 'action') return
     switch (result.actionId) {
       case 'open':
@@ -674,8 +680,8 @@ function ExtensionActions({
             onContextMenu={(e) => handleContextMenu(ext, e)}
             title={dynamicTitle || ext.actionDefaultTitle || ext.name}
             className={`relative h-8 w-8 shrink-0 flex items-center justify-center rounded-md overflow-hidden transition-colors ${
-              isOpen ? 'bg-muted text-foreground' : 'hover:bg-muted text-secondary-foreground'
-            }`}
+              isOpen || menuExtId === ext.id ? 'bg-muted text-foreground' : 'hover:bg-muted text-secondary-foreground'
+            } ${menuExtId === ext.id ? 'ring-2 ring-primary' : ''}`}
           >
             {iconSrc ? (
               <img
@@ -775,9 +781,7 @@ function AppMenu({ sidebarVisible, onToggleSidebar, onOpenSettings, onOpenAbout,
   // through via the 'action' event.
   const ACTIONS: Record<string, () => void> = {
     'toggle-sidebar': onToggleSidebar,
-    'search': onOpenSearch,
-    'downloads': onOpenDownloads,
-    'bangs': () => useAppStore.getState().showInternalPage(BANGS_URL),
+    'keys': toggleHelpPanel,
     'settings': onOpenSettings,
     'check-updates': () => { (window as any).electronAPI.checkForUpdates?.() },
     'install-update': () => { (window as any).electronAPI.installUpdate?.() },
@@ -806,12 +810,8 @@ function AppMenu({ sidebarVisible, onToggleSidebar, onOpenSettings, onOpenAbout,
         iconName: sidebarVisible ? 'PanelLeftClose' : 'PanelLeft',
         shortcut: shortcutFor('toggle-sidebar'),
       },
-      { id: 'search', label: 'Search Everything', iconName: 'Search', shortcut: shortcutFor('search') },
-      // Permanent entry point for the Downloads page: the toolbar button
-      // hides itself once the list is empty, so this row is what guarantees
-      // the page is always reachable.
-      { id: 'downloads', label: 'Downloads', iconName: 'Download', shortcut: shortcutFor('open-downloads') },
-      { id: 'bangs', label: 'Bangs & Search Engine', iconName: 'Zap' },
+      // The keys' help page: every key there is, and where to change them.
+      { id: 'keys', label: 'Keys', iconName: 'Keyboard', shortcut: shortcutFor('help') },
       { id: 'settings', label: 'Settings', iconName: 'Settings', shortcut: shortcutFor('settings') },
       updateReady
         ? {

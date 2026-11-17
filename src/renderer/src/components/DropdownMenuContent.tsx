@@ -12,7 +12,7 @@ import { CSS } from '@dnd-kit/utilities'
 import {
   User, Layout, Search, Settings, Download, Info, LogOut, Plus, Pencil, Trash2, Menu, Globe, Import,
   Upload, X, FolderPlus, FolderMinus, FolderInput, Folder, CopyPlus, MessageSquare,
-  MessageSquareOff, FilePlus, Pin, PinOff, EyeOff, Puzzle, PanelLeft, PanelLeftClose, Check,
+  MessageSquareOff, FilePlus, Pin, PinOff, EyeOff, Puzzle, PanelLeft, PanelLeftClose, Keyboard, Check,
   FolderOpen, Link, Pause, Play, RotateCw, ListX, Zap,
 } from 'lucide-react'
 import type {
@@ -29,7 +29,7 @@ import type {
 const ICONS: Record<IconName, typeof User> = {
   User, Layout, Search, Settings, Download, Info, LogOut, Plus, Pencil, Trash2, Menu, Globe, Import,
   Upload, X, FolderPlus, FolderMinus, FolderInput, Folder, CopyPlus, MessageSquare,
-  MessageSquareOff, FilePlus, Pin, PinOff, EyeOff, Puzzle, PanelLeft, PanelLeftClose,
+  MessageSquareOff, FilePlus, Pin, PinOff, EyeOff, Puzzle, PanelLeft, PanelLeftClose, Keyboard,
   FolderOpen, Link, Pause, Play, RotateCw, ListX, Zap,
 }
 

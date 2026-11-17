@@ -19,6 +19,7 @@ import { isSplitShown, setSplitRatio, useSplitStore, workspaceTabs, MAX_SPLIT_RA
 import type { ParsedVimKeymap, VimKeymap } from '../lib/vim-keymap'
 import { SearchPage } from './SearchPage'
 import { KeysPage } from './KeysPage'
+import { PlacePage } from './PlacePage'
 import { BookshelfPage } from './BookshelfPage'
 
 // Tab rendering lives in the main process now, as a WebContentsView per tab
@@ -737,6 +738,19 @@ export function WebviewPanel({ splitPickerKeymap, splitPickerFocusTick, vimKeyma
           case 'keys': return parsedKeymap ? <KeysPage keymap={parsedKeymap} vimPending={vimPending} vimMode={vimMode} /> : null
           case 'bookshelf':
             return <BookshelfPage profileId={profileId} vimKeymap={vimKeymap} vimMode={vimMode} vimPending={vimPending} hintsOn={groupHintsOn} />
+          case 'move':
+          case 'open-link':
+            return (
+              <PlacePage
+                key={activeTabId}
+                page={internalPageOf(activeInternalUrl) === 'move' ? 'move' : 'open-link'}
+                tabId={activeTabId}
+                windowWorkspaceId={windowWorkspaceId}
+                vimMode={vimMode}
+                vimPending={vimPending}
+                hintsOn={groupHintsOn}
+              />
+            )
           default: return <UnknownInternalPage url={activeInternalUrl} />
         }
       })()}

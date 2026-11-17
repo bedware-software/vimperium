@@ -5,7 +5,7 @@
 // and the web is a store change (retargetTab); WebviewPanel creates or drops
 // the tab's view to match.
 
-export type InternalPage = 'downloads' | 'bangs' | 'search' | 'keys' | 'bookshelf'
+export type InternalPage = 'downloads' | 'bangs' | 'search' | 'keys' | 'bookshelf' | 'move' | 'open-link'
 
 export const DOWNLOADS_URL = 'vimperium://downloads'
 export const BANGS_URL = 'vimperium://bangs'
@@ -17,6 +17,11 @@ export const SEARCH_URL = 'vimperium://search'
 export const KEYS_URL = 'vimperium://keys'
 /** The Bookshelf (tb): likewise toggled, likewise never brought back by u. */
 export const BOOKSHELF_URL = 'vimperium://bookshelf'
+/** Where a tab or a group moves to (lib/place-page.ts): there while you
+ *  pick, as Search Everything is. */
+export const MOVE_URL = 'vimperium://move'
+/** Where a link another app handed over opens: likewise. */
+export const OPEN_LINK_URL = 'vimperium://open-link'
 
 /** Tab favicon marker for internal pages. TabFavicon draws the named icon
  *  instead of loading an image. */
@@ -39,16 +44,19 @@ const PAGES: Record<InternalPage, { title: string; icon: string }> = {
   search: { title: 'Search Everything', icon: 'search' },
   keys: { title: 'Keys', icon: 'keyboard' },
   bookshelf: { title: 'Bookshelf', icon: 'library' },
+  move: { title: 'Move', icon: 'move' },
+  'open-link': { title: 'Open Link', icon: 'link' },
 }
 
 /** Pages that are there for a moment, as the popup and panels they were:
- *  Search Everything, the keys' help, the Bookshelf. Closing one — toggled
+ *  Search Everything, the keys' help, the Bookshelf, the pages that ask
+ *  where a tab moves or a link opens. Closing one — toggled
  *  shut, Esc, dd, its group closed — never goes to the closed tabs u brings
  *  back (u would otherwise reopen the page you just put away instead of the
  *  tab you closed), and one never opens inside a group of yours. */
 export function isTransientInternalUrl(url: string | null | undefined): boolean {
   const page = internalPageOf(url)
-  return page === 'search' || page === 'keys' || page === 'bookshelf'
+  return page === 'search' || page === 'keys' || page === 'bookshelf' || page === 'move' || page === 'open-link'
 }
 
 /** Any vimperium:// (or legacy newbro://) URL — known page or not, it must

@@ -34,6 +34,7 @@ export type IconName =
   | 'Puzzle'
   | 'PanelLeft'
   | 'PanelLeftClose'
+  | 'Keyboard'
   | 'FolderOpen'
   | 'Link'
   | 'Pause'

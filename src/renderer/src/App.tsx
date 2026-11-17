@@ -12,7 +12,7 @@ import { WhichKeyStrip } from './components/WhichKey'
 import { NoticeStrip } from './components/Notice'
 import { showNotice } from './lib/notice'
 import { useSidebarCursorStore } from './lib/sidebar-cursor'
-import { parseVimKeymap, paletteKeymap, DEFAULT_VIM_KEYMAP, extensionMenuIndex, isPageCommand, isSidebarCommand, withExtensionMenuKeys, withRowGoKey } from './lib/vim-keymap'
+import { parseVimKeymap, paletteKeymap, DEFAULT_VIM_KEYMAP, extensionMenuIndex, isPageCommand, isSidebarCommand, withExtensionMenuKeys, withRowGoKey, withRowUnselectKey } from './lib/vim-keymap'
 import { Toolbar } from './components/Toolbar'
 import { Sidebar } from './components/Sidebar'
 import { WebviewPanel } from './components/WebviewPanel'
@@ -32,9 +32,9 @@ import { startExtensionTabGroupsBridge } from './lib/extension-tab-groups'
 import { setExtensionInstallHandler, type InstallOutcome } from './lib/extension-install'
 import { ExtensionInstallDialog, type ExtensionInstallPreview } from './components/ExtensionInstallDialog'
 import { InputDialog } from './components/InputDialog'
-import { MoveTabDialog } from './components/MoveTabDialog'
-import { MoveGroupDialog } from './components/MoveGroupDialog'
-import { OpenExternalLinkDialog } from './components/OpenExternalLinkDialog'
+import { openLinkPage, openMovePage } from './lib/place-page'
+import { applySearchFields } from './lib/search-fields'
+import type { SearchFields } from '../../shared/search-fields'
 import { CloudSyncSetupDialog } from './components/CloudSyncSetupDialog'
 import { HttpAuthDialog } from './components/HttpAuthDialog'
 import { DOWNLOADS_FIND_EVENT, DOWNLOADS_RELOAD_EVENT } from './components/DownloadsPage'
@@ -87,6 +87,7 @@ interface Settings {
   defaultPageUrl: string
   searchEngine: string
   searchSuggestions: boolean
+  searchFields?: SearchFields
   /** `!w vim` in the address bar — see lib/bangs.ts. */
   bangsEnabled: boolean
   dohMode: 'off' | 'automatic' | 'secure'
@@ -676,20 +677,6 @@ export default function App() {
   // path uses a dialog — same shape as Rename Workspace / Rename Profile.
   const [renameGroupId, setRenameGroupId] = useState<string | null>(null)
   const [renameGroupDefault, setRenameGroupDefault] = useState('')
-  // Move Tab and Move Group dialogs. The pickers are fully controlled — App
-  // owns the open state plus the source id, and resets both on close so a
-  // fresh invocation always opens against the *current* active tab/group
-  // rather than a stale one.
-  const [tabPickerOpen, setTabPickerOpen] = useState(false)
-  const [tabPickerTabIds, setTabPickerTabIds] = useState<string[]>([])
-  const [groupPickerOpen, setGroupPickerOpen] = useState(false)
-  const [groupPickerGroupId, setGroupPickerGroupId] = useState<string | null>(null)
-  // External-link picker. The URL the user is being asked to place sits in
-  // `pendingUrl`; any URLs that arrive while the picker is already open are
-  // parked in `queue` so we never silently drop a handoff. The dialog is
-  // open whenever `pendingUrl` is non-null — no separate open flag needed.
-  const [externalUrlPending, setExternalUrlPending] = useState<string | null>(null)
-  const [externalUrlQueue, setExternalUrlQueue] = useState<string[]>([])
   const shortcutHandlerRef = useRef<((action: string) => void) | null>(null)
   const webviewColumnRef = useRef<HTMLDivElement>(null)
   const [settings, setSettings] = useState<Settings | null>(null)
@@ -811,6 +798,7 @@ export default function App() {
       applyUrlEditorModes(normalized)
       setSearchEngine(normalized.searchEngine)
       setBangsEnabled(normalized.bangsEnabled !== false)
+      applySearchFields(normalized.searchFields)
     } catch (err) {
       log.error('failed to load settings', err)
     }
@@ -1245,8 +1233,7 @@ export default function App() {
           break
         case 'move-tab':
           if (s.activeTabId) {
-            setTabPickerTabIds([s.activeTabId])
-            setTabPickerOpen(true)
+            openMovePage({ kind: 'tabs', tabIds: [s.activeTabId] })
           }
           break
         case 'rename-tab-group': {
@@ -1259,8 +1246,7 @@ export default function App() {
         }
         case 'move-group':
           if (s.activeTabGroupId) {
-            setGroupPickerGroupId(s.activeTabGroupId)
-            setGroupPickerOpen(true)
+            openMovePage({ kind: 'group', groupId: s.activeTabGroupId })
           }
           break
         case 'duplicate-group':
@@ -1470,19 +1456,12 @@ export default function App() {
     })
 
     // OS-routed handoffs (default-browser link click, second-instance
-    // argv, etc.) — different channel. Route to the picker so the user
-    // can choose where the incoming link lands. If the picker is already
-    // showing a previous URL, queue the newcomer so we drain them one
-    // at a time.
+    // argv, etc.) — different channel. A page asks where the link lands
+    // (lib/place-page.ts); one that comes while it's still asking about
+    // another waits its turn.
     const cleanupExternal = window.electronAPI.onOpenExternalUrl((url) => {
       log.event('open-external-url', url)
-      setExternalUrlPending((current) => {
-        if (current) {
-          setExternalUrlQueue((q) => [...q, url])
-          return current
-        }
-        return url
-      })
+      openLinkPage(url)
     })
 
     const cleanupSettings = window.electronAPI.onSettingsUpdated((newSettings) => {
@@ -1509,6 +1488,7 @@ export default function App() {
       applyUrlEditorModes(s)
       setSearchEngine(s.searchEngine)
       setBangsEnabled(s.bangsEnabled !== false)
+      applySearchFields(s.searchFields)
     })
 
     const cleanupActivateTab = window.electronAPI.onActivateTab((tabId) => {
@@ -1533,14 +1513,12 @@ export default function App() {
     const handleOpenMoveTab = (e: Event): void => {
       const detail = (e as CustomEvent<{ tabIds: string[] }>).detail
       if (!detail?.tabIds || detail.tabIds.length === 0) return
-      setTabPickerTabIds(detail.tabIds)
-      setTabPickerOpen(true)
+      openMovePage({ kind: 'tabs', tabIds: detail.tabIds })
     }
     const handleOpenMoveGroup = (e: Event): void => {
       const detail = (e as CustomEvent<{ groupId: string }>).detail
       if (!detail?.groupId) return
-      setGroupPickerGroupId(detail.groupId)
-      setGroupPickerOpen(true)
+      openMovePage({ kind: 'group', groupId: detail.groupId })
     }
     window.addEventListener('vimperium:open-move-tab', handleOpenMoveTab)
     window.addEventListener('vimperium:open-move-group', handleOpenMoveGroup)
@@ -1632,6 +1610,7 @@ export default function App() {
     applyUrlEditorModes(normalized)
     setSearchEngine(normalized.searchEngine)
     setBangsEnabled(normalized.bangsEnabled !== false)
+    applySearchFields(normalized.searchFields)
     await window.electronAPI.saveSettings(normalized)
   }
 
@@ -1694,10 +1673,14 @@ export default function App() {
   // Enter is the window's only while the Sidebar's cursor is off the row
   // that's shown: it shows the row it's on.
   const cursorAway = useSidebarCursorStore((s) => s.away)
+  // Esc likewise, while rows are picked there: one press unpicks them.
+  const rowsPicked = useSidebarCursorStore((s) => s.picked)
   const mainKeys = useMemo(() => {
-    const keys = withExtensionMenuKeys(vimKeymap.main)
-    return cursorAway ? withRowGoKey(keys) : keys
-  }, [vimKeymap, cursorAway])
+    let keys = withExtensionMenuKeys(vimKeymap.main)
+    if (cursorAway) keys = withRowGoKey(keys)
+    if (rowsPicked) keys = withRowUnselectKey(keys)
+    return keys
+  }, [vimKeymap, cursorAway, rowsPicked])
   const hinted = useHintKeymap(vimReady ? mainKeys : null)
   const lastChangeRef = useRef<string | null>(null)
   const runVimCommand = (command: string): void => {
@@ -1952,39 +1935,6 @@ export default function App() {
           setRenameGroupId(null)
         }}
         onCancel={() => setRenameGroupId(null)}
-      />
-      <MoveTabDialog
-        open={tabPickerOpen}
-        tabIds={tabPickerTabIds}
-        currentWorkspaceId={activeWorkspaceId}
-        onClose={() => {
-          setTabPickerOpen(false)
-          setTabPickerTabIds([])
-        }}
-      />
-      <MoveGroupDialog
-        open={groupPickerOpen}
-        groupId={groupPickerGroupId}
-        currentProfileId={activeProfileId}
-        onClose={() => {
-          setGroupPickerOpen(false)
-          setGroupPickerGroupId(null)
-        }}
-      />
-      <OpenExternalLinkDialog
-        open={externalUrlPending !== null}
-        url={externalUrlPending}
-        currentWorkspaceId={activeWorkspaceId}
-        onClose={() => {
-          // Drain the queue so a backlog of OS handoffs (e.g. user clicked
-          // several links while we weren't focused) gets walked through
-          // instead of vanishing with the first dismissal.
-          setExternalUrlQueue((q) => {
-            const [next, ...rest] = q
-            setExternalUrlPending(next ?? null)
-            return rest
-          })
-        }}
       />
       {syncPrompt && (
         <CloudSyncSetupDialog

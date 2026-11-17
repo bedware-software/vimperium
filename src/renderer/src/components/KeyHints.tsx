@@ -76,25 +76,6 @@ export function KeysPrompt({ mode, shown, className }: {
   )
 }
 
-/** The Sidebar's keys, as a hint bar's entries: what each does and its
- *  caps, the unbound ones left out. A blank tab's strip shows them
- *  (BlankPage.tsx). */
-export function sidebarHints(keymap: VimKeymap): Array<{ label: string; keys: string[] }> {
-  const caps = (...commands: string[]): string[] => vimKeyCaps(keymap, ...commands)
-  const rows: Array<[string, string[]]> = [
-    ['Pick a row', caps('row-down', 'row-up')],
-    ['Show it', keymap.has('<CR>') ? [] : ['Enter']],
-    ['Pick more', caps('row-select-down', 'row-select-up')],
-    ['Move the row', caps('row-move-down', 'row-move-up')],
-    ['Fold / unfold', caps('row-fold', 'row-unfold')],
-    ['Row menu', caps('row-menu')],
-    ['New tab', caps('new-tab')],
-    ['Close the tab', caps('close-tab')],
-    ['Sidebar', caps('toggle-sidebar')],
-  ]
-  return rows.filter(([, keys]) => keys.length > 0).map(([label, keys]) => ({ label, keys }))
-}
-
 /** The caps for `commands` as `map` binds them — each command's first key,
  *  written the way a keycap reads (Enter, Ctrl+J). */
 export function vimKeyCaps(map: VimKeymap | null, ...commands: string[]): string[] {

@@ -27,9 +27,10 @@ import { fuzzyFilter } from '../lib/fuzzy'
 import { focusAddressFilter, useAddressFilter, type AddressFilterKeyEvent } from '../lib/address-filter'
 import { closePage, closePageTab, useSearchPageRequest, type SearchFilter } from '../lib/page-nav'
 import { internalPageOf } from '../lib/internal-pages'
+import { useSearchFields } from '../lib/search-fields'
 import { useHintLabels, useHintTargets, useReservedHintKeys } from '../lib/hint-labels'
 import { ColumnsSwitch, usePageColumns, type Columns } from './ColumnsSwitch'
-import { EntityIcon, LIST_PAGE_ROOT, LIST_ROW_SCROLL, ListPageHeader, listBoxClass, listColumnCount } from './ListPage'
+import { EntityIcon, LIST_PAGE_ROOT, LIST_ROW_SCROLL, ListPageHeader, PageScopeSwitch, listBoxClass, listColumnCount } from './ListPage'
 import { usePageKeys } from '../lib/vim-mode'
 import { keyTokenFromEvent } from '../lib/vim-keymap'
 import type { VimKeymap } from '../lib/vim-keymap'
@@ -199,6 +200,13 @@ function rowMenuActions(item: SearchableItem): DropdownAction[] {
   }
 }
 
+/** Where it is, itself aside: its path's names but its own. */
+function pathBefore(item: SearchableItem): string {
+  const last = item.pathSegments[item.pathSegments.length - 1]
+  const before = last?.type === item.type ? item.pathSegments.slice(0, -1) : item.pathSegments
+  return before.map((segment) => segment.label).join(' / ')
+}
+
 function SearchBreadcrumb({ item }: { item: SearchableItem }) {
   const visibleUrl = item.url && item.url !== 'about:blank' ? item.url : undefined
   const fullLabel = `${item.path}${visibleUrl ? ` · ${visibleUrl}` : ''}`
@@ -294,38 +302,39 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
   /** What's searched for: the filter's text, the > aside. */
   const query = hierarchy ? typed.trimStart().slice(HIERARCHY_PREFIX.length).trim() : typed
 
+  const fields = useSearchFields((s) => s.fields)
   const results = useMemo(() => {
     if (!query.trim()) return items.slice(0, 250)
     return fuzzyFilter(query, items, (item) => {
-      // A tab goes by what it is — its title, its comment, its address —
-      // not by where it is: its profile's, workspace's and group's names
-      // brought up too many tabs nobody meant. > first in the filter
-      // searches those as well, as every other kind always is (a workspace
-      // by its profile and its name, a group by all three).
-      if (item.type === 'tab' && !hierarchy) {
+      const address = item.url && item.url !== 'about:blank' ? item.url : undefined
+      // By what Settings picked for its kind (shared/search-fields.ts): a
+      // tab by what it is — its title, its comment, its address — and not
+      // by where it is, unless picked: its profile's, workspace's and
+      // group's names brought up too many tabs nobody meant.
+      const by = item.type === 'profile' ? null : fields[item.type]
+      if (by && !hierarchy) {
         return [
-          { value: item.name, weight: 1 },
-          { value: item.comment, weight: 0.9 },
-          { value: item.url && item.url !== 'about:blank' ? item.url : undefined, weight: 0.5 },
+          { value: by.includes('name') ? item.name : undefined, weight: 1 },
+          { value: by.includes('comment') ? item.comment : undefined, weight: 0.9 },
+          { value: by.includes('url') ? address : undefined, weight: 0.5 },
+          // The path has the thing's own name last: without the name
+          // picked, only what's before it.
+          { value: by.includes('path') ? (by.includes('name') ? item.path : pathBefore(item)) : undefined, weight: 0.7 },
         ]
       }
-      // Combined haystack so queries can subsequence across path + url + comment
-      // (path already contains profile / workspace / group / title).
-      const haystack = [item.path, item.url, item.comment]
-        .filter((s): s is string => !!s && s !== 'about:blank')
-        .join(' ')
+      // > first in the filter (and a profile, always): everything. A
+      // combined haystack so a query can run across path, address and
+      // comment (the path has profile / workspace / group / title).
+      const haystack = [item.path, address, item.comment].filter((s): s is string => !!s).join(' ')
       return [
         { value: item.name, weight: 1 },
         { value: item.comment, weight: 0.9 },
-        { value: item.url, weight: 0.5 },
-        // The path carries the profile / workspace / group context, weighted
-        // so a tab found by its workspace's or group's name ("jj" → "Jenkins
-        // Jobs") comes up high, not under weak title coincidences.
+        { value: address, weight: 0.5 },
         { value: item.path, weight: 0.7 },
         { value: haystack, weight: 0.5 },
       ]
     })
-  }, [query, items, hierarchy])
+  }, [query, items, hierarchy, fields])
 
   // A request (ot ow og op, the toolbar's search): its kind, typing at once.
   // The kind asked for isn't remembered as the one to open on next time.
@@ -671,29 +680,13 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
             })}
           </div>
           {scopeApplies && windowWorkspaceId && (
-            <button
-              type="button"
-              role="switch"
-              aria-checked={scope === 'current'}
-              tabIndex={-1}
-              onClick={toggleScope}
+            <PageScopeSwitch
+              on={scope === 'current'}
+              label={scope === 'current' ? 'This workspace' : 'All workspaces'}
+              onToggle={toggleScope}
               title={`Search this workspace or every one (${SCOPE_KEY_CAP})`}
-              className="ml-auto flex h-7 shrink-0 items-center gap-1.5 px-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
-            >
-              {scope === 'current' ? 'This workspace' : 'All workspaces'}
-              <span
-                className={`relative inline-flex h-3.5 w-6 shrink-0 items-center rounded-full px-0.5 transition-colors ${
-                  scope === 'current' ? 'bg-primary' : 'bg-muted-foreground/30'
-                }`}
-              >
-                <span
-                  className={`h-2.5 w-2.5 rounded-full bg-white shadow-sm transition-transform ${
-                    scope === 'current' ? 'translate-x-[10px]' : 'translate-x-0'
-                  }`}
-                />
-              </span>
-              <span className="opacity-50">{SCOPE_KEY_CAP}</span>
-            </button>
+              className="ml-auto"
+            />
           )}
           <ColumnsSwitch
             columns={columns}

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ChevronUp, ChevronDown, Search, X } from 'lucide-react'
+import { ChevronUp, ChevronDown, Link, Search, X } from 'lucide-react'
 import { useAppStore } from '../store/app-store'
 import { DetachedWindow } from './DetachedWindow'
 import { InputField } from './InputField'
@@ -35,11 +35,16 @@ interface FoundInPageEvent {
   activeMatchOrdinal: number
   matches: number
   finalUpdate: boolean
+  /** The active match is on a link or a button: its address ('' with none). */
+  link?: string
 }
 
 interface MatchInfo {
   active: number
   total: number
+  /** What a click on the active match opens: an address, '' for a button
+   *  and the like, null when it's plain text. */
+  link: string | null
 }
 
 /**
@@ -49,7 +54,8 @@ interface MatchInfo {
  * stream. In Vim mode it opens in INSERT, only for typing what to find (the
  * first match lights up as you type); Enter or Ctrl+C goes to COMMAND, the
  * one place j/k (n/N) step through the matches, i types again; Esc closes
- * from either.
+ * from either. A match on a link (or a button) says so in the field, and
+ * Enter in COMMAND — Ctrl+Enter anywhere — clicks it, closing Find.
  * Without Vim mode Enter / Shift+Enter step, as in any browser.
  */
 export function FindPopup({ open, focusTick, onClose, anchorRef, vimKeymap }: Props) {
@@ -73,6 +79,20 @@ export function FindPopup({ open, focusTick, onClose, anchorRef, vimKeymap }: Pr
     lastSearchedTabIdRef.current = activeTabId
   }, [query, activeTabId])
 
+  /** Clicks what the active match is on, and closes: false when it's on
+   *  nothing a click opens. */
+  const clickMatch = (): boolean => {
+    const tabId = lastSearchedTabIdRef.current
+    if (!tabId || result?.link == null) return false
+    // Chromium's own: ends the search, focuses the match's node and clicks it.
+    window.electronAPI?.tabStopFindInPage?.(tabId, 'activateSelection')
+    lastSearchedTabIdRef.current = null
+    onClose()
+    return true
+  }
+  const clickMatchRef = useRef(clickMatch)
+  clickMatchRef.current = clickMatch
+
   const vim = usePopupVimMode({
     keymap: vimKeymap,
     popup: popupWindow,
@@ -87,6 +107,8 @@ export function FindPopup({ open, focusTick, onClose, anchorRef, vimKeymap }: Pr
       }
     },
     onEscape: onClose,
+    // Enter in COMMAND clicks the link the match is on.
+    intercept: (e) => e.key === 'Enter' && !e.shiftKey && !e.altKey && clickMatchRef.current(),
   })
 
   // Typing goes in the box on opening, and again (everything selected) on
@@ -107,7 +129,9 @@ export function FindPopup({ open, focusTick, onClose, anchorRef, vimKeymap }: Pr
       if (evt?.type !== 'found-in-page') return
       const found = raw as FoundInPageEvent
       if (!activeTabId || found.tabId !== activeTabId) return
-      setResult({ active: found.activeMatchOrdinal, total: found.matches })
+      // Only the final update knows about the link: until it comes, the
+      // match isn't one.
+      setResult({ active: found.activeMatchOrdinal, total: found.matches, link: found.matches > 0 ? found.link ?? null : null })
     })
     return cleanup
   }, [activeTabId])
@@ -169,6 +193,8 @@ export function FindPopup({ open, focusTick, onClose, anchorRef, vimKeymap }: Pr
     }
     if (e.key === 'Enter') {
       e.preventDefault()
+      // Ctrl+Enter (⌘↵): the link the match is on, as in Chrome.
+      if ((e.ctrlKey || e.metaKey) && clickMatch()) return
       // Vim: Enter ends the typing, as / does — the stepping is COMMAND's.
       if (vim.modeRef.current) inputRef.current?.blur()
       else findNext(!e.shiftKey)
@@ -180,6 +206,8 @@ export function FindPopup({ open, focusTick, onClose, anchorRef, vimKeymap }: Pr
       ? `${result.active}/${result.total}`
       : 'No results'
     : ''
+  const onLink = result?.link != null
+  const clickLabel = result?.link ? 'Open the link' : 'Click it'
   const shift = isMac ? '⇧' : 'Shift'
   // What steps through the matches, for the buttons' tooltips.
   const nextKeys = vimKeymap ? vimKeyCapsAll(vimKeymap, 'find-next').join(' / ') : 'Enter'
@@ -216,6 +244,16 @@ export function FindPopup({ open, focusTick, onClose, anchorRef, vimKeymap }: Pr
               spellCheck={false}
               className="flex-1 min-w-0 bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground"
             />
+            {/* The match is on a link or a button: Enter clicks it. */}
+            {onLink && (
+              <span
+                className="flex shrink-0 items-center gap-1 rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium text-primary select-none"
+                title={result?.link ? `The match is on a link: ${result.link}` : 'The match is on something to click'}
+              >
+                <Link size={11} />
+                {result?.link ? 'Link' : 'Click'}
+              </span>
+            )}
             <span className="text-xs text-muted-foreground tabular-nums whitespace-nowrap select-none">
               {counter}
             </span>
@@ -252,6 +290,7 @@ export function FindPopup({ open, focusTick, onClose, anchorRef, vimKeymap }: Pr
         <HintBar>
           {vim.mode === 'command' ? (
             <>
+              {onLink && <Hint label={clickLabel} keys={['Enter']} />}
               <Hint label="Next" keys={vimKeyCapsAll(vimKeymap, 'find-next')} />
               <Hint label="Previous" keys={vimKeyCapsAll(vimKeymap, 'find-prev')} />
               <Hint label="Type" keys={vimKeyCaps(vimKeymap, 'insert-mode')} />
@@ -260,12 +299,14 @@ export function FindPopup({ open, focusTick, onClose, anchorRef, vimKeymap }: Pr
           ) : vim.mode ? (
             <>
               <Hint label="Command mode" keys={['Enter', LEAVE_INSERT_CAP]} />
+              {onLink && <Hint label={clickLabel} keys={[isMac ? '⌘' : 'Ctrl', 'Enter']} />}
               <Hint label="Close" keys={['Esc']} />
             </>
           ) : (
             <>
               <Hint label="Next" keys={['Enter']} />
               <Hint label="Previous" keys={[shift, 'Enter']} />
+              {onLink && <Hint label={clickLabel} keys={[isMac ? '⌘' : 'Ctrl', 'Enter']} />}
               <Hint label="Close" keys={['Esc']} />
             </>
           )}

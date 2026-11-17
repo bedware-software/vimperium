@@ -239,8 +239,9 @@ export function KeysPage({ keymap, vimPending, vimMode = null }: KeysPageProps) 
     const note = query ? null : sectionNote(section.context, keymap)
     return (
       <section key={section.id} aria-label={section.title} className="pb-5 last:pb-0">
-        {/* The heading stays in sight while its keys scroll by. */}
-        <div className="sticky top-0 z-10 flex items-baseline gap-2 border-b border-border bg-background pb-1.5 pt-2">
+        {/* The heading stays in sight while its keys scroll by, under the
+            page's header (h-16). */}
+        <div className="sticky top-16 z-10 flex items-baseline gap-2 border-b border-border bg-background pb-1.5 pt-2">
           <h2 className="text-sm font-semibold tracking-tight text-foreground">{section.title}</h2>
           <span className="text-xs tabular-nums text-muted-foreground">
             {query ? `${rows.length} of ${sectionTotal}` : sectionTotal}
@@ -279,12 +280,14 @@ export function KeysPage({ keymap, vimPending, vimMode = null }: KeysPageProps) 
       data-vim-page=""
       role="region"
       aria-label="Keys"
-      className="absolute inset-0 z-50 flex flex-col bg-background text-foreground"
+      className="absolute inset-0 z-50 bg-background text-foreground"
     >
-      {/* The same space above the header as below the list. */}
-      <div className="flex min-h-0 flex-1 justify-center overflow-hidden px-8 py-[max(2rem,6vh)]">
-        <div className="flex min-h-0 w-full max-w-5xl flex-col">
-          <div className="mb-4 flex min-w-0 shrink-0 items-center gap-3">
+      {/* The page itself scrolls, its bar at the window's right edge, as
+          Search Everything's does (ListPage.tsx); the header stays put at
+          the top, the sections passing under it. */}
+      <div ref={scrollRef} data-vim-scroll="" className="absolute inset-0 overflow-y-auto [scrollbar-gutter:stable]">
+        <div className="sticky top-0 z-20 border-b border-border bg-background">
+          <div className="mx-auto flex h-16 w-full min-w-0 max-w-5xl items-center gap-3 px-8">
             <Keyboard size={20} className="shrink-0 text-primary" />
             <h1 className="text-2xl font-semibold tracking-tight">Keys</h1>
             <span className="shrink-0 text-sm tabular-nums text-muted-foreground">
@@ -298,7 +301,9 @@ export function KeysPage({ keymap, vimPending, vimMode = null }: KeysPageProps) 
               {vimMode === 'command' && <kbd className="ml-1.5 font-mono">{SETTINGS_KEY}</kbd>}
             </span>
           </div>
-          <div ref={scrollRef} data-vim-scroll="" className="@container min-h-0 flex-1 overflow-y-auto">
+        </div>
+        <div className="mx-auto w-full max-w-5xl px-8 pb-8 pt-2">
+          <div className="@container">
             {sections.length === 0 ? (
               <div className="py-16 text-center text-sm text-muted-foreground">No keys match “{query.trim()}”</div>
             ) : (

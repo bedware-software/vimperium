@@ -48,7 +48,7 @@ function hasTab(w: Workspace, tabId: string): boolean {
 
 /** Shows `url`'s page (its tab if the workspace has one, a new one at the
  *  top level otherwise), unless you're on it. */
-function showPage(url: string): void {
+export function showPage(url: string): void {
   const s = useAppStore.getState()
   const page = internalPageOf(url)
   if (internalPageOf(s.getActiveTab()?.url) === page) return

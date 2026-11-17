@@ -3,7 +3,7 @@
 // its name, the version and the mode beside it; how much is open, here, in
 // this profile and everywhere (Settings → About's rows). Along the bottom,
 // where a pending prefix's keys show (WhichKey.tsx) and looking as they do:
-// the keys to get going, then the Sidebar's. The mark wears Vim's mode — COMMAND's blue-violet, INSERT's
+// the key that shows every key. The mark wears Vim's mode — COMMAND's blue-violet, INSERT's
 // green-yellow — and tears once as the page comes up, once as the mode
 // changes, and again whenever the pointer comes onto it; still the rest of
 // the time.
@@ -14,17 +14,9 @@
 import { useEffect, useState } from 'react'
 import { BrandMark } from './BrandMark'
 import { WorkspaceStatsCard } from './WorkspaceStats'
-import { Hint, HintBar, sidebarHints, vimKeyCaps } from './KeyHints'
+import { Hint, HintBar, vimKeyCaps } from './KeyHints'
 import { useWindowVimKeymap } from '../lib/window-vim-keymap'
 import type { VimMode } from '../lib/vim-mode'
-
-/** What gets you going from a blank tab, with the command whose key it is. */
-const KEYS: ReadonlyArray<readonly [command: string, label: string]> = [
-  ['focus-url', 'Address'],
-  ['pick-tab', 'Tabs'],
-  ['reopen-closed-tab', 'Reopen closed'],
-  ['help', 'All keys'],
-]
 
 export function BlankPage({ vimMode }: { vimMode: VimMode | null }) {
   const keymap = useWindowVimKeymap()?.main ?? null
@@ -37,10 +29,8 @@ export function BlankPage({ vimMode }: { vimMode: VimMode | null }) {
     return () => { alive = false }
   }, [])
 
-  const keys = KEYS
-    .map(([command, label]) => ({ label, keys: vimKeyCaps(keymap, command) }))
-    .filter((k) => k.keys.length > 0)
-  const sidebar = keymap ? sidebarHints(keymap) : []
+  // The one key worth saying here: the page that lists all the others.
+  const helpKeys = vimKeyCaps(keymap, 'help')
   const under = [version && `v${version}`, vimMode && vimMode.toUpperCase()].filter(Boolean).join(' · ')
 
   return (
@@ -58,13 +48,11 @@ export function BlankPage({ vimMode }: { vimMode: VimMode | null }) {
         </div>
       </div>
       </div>
-      {/* The keys: to get going, then the Sidebar's. A prefix typed (o, d,
-          n…) puts what can follow it over this, in the same place. */}
-      {keys.length + sidebar.length > 0 && (
-        <HintBar wrap>
-          {keys.map(({ label, keys: caps }) => <Hint key={label} label={label} keys={caps} />)}
-          {keys.length > 0 && sidebar.length > 0 && <span aria-hidden="true" className="h-3 w-px bg-border" />}
-          {sidebar.map(({ label, keys: caps }) => <Hint key={label} label={label} keys={caps} />)}
+      {/* How to see every key. A prefix typed (o, d, n…) puts what can
+          follow it over this, in the same place. */}
+      {helpKeys.length > 0 && (
+        <HintBar>
+          <Hint label="All keys" keys={helpKeys} />
         </HintBar>
       )}
     </div>

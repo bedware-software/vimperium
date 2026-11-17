@@ -44,6 +44,7 @@ const VIM_COMMAND_LABELS: Record<string, string> = {
   'row-select-down': 'Select the row below too',
   'row-select-up': 'Select the row above too',
   'row-go': 'Show the row the cursor is on',
+  'row-unselect': 'Unpick the picked rows',
   'row-move-down': 'Move the tab (or group) down',
   'row-move-up': 'Move the tab (or group) up',
   'row-fold': 'Fold the group, onto its header',
@@ -124,6 +125,7 @@ export const SIDEBAR_COMMANDS = [
   'row-select-down',
   'row-select-up',
   'row-go',
+  'row-unselect',
   'row-move-down',
   'row-move-up',
   'row-fold',
@@ -501,6 +503,13 @@ export function extensionMenuIndex(command: string): number | null {
 export function withRowGoKey(map: VimKeymap): VimKeymap {
   if (map.has('<CR>')) return map
   return new Map(map).set('<CR>', 'row-go')
+}
+
+/** `map` with Esc unpicking the Sidebar's picked rows — for while there are
+ *  some (lib/sidebar-cursor.ts). A map that binds Esc itself keeps its own. */
+export function withRowUnselectKey(map: VimKeymap): VimKeymap {
+  if (map.has('<Esc>')) return map
+  return new Map(map).set('<Esc>', 'row-unselect')
 }
 
 /** `map` with the pinned extensions' menus on their keys. A key the map

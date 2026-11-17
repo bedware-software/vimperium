@@ -1,3 +1,4 @@
+import { DEFAULT_SEARCH_FIELDS, normalizeSearchFields, type SearchFields } from '../shared/search-fields'
 import Store from 'electron-store'
 import { migrateVimKeymap as migrateVimKeymapText } from '../shared/vim-default-keymap'
 import { log } from './log'
@@ -68,6 +69,8 @@ export interface Settings {
   /** Fetch search suggestions from the default engine while typing in the
    *  address bar, as Chrome / Edge do (see omnibox-suggest.ts). */
   searchSuggestions: boolean
+  /** What Search Everything's filter goes by, per kind (shared/search-fields.ts). */
+  searchFields: SearchFields
   /** `!w vim` in the address bar opens Wikipedia's search for "vim" —
    *  resolved locally from the bang table (bangs-store.ts), whatever the
    *  search engine. */
@@ -341,6 +344,7 @@ export const DEFAULT_SETTINGS: Settings = {
   defaultPageUrl: '',
   searchEngine: 'https://www.google.com/search?q=%s',
   searchSuggestions: true,
+  searchFields: DEFAULT_SEARCH_FIELDS,
   bangsEnabled: true,
   proxy: {
     mode: 'system',
@@ -704,6 +708,7 @@ export function loadSettings(): Settings {
     motion: motionChoice(saved?.motion),
     vimKeymap: normalizeVimKeymap(saved?.vimKeymap),
     searchSuggestions: saved?.searchSuggestions !== false,
+    searchFields: normalizeSearchFields(saved?.searchFields),
     bangsEnabled: saved?.bangsEnabled !== false,
     dohMode: KNOWN_DOH_MODES.has(saved?.dohMode as string)
       ? (saved!.dohMode as 'off' | 'automatic' | 'secure')
@@ -765,6 +770,7 @@ export function saveSettings(settings: Settings): void {
     motion: motionChoice(settings.motion),
     vimKeymap: normalizeVimKeymap(settings.vimKeymap),
     searchSuggestions: settings.searchSuggestions !== false,
+    searchFields: normalizeSearchFields(settings.searchFields),
     bangsEnabled: settings.bangsEnabled !== false,
     dohMode: KNOWN_DOH_MODES.has(settings.dohMode as string)
       ? settings.dohMode

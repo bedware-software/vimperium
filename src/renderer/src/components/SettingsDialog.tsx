@@ -7,7 +7,7 @@ import { ConfirmDialog } from './ConfirmDialog'
 import { DarkPagesSettings } from './DarkPagesSettings'
 import { ExtensionPermissionList } from './ExtensionPermissionList'
 import { requestExtensionInstall } from '../lib/extension-install'
-import { LIGHT_VARIANTS, DARK_VARIANTS, DENSITIES, normalizeLightVariant, normalizeDarkVariant, normalizeDensity, DEFAULT_DENSITY, type ThemeChoice, type Density } from '../lib/theme'
+import { LIGHT_VARIANTS, DARK_VARIANTS, normalizeLightVariant, normalizeDarkVariant, normalizeDensity, DEFAULT_DENSITY, type ThemeChoice, type Density } from '../lib/theme'
 import { VIM_INDICATORS, DEFAULT_VIM_INDICATOR, normalizeVimIndicator, type VimIndicator } from '../lib/vim-indicator'
 import { VimModeBadge } from './VimModeBadge'
 import { ModeEdge } from './ModeEdge'
@@ -28,6 +28,7 @@ import { VimFormCursorHints, VimFormLabels } from './VimForm'
 import { VimSelect } from './VimSelect'
 import { Segmented } from './Segmented'
 import { Switch } from './Switch'
+import { DEFAULT_SEARCH_FIELDS, SEARCH_FIELD_KINDS, SEARCH_FIELD_OPTIONS, normalizeSearchFields, type SearchFields } from '../../../shared/search-fields'
 import { ACTION_LABELS } from '../lib/action-labels'
 import { SEARCH_ENGINES } from '../../../shared/search-engines'
 import { BANGS_URL } from '../lib/internal-pages'
@@ -71,6 +72,7 @@ interface Settings {
   defaultPageUrl: string
   searchEngine: string
   searchSuggestions: boolean
+  searchFields?: SearchFields
   bangsEnabled: boolean
   proxy: ProxySettings
   dohMode: 'off' | 'automatic' | 'secure'
@@ -523,6 +525,8 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
   const [defaultUrl, setDefaultUrl] = useState('')
   const [searchEngine, setSearchEngine] = useState(SEARCH_ENGINES.Google)
   const [searchSuggestions, setSearchSuggestions] = useState(true)
+  // What Search Everything's filter goes by, per kind.
+  const [searchFields, setSearchFields] = useState<SearchFields>(DEFAULT_SEARCH_FIELDS)
   const [bangsEnabled, setBangsEnabled] = useState(true)
   const [proxy, setProxy] = useState<ProxySettings>({ ...DEFAULT_PROXY_SETTINGS })
   const [dohMode, setDohMode] = useState<'off' | 'automatic' | 'secure'>('automatic')
@@ -939,6 +943,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
       setDefaultUrl(settings.defaultPageUrl)
       setSearchEngine(settings.searchEngine || SEARCH_ENGINES.Google)
       setSearchSuggestions(settings.searchSuggestions !== false)
+      setSearchFields(normalizeSearchFields(settings.searchFields))
       setBangsEnabled(settings.bangsEnabled !== false)
       setProxy({ ...DEFAULT_PROXY_SETTINGS, ...settings.proxy })
       setDohMode(
@@ -1384,6 +1389,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
       defaultPageUrl: defaultUrl,
       searchEngine,
       searchSuggestions,
+      searchFields,
       bangsEnabled,
       proxy: normalizedProxy,
       dohMode,
@@ -1841,21 +1847,6 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                     />
                   </div>
                 )}
-              </div>
-
-              {/* Density */}
-              <div>
-                <h3 className="text-sm font-semibold text-foreground mb-1">Density</h3>
-                <p className="text-[11px] text-muted-foreground mb-3">
-                  Vertical breathing room between sidebar rows.
-                </p>
-                <Segmented
-                  label="Density"
-                  vimItem="appearance:density"
-                  value={density}
-                  onChange={(id) => { setDensity(id); previewAppearance({ density: id }) }}
-                  options={DENSITIES.map((d) => ({ value: d.id, label: d.label, title: d.hint }))}
-                />
               </div>
 
               {/* Vim's mode key cap. */}
@@ -2812,6 +2803,52 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                   Manage bangs…
                   <ExternalLink size={12} />
                 </button>
+              </div>
+
+              {/* Search Everything: what its filter goes by. */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">Search Everything Goes By</label>
+                <p className="text-[11px] text-muted-foreground mb-2">
+                  What the filter of Search Everything looks through, for each kind of thing. <span className="font-mono">&gt;</span> first in the filter looks through all of it whatever is picked here.
+                </p>
+                <div className="flex flex-col gap-2">
+                  {SEARCH_FIELD_KINDS.map(({ kind, label }) => (
+                    <div key={kind} className="flex items-center gap-3">
+                      <span className="w-44 shrink-0 text-xs text-muted-foreground">{label}</span>
+                      <div className="flex h-8 items-center rounded-md bg-secondary p-0.5" role="group" aria-label={`Search ${label.toLowerCase()} by`}>
+                        {SEARCH_FIELD_OPTIONS[kind].map((option) => {
+                          const on = searchFields[kind].includes(option.id)
+                          // The last one stays: a kind searched by nothing finds nothing.
+                          const last = on && searchFields[kind].length === 1
+                          return (
+                            <button
+                              key={option.id}
+                              type="button"
+                              role="checkbox"
+                              aria-checked={on}
+                              aria-disabled={last}
+                              data-vim-item={`general:search-fields:${kind}:${option.id}`}
+                              title={last ? `${option.hint} — at least one stays on` : option.hint}
+                              onClick={() => {
+                                if (last) return
+                                setSearchFields((prev) => normalizeSearchFields({
+                                  ...prev,
+                                  [kind]: on ? prev[kind].filter((id) => id !== option.id) : [...prev[kind], option.id],
+                                }))
+                              }}
+                              className={cn(
+                                'flex h-7 items-center rounded px-2.5 text-xs font-medium transition-colors',
+                                on ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+                              )}
+                            >
+                              {option.label}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {/* Default browser */}

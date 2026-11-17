@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Globe, Download, CircleAlert, Zap, Search, Keyboard, Library, type LucideIcon } from 'lucide-react'
+import { Globe, Download, CircleAlert, Zap, Search, Keyboard, Library, FolderInput, Link, type LucideIcon } from 'lucide-react'
 import { useAppStore } from '../store/app-store'
 import { internalIconName } from '../lib/internal-pages'
 
@@ -12,6 +12,8 @@ const INTERNAL_ICONS: Record<string, LucideIcon> = {
   search: Search,
   keyboard: Keyboard,
   library: Library,
+  move: FolderInput,
+  link: Link,
 }
 
 interface Props {
