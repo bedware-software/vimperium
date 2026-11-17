@@ -1349,17 +1349,29 @@ export const useAppStore = create<AppState>((set, get) => ({
     const existing = workspaceTabs(w).find((t) => t.url === url || (page !== null && internalPageOf(t.url) === page))
     log.action('showInternalPage', { url, existing: existing?.id ?? null })
     if (existing) s.setActiveTab(existing.id)
-    // Search Everything, the keys' help and the Bookshelf open at the top
-    // level, below where you are, never inside a group of yours — they'd
-    // show in its Sidebar rows and on its page. (addUngroupedTab anchors on
-    // the active tab's group, or the group parked on.)
-    else if (isTransientInternalUrl(url)) {
-      const id = s.addUngroupedTab(s.activeWorkspaceId, url, true)
+    // A page this window draws opens at the top level, first in the
+    // Sidebar — in sight at once, wherever you were — never inside a group
+    // of yours: it'd show in its Sidebar rows and on its page.
+    else {
+      const workspaceId = s.activeWorkspaceId
+      const id = s.addUngroupedTab(workspaceId, url, true)
       // Not a new tab to type an address in: the page takes the keys it
       // wants itself (Search Everything its filter), the rest stay COMMAND.
       newTabUrlFocusPending.delete(id)
+      set(produce((draft: AppState) => {
+        for (const p of draft.profiles) {
+          const ws = p.workspaces.find((x) => x.id === workspaceId)
+          if (!ws) continue
+          const order = ensureSidebarOrder(ws)
+          const at = order.indexOf(id)
+          if (at > 0) {
+            order.splice(at, 1)
+            order.unshift(id)
+          }
+          return
+        }
+      }))
     }
-    else s.addTabNearActive(s.activeWorkspaceId, url, true)
   },
 
   updateTabTitle: (id, title) => set(produce((s: AppState) => {
