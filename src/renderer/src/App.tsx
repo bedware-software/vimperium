@@ -1642,6 +1642,14 @@ export default function App() {
       if (focused instanceof HTMLElement && page.contains(focused)) focused.blur()
       return false
     }
+    // A blank tab has no page to type in — its view is off screen behind the
+    // app's mark (BlankPage): INSERT there is the address bar's, as it is
+    // when the tab is new.
+    const url = s.getActiveTab()?.url
+    if (mode === 'insert' && (!url || url === 'about:blank')) {
+      focusAndSelectUrlBar()
+      return true
+    }
     window.electronAPI.tabFocus?.(s.activeTabId)
     return true
   }
