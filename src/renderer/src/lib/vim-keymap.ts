@@ -455,3 +455,49 @@ export function keysFor(map: VimKeymap, command: string): string[] {
   for (const [seq, bound] of map) if (bound === command) out.push(seq.split(SEQUENCE_JOIN).join(''))
   return out
 }
+
+// ── The pinned extensions' menus ──
+//
+// The Nth pinned extension's own menu (pin, options, disable, remove — its
+// button's context menu) has a key made from the extensions menu's: a digit
+// before its last key — oe opens the menu of them all, o1e the first pinned
+// one's, o2e the second's. Not lines of the keymap: they follow whatever
+// extensions-menu is bound to, and exist only while that is a sequence.
+
+const EXTENSION_MENU_PREFIX = 'extension-menu-'
+/** How many pinned extensions have a key. */
+export const EXTENSION_MENU_KEYS = 9
+
+/** The place (from 1) of the pinned extension `command` opens the menu of;
+ *  null for any other command. */
+export function extensionMenuIndex(command: string): number | null {
+  if (!command.startsWith(EXTENSION_MENU_PREFIX)) return null
+  const n = Number(command.slice(EXTENSION_MENU_PREFIX.length))
+  return Number.isInteger(n) && n >= 1 && n <= EXTENSION_MENU_KEYS ? n : null
+}
+
+/** `map` with the pinned extensions' menus on their keys. A key the map
+ *  already binds, or already binds the start of, stays the map's. */
+export function withExtensionMenuKeys(map: VimKeymap): VimKeymap {
+  const out: VimKeymap = new Map(map)
+  for (const [seq, command] of map) {
+    if (command !== 'extensions-menu') continue
+    const tokens = seq.split(SEQUENCE_JOIN)
+    if (tokens.length < 2) continue
+    const head = tokens.slice(0, -1)
+    const last = tokens[tokens.length - 1]
+    for (let n = 1; n <= EXTENSION_MENU_KEYS; n++) {
+      const start = [...head, String(n)].join(SEQUENCE_JOIN)
+      const key = [...head, String(n), last].join(SEQUENCE_JOIN)
+      if (out.has(start) || out.has(key)) continue
+      out.set(key, `${EXTENSION_MENU_PREFIX}${n}`)
+    }
+  }
+  return out
+}
+
+/** The key of the `n`th pinned extension's menu, as typed (o1e); none while
+ *  extensions-menu has no sequence to make it from. */
+export function extensionMenuKey(map: VimKeymap, n: number): string | undefined {
+  return keysFor(withExtensionMenuKeys(map), `${EXTENSION_MENU_PREFIX}${n}`)[0]
+}

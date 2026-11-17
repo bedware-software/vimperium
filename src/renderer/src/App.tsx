@@ -11,7 +11,7 @@ import { HINT_CANCEL_COMMAND, hintIndex, useHintKeymap } from './lib/hint-labels
 import { cancelChromeHints, toggleChromeHints } from './lib/chrome-hints'
 import { ChromeHintsOverlay } from './components/ChromeHintsOverlay'
 import { WhichKeyStrip } from './components/WhichKey'
-import { parseVimKeymap, paletteKeymap, DEFAULT_VIM_KEYMAP, isPageCommand, isSidebarCommand } from './lib/vim-keymap'
+import { parseVimKeymap, paletteKeymap, DEFAULT_VIM_KEYMAP, extensionMenuIndex, isPageCommand, isSidebarCommand, withExtensionMenuKeys } from './lib/vim-keymap'
 import { Toolbar } from './components/Toolbar'
 import { Sidebar } from './components/Sidebar'
 import { WebviewPanel } from './components/WebviewPanel'
@@ -977,6 +977,12 @@ export default function App() {
           return
         }
       }
+      // The nth pinned extension's own menu (o1e…o9e).
+      const extensionMenu = extensionMenuIndex(action)
+      if (extensionMenu !== null) {
+        window.dispatchEvent(new CustomEvent('vimperium-open-extension-menu', { detail: extensionMenu }))
+        return
+      }
       switch (action) {
         case 'new-tab': {
           // It comes up typing in the address bar (WebviewPanel).
@@ -1656,7 +1662,10 @@ export default function App() {
   // Labels on the rows the group page, the Bookshelf and the Sidebar show
   // in COMMAND (lib/hint-labels.ts), bound in the window's keymap — the one
   // pages run too.
-  const hinted = useHintKeymap(vimReady ? vimKeymap.main : null)
+  // COMMAND's keys, with the pinned extensions' menus on theirs (o1e…o9e,
+  // made from the extensions menu's own — lib/vim-keymap.ts).
+  const mainKeys = useMemo(() => withExtensionMenuKeys(vimKeymap.main), [vimKeymap])
+  const hinted = useHintKeymap(vimReady ? mainKeys : null)
   const runVimCommand = (command: string): void => {
     const hint = hintIndex(command)
     if (hint !== null) {
@@ -1717,7 +1726,7 @@ export default function App() {
   }
   const vim = useVimMode({
     enabled: vimReady,
-    keymap: hinted.keymap ?? vimKeymap.main,
+    keymap: hinted.keymap ?? mainKeys,
     onCommand: runVimCommand,
     // The other split pane's page counts too: clicking into it focuses it.
     isActiveTab: (tabId) => useAppStore.getState().activeTabId === tabId || otherPaneTab() === tabId,

@@ -22,7 +22,9 @@ import type { VimMode } from '../lib/vim-mode'
 import { VimModeBadge } from './VimModeBadge'
 import { ModeEdge } from './ModeEdge'
 import { WorkspaceStats } from './WorkspaceStats'
-import { HEADER_HINT_BOTTOM_RIGHT, HeaderHintsContext, useHeaderHint } from './HeaderHint'
+import { HEADER_HINT_BOTTOM_RIGHT, HeaderHintsContext, useHeaderHint, useHeaderKeyHint } from './HeaderHint'
+import { useWindowVimKeymap } from '../lib/window-vim-keymap'
+import { EXTENSION_MENU_KEYS, extensionMenuKey } from '../lib/vim-keymap'
 import { useHelpPanelStore } from '../lib/help-panel'
 import { useUrlEditorStore } from '../lib/url-editor'
 import { actionHint, type HintSettings } from '../lib/shortcut-hints'
@@ -495,9 +497,19 @@ function ExtensionActions({
     return () => window.removeEventListener('vimperium-open-extensions-menu', onOpen)
   }, [])
 
-  const handleContextMenu = async (ext: ExtensionInfo, e: React.MouseEvent): Promise<void> => {
+  const handleContextMenu = (ext: ExtensionInfo, e: React.MouseEvent): Promise<void> => {
     e.preventDefault()
     e.stopPropagation()
+    return openExtensionMenu(ext, { position: { x: e.clientX, y: e.clientY } })
+  }
+
+  /** An extension's own menu — pin, options, disable, remove: at the pointer
+   *  (a right click on its button), or hung off its button with the
+   *  keyboard on it (its key: o1e, o2e…). */
+  const openExtensionMenu = async (
+    ext: ExtensionInfo,
+    place: { position: { x: number; y: number } } | { anchor: { x: number; y: number; width: number; height: number }; keyboard: true },
+  ): Promise<void> => {
     const api = (window as any).electronAPI
     const isPinned = ext.pinned ?? true
     const actions: DropdownAction[] = [
@@ -516,7 +528,7 @@ function ExtensionActions({
 
     const result = await openDropdownAsync({
       kind: 'menu',
-      position: { x: e.clientX, y: e.clientY },
+      ...place,
       ...readThemeAttrs(),
       header: ext.name,
       actions,
@@ -546,6 +558,26 @@ function ExtensionActions({
 
   // The puzzle's key (oe, the extensions' menu), while the help is open.
   const manageHint = useHeaderHint('extensions-menu')
+  // Each pinned extension's menu has a key too: a digit inside the puzzle's
+  // (o1e the first, o2e the second… — lib/vim-keymap.ts), shown on its
+  // button while the help is open.
+  const keyHint = useHeaderKeyHint()
+  const mainKeymap = useWindowVimKeymap()?.main ?? null
+  const openExtensionMenuRef = useRef<(n: number) => void>(() => {})
+  openExtensionMenuRef.current = (n) => {
+    const ext = visible[n - 1]
+    if (!ext) return
+    openExtensionMenu(ext, { anchor: buttonAnchor(ext.id), keyboard: true })
+      .catch((err: unknown) => log.warn('extension menu failed', err))
+  }
+  useEffect(() => {
+    const onOpen = (e: Event): void => {
+      const n = (e as CustomEvent<number>).detail
+      if (typeof n === 'number') openExtensionMenuRef.current(n)
+    }
+    window.addEventListener('vimperium-open-extension-menu', onOpen)
+    return () => window.removeEventListener('vimperium-open-extension-menu', onOpen)
+  }, [])
 
   return (
     <div
@@ -565,7 +597,7 @@ function ExtensionActions({
         {manageHint}
         <Puzzle size={15} />
       </button>
-      {visible.map((ext) => {
+      {visible.map((ext, extIndex) => {
         const isOpen = openPopupId === ext.id
         const action = actionState.actions.find((a) => a.id === ext.id)
         // Per-tab override beats the action-global value beats the manifest
@@ -593,8 +625,11 @@ function ExtensionActions({
           iconSrc = `crx://extension-icon/${ext.id}/32/2?${params.toString()}`
         }
         return (
+          // A box round the button for its key's badge: the button clips
+          // what's drawn past its own edge.
+          <span key={ext.id} className="relative flex shrink-0">
+          {keyHint(mainKeymap && extIndex < EXTENSION_MENU_KEYS ? extensionMenuKey(mainKeymap, extIndex + 1) : undefined)}
           <button
-            key={ext.id}
             ref={(el) => {
               if (el) buttonRefs.current.set(ext.id, el)
               else buttonRefs.current.delete(ext.id)
@@ -635,6 +670,7 @@ function ExtensionActions({
               </span>
             ) : null}
           </button>
+          </span>
         )
       })}
     </div>
@@ -1441,9 +1477,12 @@ export function Toolbar({ windowWorkspaceId, sidebarVisible, pageFullscreen, vim
   const helpOpen = useHelpPanelStore((s) => s.open)
   const headerHints = useMemo(() => ({ on: helpOpen && hintsOn, pending: vimPending ?? '' }), [helpOpen, hintsOn, vimPending])
   const downloadsHint = useHeaderHint('open-downloads', totalDownloads > 0, undefined, headerHints)
-  const backHint = useHeaderHint('back', true, undefined, headerHints)
+  // Back and Reload are a web page's: on a page this window draws (the
+  // keys' help itself, Downloads…) there's no history to go back in and
+  // nothing to load again, so their keys do nothing and aren't shown.
+  const backHint = useHeaderHint('back', security !== 'internal', undefined, headerHints)
   const forwardHint = useHeaderHint('forward', canGoForward, undefined, headerHints)
-  const reloadHint = useHeaderHint('reload', true, undefined, headerHints)
+  const reloadHint = useHeaderHint('reload', security !== 'internal', undefined, headerHints)
   const urlHint = useHeaderHint('focus-url', !urlEditorOpen, undefined, headerHints)
   const securityHint = useHeaderHint('site-info', security !== 'internal', HEADER_HINT_BOTTOM_RIGHT, headerHints)
 
