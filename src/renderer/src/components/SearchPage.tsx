@@ -28,7 +28,7 @@ import { focusAddressFilter, useAddressFilter, type AddressFilterKeyEvent } from
 import { closePage, closePageTab, useSearchPageRequest, type SearchFilter } from '../lib/page-nav'
 import { internalPageOf } from '../lib/internal-pages'
 import { useHintLabels, useHintTargets, useReservedHintKeys } from '../lib/hint-labels'
-import { ColumnsSwitch, usePageColumns } from './ColumnsSwitch'
+import { ColumnsSwitch, pageWidthClass, usePageColumns } from './ColumnsSwitch'
 import { usePageKeys } from '../lib/vim-mode'
 import { keyTokenFromEvent } from '../lib/vim-keymap'
 import type { VimKeymap } from '../lib/vim-keymap'
@@ -575,11 +575,9 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
   const deleting = rowDialog?.kind === 'delete-workspace' ? rowDialog : null
 
   const TypeIcon = TYPE_ICONS[filter]
-  // The header and the results are one width, their edges in one line: wide
-  // enough in one column for the header's row (the kinds, the scope, the
-  // columns) unwrapped; two columns are the wide layout, the page's whole
-  // width.
-  const widthClass = columns === 2 ? 'max-w-none' : 'max-w-5xl'
+  // The header and the results are one width, their edges in one line —
+  // the width every such page has (a group's page too).
+  const widthClass = pageWidthClass(columns)
   const total = items.length
   const countLabel = query.trim() ? `${results.length}/${total}` : `${total}`
 

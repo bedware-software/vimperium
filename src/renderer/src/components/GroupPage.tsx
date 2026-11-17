@@ -24,7 +24,7 @@ import { TabFavicon } from './TabFavicon'
 import { CommentChip } from './CommentChip'
 import { RowCap } from './KeyHints'
 import { useHintLabels, useHintTargets } from '../lib/hint-labels'
-import { ColumnsSwitch, usePageColumns } from './ColumnsSwitch'
+import { ColumnsSwitch, pageWidthClass, usePageColumns } from './ColumnsSwitch'
 import { fuzzyFilter } from '../lib/fuzzy'
 import { focusAddressFilter, useAddressFilter, type AddressFilterKeyEvent } from '../lib/address-filter'
 import { keyTokenFromEvent } from '../lib/vim-keymap'
@@ -171,10 +171,10 @@ export function GroupPage({ group, vimMode, vimPending, hintsOn }: Props) {
   return (
     // The page itself scrolls, its bar at the window's right edge as a web
     // page's is; the header stays put at the top, the rows passing under it.
-    <div className="absolute inset-0 z-50 overflow-y-auto bg-background px-8 text-foreground select-none">
+    <div className="absolute inset-0 z-50 overflow-y-auto bg-background text-foreground select-none">
       {/* The same space above the header as below the list. */}
       <div className="pb-[max(2rem,6vh)]">
-        <div className={cn('mx-auto w-full', columns === 2 ? 'max-w-none' : 'max-w-2xl')}>
+        <div className={cn('mx-auto w-full px-4', pageWidthClass(columns))}>
           {/* Above the rows' labels (z-10), which pass under it too. */}
           <div className="sticky top-0 z-20 flex min-w-0 items-center gap-3 bg-background pb-4 pt-[max(2rem,6vh)]">
             <div
@@ -213,7 +213,7 @@ export function GroupPage({ group, vimMode, vimPending, hintsOn }: Props) {
                   className={cn(
                     // Scrolled to by the keys, a row stops clear of the
                     // header it would otherwise sit under.
-                    'flex min-w-0 scroll-mb-4 scroll-mt-[calc(max(2rem,6vh)+4rem)] cursor-pointer items-center gap-2 rounded-lg px-3 py-2',
+                    'flex min-w-0 scroll-mb-4 scroll-mt-[calc(max(2rem,6vh)+4rem)] cursor-pointer items-center gap-2 rounded-lg px-2 py-2',
                     idx === selected ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50',
                   )}
                 >

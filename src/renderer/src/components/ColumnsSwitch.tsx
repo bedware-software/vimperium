@@ -15,6 +15,13 @@ import { cn } from '../lib/utils'
 
 export type Columns = 1 | 2
 
+/** The width of a page's header and list, the same on every page that
+ *  lists rows: one column a readable measure in the middle of the page, two
+ *  the page's whole width. */
+export function pageWidthClass(columns: Columns): string {
+  return columns === 2 ? 'max-w-none' : 'max-w-4xl'
+}
+
 /** The switch's key in COMMAND. */
 export const COLUMNS_KEY = 'c'
 
