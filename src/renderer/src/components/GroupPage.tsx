@@ -198,12 +198,13 @@ export function GroupPage({ group, vimKeymap, vimMode, vimPending, hintsOn }: Pr
   const filtered = query.trim() !== ''
 
   return (
-    <div className="absolute inset-0 z-50 flex flex-col bg-background text-foreground select-none">
-      {/* The same space above the header as below the list, however long
-          the list: a list that scrolls stops short of the edge. */}
-      <div className="flex min-h-0 flex-1 justify-center overflow-hidden px-8 py-[max(2rem,6vh)]">
-        <div className={cn('flex min-h-0 w-full flex-col', columns === 2 ? 'max-w-4xl' : 'max-w-2xl')}>
-          <div className="mb-4 flex min-w-0 shrink-0 items-center gap-3">
+    // The page itself scrolls, its bar at the window's right edge as a web
+    // page's is; the header stays put at the top, the rows passing under it.
+    <div className="absolute inset-0 z-50 overflow-y-auto bg-background px-8 text-foreground select-none">
+      {/* The same space above the header as below the list. */}
+      <div className="pb-[max(2rem,6vh)]">
+        <div className={cn('mx-auto w-full', columns === 2 ? 'max-w-4xl' : 'max-w-2xl')}>
+          <div className="sticky top-0 z-10 flex min-w-0 items-center gap-3 bg-background pb-4 pt-[max(2rem,6vh)]">
             <div
               data-group-container=""
               style={{ ['--gc' as string]: group.color }}
@@ -253,7 +254,7 @@ export function GroupPage({ group, vimKeymap, vimMode, vimPending, hintsOn }: Pr
           </div>
           <div
             ref={listRef}
-            className={cn('min-h-0 flex-1 overflow-y-auto', columns === 2 && rows.length > 0 && 'grid grid-cols-2 content-start gap-x-2')}
+            className={cn(columns === 2 && rows.length > 0 && 'grid grid-cols-2 content-start gap-x-2')}
           >
             {rows.length === 0 && (
               <div className="px-4 py-6 text-center text-sm text-muted-foreground">
@@ -268,7 +269,9 @@ export function GroupPage({ group, vimKeymap, vimMode, vimPending, hintsOn }: Pr
                   onClick={() => open(idx)}
                   onMouseMove={() => { if (selected !== idx) setSelected(idx) }}
                   className={cn(
-                    'flex min-w-0 cursor-pointer items-center gap-2 rounded-lg px-3 py-2',
+                    // Scrolled to by the keys, a row stops clear of the
+                    // header it would otherwise sit under.
+                    'flex min-w-0 scroll-mb-4 scroll-mt-[calc(max(2rem,6vh)+4rem)] cursor-pointer items-center gap-2 rounded-lg px-3 py-2',
                     idx === selected ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50',
                   )}
                 >

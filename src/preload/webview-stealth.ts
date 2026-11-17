@@ -691,13 +691,19 @@ if (STEALTH_ENABLED) {
   }
 }
 
+/** A key token that types a character: one printable, or Space. */
+function isTypingToken(token: string | null): boolean {
+  return token !== null && (token.length === 1 || token === '<Space>')
+}
+
 // ── Vim mode: COMMAND and INSERT in the page ──────────────────────────────
 // With Vim mode on (Settings → Keyboard Shortcuts) the window's renderer
 // holds the mode (renderer lib/vim-mode.ts) and main passes it on to the
 // pages, with COMMAND's keys. In COMMAND mode this page runs the keys the way
 // Vimium did — the page's own (scrolling, picking a text field) here, the
 // browser's (close the tab, switch tabs, copy the address) in the renderer —
-// and lets every unbound key through. INSERT passes everything through; Esc
+// and swallows the typing keys nothing binds (letters, digits, signs,
+// Space), letting the rest through. INSERT passes everything through; Esc
 // leaves it for COMMAND (and a focused field loses focus), like Vimium's
 // insert mode; in a field inside a frame main catches that Esc for us.
 // Changes made here (i, a field focused or left, Esc) are reported back to
@@ -875,7 +881,16 @@ function installVimPage(): void {
       const token = keyTokenFromEvent(e)
       if (!token || !isCtrlToken(token)) return
     }
-    if (sequencer.feed(e)) consume(e)
+    if (sequencer.feed(e)) {
+      consume(e)
+      return
+    }
+    // A typing key nothing binds — a letter, a digit, a sign, Space — does
+    // nothing in COMMAND: the page's own shortcuts are INSERT's (Space
+    // paused YouTube's video once no command had it). The keys that aren't
+    // typing — the arrows, Enter, Tab, Esc, PageUp/Down, the F keys, a Ctrl
+    // chord — still reach the page.
+    if (!e.ctrlKey && isTypingToken(keyTokenFromEvent(e))) consume(e)
   }, true)
 
   document.addEventListener('focusin', (e) => {

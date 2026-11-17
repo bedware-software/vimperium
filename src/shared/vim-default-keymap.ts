@@ -15,7 +15,8 @@ export const DEFAULT_VIM_KEYMAP = `" Vim mode keys.
 "
 " Two modes:
 "   COMMAND  the page and the browser: scrolling, history, tabs, app
-"            commands. Keys not bound here reach the page.
+"            commands. Typing keys not bound here do nothing; the arrows,
+"            Enter, Tab and Esc still reach the page.
 "   INSERT   keys go to the page or the field you type in
 " i (or gi, picking a text field) goes into INSERT; Esc or Ctrl+[ comes back
 " to COMMAND. In a popup — Search Everything, Find, the address editor, a
