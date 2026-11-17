@@ -22,7 +22,7 @@ import type { TabGroup } from '../store/types'
 import { TabFavicon } from './TabFavicon'
 import { CommentChip } from './CommentChip'
 import { RowHint } from './KeyHints'
-import { useHintLabels, useHintTargets } from '../lib/hint-labels'
+import { useHintLabels, useHintTargets, useReservedHintKeys } from '../lib/hint-labels'
 import { fuzzyFilter } from '../lib/fuzzy'
 import { focusAddressFilter, useAddressFilter, type AddressFilterKeyEvent } from '../lib/address-filter'
 import { keyTokenFromEvent } from '../lib/vim-keymap'
@@ -138,6 +138,9 @@ export function GroupPage({ group, vimKeymap, vimMode, vimPending, hintsOn }: Pr
     return true
   }, [vimKeymap])
 
+  // No row's label starts with it then.
+  useReservedHintKeys(columnsKeyFree ? [COLUMNS_KEY_TOKEN] : [])
+
   /** Enter and c, typed outside the filter. */
   const rowKey = (e: KeyboardEvent): boolean => {
     if (e.metaKey || e.ctrlKey || e.altKey) return false
@@ -204,7 +207,8 @@ export function GroupPage({ group, vimKeymap, vimMode, vimPending, hintsOn }: Pr
       {/* The same space above the header as below the list. */}
       <div className="pb-[max(2rem,6vh)]">
         <div className={cn('mx-auto w-full', columns === 2 ? 'max-w-4xl' : 'max-w-2xl')}>
-          <div className="sticky top-0 z-10 flex min-w-0 items-center gap-3 bg-background pb-4 pt-[max(2rem,6vh)]">
+          {/* Above the rows' labels (z-10), which pass under it too. */}
+          <div className="sticky top-0 z-20 flex min-w-0 items-center gap-3 bg-background pb-4 pt-[max(2rem,6vh)]">
             <div
               data-group-container=""
               style={{ ['--gc' as string]: group.color }}

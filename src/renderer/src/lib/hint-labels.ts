@@ -55,6 +55,37 @@ export function hintAlphabet(keymap: VimKeymap | null): string[] {
   return HINT_KEYS.filter((k) => !first.has(k))
 }
 
+// Keys a page drawn in the page area keeps for itself ahead of the keymap
+// (lib/vim-mode.ts usePageKeys' intercept — c on a group's page, w g t p on
+// Search Everything): no label starts with one while the page is up, or
+// typing the label would run the page's key instead.
+const reservedKeys = new Map<object, readonly string[]>()
+const reservedListeners = new Set<() => void>()
+let reservedSnapshot = ''
+
+function rebuildReserved(): void {
+  const next = [...new Set([...reservedKeys.values()].flat())].sort().join('')
+  if (next === reservedSnapshot) return
+  reservedSnapshot = next
+  reservedListeners.forEach((l) => l())
+}
+
+/** Keeps `keys` (single letters) out of the labels while the caller is
+ *  mounted. */
+export function useReservedHintKeys(keys: readonly string[]): void {
+  const joined = keys.join('')
+  useEffect(() => {
+    if (!joined) return
+    const token = {}
+    reservedKeys.set(token, [...joined])
+    rebuildReserved()
+    return () => {
+      reservedKeys.delete(token)
+      rebuildReserved()
+    }
+  }, [joined])
+}
+
 /** A row's name, for its label; none for rows with nothing to read. */
 export type HintName = string | undefined
 
@@ -317,7 +348,17 @@ export function useHintTargetList(): HintTarget[] {
  *  alone (hintsOnlyKeymap). */
 export function useHintKeymap(keymap: VimKeymap | null): { keymap: VimKeymap | null; targets: HintTarget[]; exclusive: boolean } {
   const { targets, exclusive } = useTargetSnapshot()
-  const alphabet = useMemo(() => (exclusive ? HINT_KEYS : hintAlphabet(keymap)), [keymap, exclusive])
+  const reserved = useSyncExternalStore(
+    (l) => {
+      reservedListeners.add(l)
+      return () => { reservedListeners.delete(l) }
+    },
+    () => reservedSnapshot,
+  )
+  const alphabet = useMemo(
+    () => (exclusive ? HINT_KEYS : hintAlphabet(keymap).filter((k) => !reserved.includes(k))),
+    [keymap, exclusive, reserved],
+  )
   // Each row keeps the label it wore while its name still gives it; the
   // browser's own controls (;) have no names and take labels in reach order.
   const previousRef = useRef(new Map<string, string>())

@@ -5,13 +5,15 @@
 // It has no box of its own: the address bar is its filter
 // (lib/address-filter.ts), typing at once when it opens. In the bar ↑/↓ and
 // PageUp/PageDown move through the results, Enter opens the selected one,
-// Tab / Shift+Tab step through the four kinds, Alt+S flips the scope (this
-// workspace / every one) for tabs and groups; Ctrl+C leaves the bar for
-// COMMAND, the query kept, and Esc closes the page from there too.
+// Tab flips the scope (this workspace / every one) for tabs and groups;
+// Ctrl+C leaves the bar for COMMAND, the query kept, and Esc closes the
+// page from there too.
 //
 // In COMMAND (lib/vim-mode.ts usePageKeys) the scroll keys move the
-// selection, Enter opens it, i / gi type in the bar again, m opens the
-// selected row's menu, and Esc closes the page — back to the tab you were
+// selection, Enter opens it, i types in the bar again, m opens the
+// selected row's menu, w g t p pick the kind searched (workspaces, groups,
+// tabs, profiles — ahead of the keymap's own g… and t… here), Tab flips
+// the scope, and Esc closes the page — back to the tab you were
 // on. Every result wears a label that picks it (lib/hint-labels.ts), the one
 // the Sidebar gives the same tab or group. ot ow og op, typed here, ask for
 // the page again on another kind (lib/page-nav.ts).
@@ -25,7 +27,7 @@ import { fuzzyFilter } from '../lib/fuzzy'
 import { focusAddressFilter, useAddressFilter, type AddressFilterKeyEvent } from '../lib/address-filter'
 import { closePage, closePageTab, useSearchPageRequest, type SearchFilter } from '../lib/page-nav'
 import { internalPageOf } from '../lib/internal-pages'
-import { useHintLabels, useHintTargets } from '../lib/hint-labels'
+import { useHintLabels, useHintTargets, useReservedHintKeys } from '../lib/hint-labels'
 import { usePageKeys } from '../lib/vim-mode'
 import { keyTokenFromEvent } from '../lib/vim-keymap'
 import type { VimKeymap } from '../lib/vim-keymap'
@@ -115,8 +117,16 @@ function saveScope(scope: SearchScope): void {
 let handledRequest = useSearchPageRequest.getState().v
 let shownFilter: FilterType | null = null
 
-const isMac = navigator.platform.includes('Mac')
-const SCOPE_KEY_CAP = isMac ? '⌥S' : 'Alt+S'
+/** COMMAND's key for each kind, ahead of the keymap on this page: the
+ *  letter ot ow og op open it with. */
+const TYPE_KEYS: Record<FilterType, string> = {
+  profile: 'p',
+  workspace: 'w',
+  tabGroup: 'g',
+  tab: 't',
+}
+const TYPE_KEY_LIST = Object.values(TYPE_KEYS)
+const SCOPE_KEY_CAP = 'Tab'
 const HALF_PAGE_ROWS = 10
 
 /** Its rows' ids among the window's hint targets: the Sidebar's for a tab
@@ -319,10 +329,12 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
     setFilter(next)
     saveFilter(next)
   }
-  const cycleFilter = (delta: number): void => {
-    const at = FILTER_TYPES.indexOf(filter)
-    selectFilter(FILTER_TYPES[(at + delta + FILTER_TYPES.length) % FILTER_TYPES.length])
-  }
+  // No result's label starts with a kind's key.
+  useReservedHintKeys(TYPE_KEY_LIST)
+  // The Sidebar's row says what's searched.
+  useEffect(() => {
+    useAppStore.getState().updateTabTitle(tabId, `Search ${TYPE_LABELS[filter]}`)
+  }, [tabId, filter])
   const toggleScope = (): void => {
     setScope((prev) => {
       const next = prev === 'all' ? 'current' : 'all'
@@ -334,13 +346,9 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
   /** A key typed in the bar but Enter and Esc. */
   const barKey = (e: AddressFilterKeyEvent): boolean => {
     const plain = !e.ctrlKey && !e.metaKey && !e.altKey
+    // Tab flips the scope (this workspace / every one), as in the pickers;
+    // the kinds are COMMAND's keys (TYPE_KEYS), not the bar's.
     if (e.key === 'Tab' && plain) {
-      cycleFilter(e.shiftKey ? -1 : 1)
-      return true
-    }
-    // Alt+S by its physical key (Option+S types ß on a Mac).
-    const code = 'code' in e && typeof e.code === 'string' ? e.code : ''
-    if (e.altKey && !e.ctrlKey && !e.metaKey && (code === 'KeyS' || e.key.toLowerCase() === 's')) {
       if (scopeApplies) toggleScope()
       return true
     }
@@ -500,7 +508,19 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
       if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return false
       // Esc closes the page: the tab you were on shows again.
       if (e.key === 'Escape') return closePage('search')
-      return keyTokenFromEvent(e) === '<CR>' && openAt(selected)
+      const token = keyTokenFromEvent(e)
+      // w g t p: what's searched. Ahead of the keymap's own g… and t… here.
+      const kind = FILTER_TYPES.find((type) => TYPE_KEYS[type] === token)
+      if (kind) {
+        selectFilter(kind)
+        return true
+      }
+      // Tab: this workspace or every one.
+      if (token === '<Tab>') {
+        if (scopeApplies) toggleScope()
+        return true
+      }
+      return token === '<CR>' && openAt(selected)
     },
     command: (command) => {
       switch (command) {
@@ -578,7 +598,7 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
                   aria-checked={active}
                   tabIndex={-1}
                   onClick={() => selectFilter(type)}
-                  title={`${TYPE_LABELS[type]} (Tab / Shift+Tab in the address bar)`}
+                  title={`${TYPE_LABELS[type]} (${TYPE_KEYS[type]} in COMMAND)`}
                   className={`flex h-7 items-center gap-1.5 rounded px-2.5 text-xs font-medium transition-colors ${
                     active ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                   }`}
@@ -586,6 +606,8 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
                   <Icon size={13} />
                   {TYPE_LABELS[type]}
                   <span className="tabular-nums opacity-50">{counts[type]}</span>
+                  {/* Its key, while the keys are COMMAND's. */}
+                  {vimMode === 'command' && <kbd className="font-mono text-[10px]">{TYPE_KEYS[type]}</kbd>}
                 </button>
               )
             })}
@@ -597,7 +619,7 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
               aria-checked={scope === 'current'}
               tabIndex={-1}
               onClick={toggleScope}
-              title={`Search this workspace or every one (${SCOPE_KEY_CAP} in the address bar)`}
+              title={`Search this workspace or every one (${SCOPE_KEY_CAP})`}
               className="ml-auto flex h-7 items-center gap-1.5 px-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
               {scope === 'current' ? 'This workspace' : 'All workspaces'}
