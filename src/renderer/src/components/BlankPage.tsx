@@ -44,10 +44,10 @@ export function BlankPage({ vimMode }: { vimMode: VimMode | null }) {
   return (
     <div className="absolute inset-0 z-40 flex items-center justify-center overflow-auto bg-background p-8 text-foreground select-none">
       {/* A touch above dead-centre, as the error page's block is. */}
-      <div className="flex w-full max-w-[640px] -translate-y-[4vh] items-center gap-7 rounded-2xl border border-border bg-card p-7">
+      <div className="flex w-full max-w-[780px] -translate-y-[4vh] items-center gap-7 rounded-2xl border border-border bg-card p-7">
         <BrandMark variant="full" size={168} mode={vimMode} glitchOnMount glitchOnHover />
         <div className="min-w-0 flex-1">
-          <h1 className="text-3xl font-light tracking-wide">Vimperium</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Vimperium</h1>
           {under && <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">{under}</p>}
           <div className="mt-3 border-t border-border">
             <WorkspaceStatsCard bare />

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { KeySequencer, SEQUENCE_JOIN, isCtrlToken, keyTokenFromEvent, type VimKeymap, type VimKeymapEntries } from '../../../shared/vim-keys'
 import type { SidebarCommand } from './vim-keymap'
 import { log } from './log'
-import { useAddressFilterStore } from './address-filter'
 
 // Vim mode. A window is in one of two modes:
 //   COMMAND — plain keys run the commands from Settings' keymap: scrolling
@@ -309,19 +308,18 @@ export function isLeaveInsertKey(e: KeyboardEvent): boolean {
   return isCtrlChord(e, 'KeyC') || isCtrlChord(e, 'BracketLeft')
 }
 
-/** Ctrl+C that leaves a page this window draws for COMMAND, as it leaves a
- *  popup's field: typed on the page while it has the keys (Downloads,
- *  Bangs), or in the address bar while it's a page's filter. Esc closes the
- *  page instead, from either mode. A field of the page's own (the bang
- *  form's) keeps its Ctrl+C; so does the address bar on a web page. Off the
- *  Mac, with part of the filter selected, Ctrl+C copies it — the whole of
- *  it selected is what going into the filter does, not a selection to copy. */
+/** Ctrl+C that leaves for COMMAND, as it leaves a popup's field: typed in
+ *  the address bar — a page's address or a page's filter — or on a page
+ *  this window draws while it has the keys (Downloads, Bangs), where Esc
+ *  closes the page instead, from either mode. A field of the page's own
+ *  (the bang form's) keeps its Ctrl+C. Off the Mac, with part of the bar's
+ *  text selected, Ctrl+C copies it — the whole of it selected is what going
+ *  into the bar does, not a selection to copy. */
 function leavesPageInsert(e: KeyboardEvent): boolean {
   if (!isCtrlChord(e, 'KeyC')) return false
   const target = e.target
   if (!(target instanceof HTMLElement)) return false
   if (target instanceof HTMLInputElement && target.id === 'url-bar') {
-    if (!useAddressFilterStore.getState().owner) return false
     const from = target.selectionStart ?? 0
     const to = target.selectionEnd ?? 0
     const part = to > from && to - from < target.value.length

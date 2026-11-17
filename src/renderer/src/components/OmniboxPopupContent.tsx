@@ -57,7 +57,12 @@ export function OmniboxPopupContent({
   useEffect(() => {
     const el = listRef.current
     if (!el) return
-    const measure = (): void => onMeasured(Math.ceil(el.getBoundingClientRect().height))
+    // The list's whole height, borders and all — not the box it has now:
+    // the window is sized from this, and the list is capped at the window's
+    // height, so a list measured as it stands in a window opened too short
+    // (the estimate of a row a few px under the real one) would stay that
+    // short for good, its one row scrolling.
+    const measure = (): void => onMeasured(Math.ceil(el.scrollHeight + (el.offsetHeight - el.clientHeight)))
     measure()
     const ro = new ResizeObserver(measure)
     ro.observe(el)

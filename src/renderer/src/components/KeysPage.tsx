@@ -156,6 +156,16 @@ export function KeysPage({ keymap, vimPending }: KeysPageProps) {
     }).filter(({ rows }) => rows.length > 0)
   }, [keymap, query])
 
+  // It opens typing in the filter (INSERT), as Search Everything does: what
+  // you came for is finding a key. Twice: the bar turns into the page's
+  // filter a render after this one.
+  useEffect(() => {
+    const timers = [0, 80].map((ms) => setTimeout(() => {
+      if (document.activeElement?.id !== 'url-bar') focusAddressFilter()
+    }, ms))
+    return () => timers.forEach(clearTimeout)
+  }, [])
+
   const found = sections.reduce((n, s) => n + s.rows.length, 0)
   const total = useMemo(() => sections.reduce((n, s) => n + s.total, 0), [sections])
   const columns = useMemo(() => splitInTwo(sections, !query, keymap), [sections, query, keymap])

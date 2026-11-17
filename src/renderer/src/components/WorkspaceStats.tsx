@@ -55,13 +55,15 @@ function useStats() {
 export function WorkspaceStatsCard({ bare = false }: { bare?: boolean } = {}) {
   const { profiles, profile, workspace, profileTabs, allTabs, allWorkspaces, allGroups } = useStats()
   const row = (icon: ReactNode, label: string, name: string | null, counts: ReactNode) => (
-    <div className={`flex items-center justify-between gap-4 ${bare ? 'py-2' : 'px-4 py-3'}`}>
+    // Bare, in a panel that may be narrow: the counts drop under the label
+    // rather than run over it.
+    <div className={`flex items-center justify-between gap-x-4 gap-y-1 ${bare ? 'flex-wrap py-2' : 'px-4 py-3'}`}>
       <div className="flex min-w-0 items-center gap-2 text-sm font-medium text-foreground">
         <span className="shrink-0 text-muted-foreground">{icon}</span>
         <span className="shrink-0">{label}</span>
         {name && <span className="truncate font-normal text-muted-foreground">{name}</span>}
       </div>
-      <div className="flex shrink-0 items-center gap-1.5 text-sm text-muted-foreground">{counts}</div>
+      <div className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-sm text-muted-foreground">{counts}</div>
     </div>
   )
   return (
