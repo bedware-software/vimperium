@@ -24,7 +24,8 @@ import { TabFavicon } from './TabFavicon'
 import { CommentChip } from './CommentChip'
 import { RowCap } from './KeyHints'
 import { useHintLabels, useHintTargets } from '../lib/hint-labels'
-import { ColumnsSwitch, pageWidthClass, usePageColumns } from './ColumnsSwitch'
+import { ColumnsSwitch, usePageColumns } from './ColumnsSwitch'
+import { EntityIcon, LIST_PAGE_ROOT, LIST_ROW_SCROLL, ListPageHeader, listBoxClass } from './ListPage'
 import { fuzzyFilter } from '../lib/fuzzy'
 import { focusAddressFilter, useAddressFilter, type AddressFilterKeyEvent } from '../lib/address-filter'
 import { keyTokenFromEvent } from '../lib/vim-keymap'
@@ -169,35 +170,31 @@ export function GroupPage({ group, vimMode, vimPending, hintsOn }: Props) {
   const filtered = query.trim() !== ''
 
   return (
-    // The page itself scrolls, its bar at the window's right edge as a web
-    // page's is; the header stays put at the top, the rows passing under it.
-    <div className="absolute inset-0 z-50 overflow-y-auto bg-background text-foreground select-none">
-      {/* The same space above the header as below the list. */}
-      <div className="pb-[max(2rem,6vh)]">
-        <div className={cn('mx-auto w-full px-4', pageWidthClass(columns))}>
-          {/* Above the rows' labels (z-10), which pass under it too. */}
-          <div className="sticky top-0 z-20 flex min-w-0 items-center gap-3 bg-background pb-4 pt-[max(2rem,6vh)]">
-            <div
-              data-group-container=""
-              style={{ ['--gc' as string]: group.color }}
-              className="flex min-w-0 items-center"
-            >
-              <span
-                data-group-pill=""
-                className="min-w-0 truncate rounded-xl px-4 py-1.5 text-2xl font-semibold tracking-tight"
-              >
-                {group.name || 'Unnamed group'}
-              </span>
-            </div>
-            <span className="shrink-0 text-sm text-muted-foreground tabular-nums">
-              {filtered ? `${rows.length} of ${count}` : count} {count === 1 ? 'tab' : 'tabs'}
-            </span>
-            <ColumnsSwitch columns={columns} onChange={setColumns} keyFree={columnsKeyFree} vimMode={vimMode} className="ml-auto" />
-          </div>
+    // The page's frame is the one Search Everything has (ListPage.tsx): the
+    // page scrolls, the header stays put, its controls on a row of their own.
+    <div className={LIST_PAGE_ROOT}>
+      <ListPageHeader
+        columns={columns}
+        title={(
           <div
-            ref={listRef}
-            className={cn(columns === 2 && rows.length > 0 && 'grid grid-cols-2 content-start gap-x-2')}
+            data-group-container=""
+            style={{ ['--gc' as string]: group.color }}
+            className="flex min-w-0 items-center"
           >
+            <h1 data-group-pill="" className="min-w-0 truncate rounded-lg px-3 py-0.5 text-lg font-semibold tracking-tight">
+              {group.name || 'Unnamed group'}
+            </h1>
+          </div>
+        )}
+      >
+        <span className="shrink-0 text-xs font-medium text-muted-foreground tabular-nums">
+          {filtered ? `${rows.length} of ${count}` : count} {count === 1 ? 'tab' : 'tabs'}
+        </span>
+        <ColumnsSwitch columns={columns} onChange={setColumns} keyFree={columnsKeyFree} vimMode={vimMode} className="ml-auto" />
+      </ListPageHeader>
+      <div>
+        <div>
+          <div ref={listRef} className={listBoxClass(columns, rows.length > 0)}>
             {rows.length === 0 && (
               <div className="px-4 py-6 text-center text-sm text-muted-foreground">
                 {count === 0 ? 'No tabs in this group' : 'No tabs match'}
@@ -211,9 +208,8 @@ export function GroupPage({ group, vimMode, vimPending, hintsOn }: Props) {
                   onClick={() => open(idx)}
                   onMouseMove={() => { if (selected !== idx) setSelected(idx) }}
                   className={cn(
-                    // Scrolled to by the keys, a row stops clear of the
-                    // header it would otherwise sit under.
-                    'flex min-w-0 scroll-mb-4 scroll-mt-[calc(max(2rem,6vh)+4rem)] cursor-pointer items-center gap-2 rounded-lg px-2 py-2',
+                    LIST_ROW_SCROLL,
+                    'flex min-w-0 cursor-pointer items-center gap-2 rounded-lg px-2 py-2',
                     idx === selected ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50',
                   )}
                 >
@@ -221,7 +217,7 @@ export function GroupPage({ group, vimMode, vimPending, hintsOn }: Props) {
                       and its rule, as the Sidebar's. */}
                   <RowCap mode={vimMode} label={hintLabels.get(hintId(tab.id))} pending={vimPending} index={idx} />
                   <span className="flex w-6 shrink-0 items-center">
-                    {tab.favicon ? <TabFavicon favicon={tab.favicon} /> : <Globe size={16} className="text-muted-foreground/60" />}
+                    {tab.favicon ? <TabFavicon favicon={tab.favicon} /> : <EntityIcon icon={Globe} mode={vimMode} />}
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="flex min-w-0 items-center gap-1.5">

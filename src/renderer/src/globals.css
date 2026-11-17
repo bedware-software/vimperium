@@ -921,6 +921,19 @@ kbd.vim-mode[data-indicator="dot"]::before {
   width: 100%;
   height: 100%;
 }
+/* A badge that wears Vim's mode (a blank tab's), in INSERT: the trios
+ * swapped — green-yellow and amber in front, tearing into COMMAND's. */
+.brand-mark[data-variant="full"][data-mode="insert"] {
+  --c1: oklch(0.80 0.18 142);
+  --c2: oklch(0.89 0.16 110);
+  --c3: oklch(0.77 0.13 182);
+  --hot: oklch(0.78 0.18 60);
+  --a1: oklch(0.74 0.14 240);
+  --a2: oklch(0.66 0.19 292);
+  --a3: oklch(0.83 0.12 205);
+  --ahot: oklch(0.72 0.22 350);
+  --glow: oklch(0.80 0.18 142);
+}
 .brand-mark[data-variant="full"] > svg:nth-child(2) { --c2: var(--a2); --hot: var(--ahot); }
 .brand-mark[data-variant="full"] > svg:nth-child(3) { --hot: var(--c2); }
 

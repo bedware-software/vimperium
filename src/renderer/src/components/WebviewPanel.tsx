@@ -13,6 +13,7 @@ import { BangsPage } from './BangsPage'
 import { OsBlockedPrompt, PermissionPrompt } from './PagePrompt'
 import { SplitFrames, insetForFrame, splitPaneRects } from './SplitPanes'
 import { SplitPicker } from './SplitPicker'
+import { BlankPage } from './BlankPage'
 import { GroupPage } from './GroupPage'
 import { isSplitShown, setSplitRatio, useSplitStore, workspaceTabs, MAX_SPLIT_RATIO, MIN_SPLIT_RATIO } from '../lib/split-view'
 import type { ParsedVimKeymap, VimKeymap } from '../lib/vim-keymap'
@@ -216,6 +217,7 @@ export function WebviewPanel({ splitPickerKeymap, splitPickerFocusTick, vimKeyma
     ? s.getActiveWorkspace()?.tabGroups.find((g) => g.id === s.activeTabGroupId)
     : undefined))
   // An internal page (vimperium://…) takes the page's place, drawn right here.
+  const activeTabUrl = useAppStore((s) => s.getActiveTab()?.url ?? null)
   const activeInternalUrl = useAppStore((s) => {
     const url = s.getActiveTab()?.url
     return url && isInternalUrl(url) ? url : null
@@ -232,6 +234,8 @@ export function WebviewPanel({ splitPickerKeymap, splitPickerFocusTick, vimKeyma
   splitLayoutRef.current = { split, shown: splitShown }
   // Views are off screen (a drag over the page area, an error overlay).
   const suppressedRef = useRef(false)
+  /** The blank tab's page is up (BlankPage): its view stays off screen. */
+  const blankCoverRef = useRef(false)
   const splitSentRef = useRef(false)
 
   /** Tells main which tabs show in the split and where, measured now — sent
@@ -442,6 +446,9 @@ export function WebviewPanel({ splitPickerKeymap, splitPickerFocusTick, vimKeyma
       window.electronAPI.tabSetBounds?.({ x: 0, y: 0, width: 0, height: 0 })
     }
     const show = (): void => {
+      // A blank tab's page stays in its view's place: the view stays off
+      // screen past a drag's end.
+      if (blankCoverRef.current) return
       suppressedRef.current = false
       report()
     }
@@ -620,6 +627,21 @@ export function WebviewPanel({ splitPickerKeymap, splitPickerFocusTick, vimKeyma
     return
   }, [showError, showCertError])
 
+  // A blank tab — nothing loaded, nothing failed, not in a split: the app's
+  // mark in the page area (BlankPage), its empty view off screen. The keys
+  // stay where they were (the address bar of a new tab, or the view).
+  const showBlank = !!activeTabId && !activeInternalUrl && !splitShown && !showError && !showCertError &&
+    (activeTabUrl === 'about:blank' || activeTabUrl === '')
+  useEffect(() => {
+    if (!showBlank) return
+    blankCoverRef.current = true
+    window.dispatchEvent(new CustomEvent('vimperium-tab-hide'))
+    return () => {
+      blankCoverRef.current = false
+      window.dispatchEvent(new CustomEvent('vimperium-tab-show'))
+    }
+  }, [showBlank, activeTabId])
+
   const failedHost = (() => {
     if (!activeError?.url) return ''
     try { return new URL(activeError.url).hostname } catch { return activeError.url }
@@ -691,6 +713,8 @@ export function WebviewPanel({ splitPickerKeymap, splitPickerFocusTick, vimKeyma
       {splitShown && split && split.second === null && (
         <SplitPicker split={split} paneRef={emptyPaneRef} vimKeymap={splitPickerKeymap} focusTick={splitPickerFocusTick} />
       )}
+
+      {showBlank && <BlankPage vimMode={vimMode} />}
 
       {parkedGroup && <GroupPage group={parkedGroup} vimKeymap={vimKeymap} vimMode={vimMode} vimPending={vimPending} hintsOn={groupHintsOn} />}
 

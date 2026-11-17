@@ -28,7 +28,8 @@ import { focusAddressFilter, useAddressFilter, type AddressFilterKeyEvent } from
 import { closePage, closePageTab, useSearchPageRequest, type SearchFilter } from '../lib/page-nav'
 import { internalPageOf } from '../lib/internal-pages'
 import { useHintLabels, useHintTargets, useReservedHintKeys } from '../lib/hint-labels'
-import { ColumnsSwitch, pageWidthClass, usePageColumns } from './ColumnsSwitch'
+import { ColumnsSwitch, usePageColumns } from './ColumnsSwitch'
+import { EntityIcon, LIST_PAGE_ROOT, LIST_ROW_SCROLL, ListPageHeader, listBoxClass } from './ListPage'
 import { usePageKeys } from '../lib/vim-mode'
 import { keyTokenFromEvent } from '../lib/vim-keymap'
 import type { VimKeymap } from '../lib/vim-keymap'
@@ -336,7 +337,7 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
   useReservedHintKeys(TYPE_KEY_LIST)
   // The Sidebar's row says what's searched.
   useEffect(() => {
-    useAppStore.getState().updateTabTitle(tabId, `Search ${TYPE_LABELS[filter]}`)
+    useAppStore.getState().updateTabTitle(tabId, `Search Everything: ${TYPE_LABELS[filter]}`)
   }, [tabId, filter])
   const toggleScope = (): void => {
     setScope((prev) => {
@@ -575,26 +576,33 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
   const deleting = rowDialog?.kind === 'delete-workspace' ? rowDialog : null
 
   const TypeIcon = TYPE_ICONS[filter]
-  // The header and the results are one width, their edges in one line —
-  // the width every such page has (a group's page too).
-  const widthClass = pageWidthClass(columns)
   const total = items.length
   const countLabel = query.trim() ? `${results.length}/${total}` : `${total}`
 
+  /** The page's name, with what's searched: its heading and its row in
+   *  the Sidebar read the same. */
+  const pageTitle = `Search Everything: ${TYPE_LABELS[filter]}`
+
   return (
     <div
-      className="absolute inset-0 z-50 flex flex-col bg-background text-foreground select-none"
+      // The page's frame is the one a group's page has (ListPage.tsx): the
+      // page scrolls, the header stays put.
+      ref={listRef}
+      className={LIST_PAGE_ROOT}
       role="region"
-      aria-label="Search Everything"
+      aria-label={pageTitle}
       onMouseDown={keepFocus}
     >
-      {/* Header: the title, then the kinds and the scope. */}
-      <div className="shrink-0 border-b border-border">
-        <div className={`mx-auto flex items-center gap-3 px-4 pt-5 pb-3 ${widthClass}`}>
-          <Search size={18} className="shrink-0 text-primary" />
-          <h1 className="text-lg font-semibold tracking-tight">Search Everything</h1>
-        </div>
-        <div className={`mx-auto flex items-center gap-1.5 whitespace-nowrap px-4 pb-4 ${widthClass}`}>
+      {/* Header: the title, then the kinds, the scope and the columns. */}
+      <ListPageHeader
+        columns={columns}
+        title={(
+          <>
+            <Search size={18} className="shrink-0 text-primary" />
+            <h1 className="min-w-0 truncate text-lg font-semibold tracking-tight">{pageTitle}</h1>
+          </>
+        )}
+      >
           <div className="flex h-8 shrink-0 items-center rounded-md bg-secondary p-0.5" role="radiogroup" aria-label="What to search">
             {FILTER_TYPES.map((type) => {
               const Icon = TYPE_ICONS[type]
@@ -653,16 +661,11 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
             vimMode={vimMode}
             className={scopeApplies && windowWorkspaceId ? 'ml-2' : 'ml-auto'}
           />
-        </div>
-      </div>
+      </ListPageHeader>
 
       {/* The results: the same padding above and below, scrolled or not. */}
-      <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto">
-        <div
-          className={`mx-auto px-4 py-4 ${widthClass} ${columns === 2 ? 'grid grid-cols-2 content-start gap-x-2' : ''}`}
-          role="listbox"
-          aria-label={TYPE_LABELS[filter]}
-        >
+      <div>
+        <div className={listBoxClass(columns)} role="listbox" aria-label={TYPE_LABELS[filter]}>
           <div className="col-span-full flex items-center gap-2 px-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             <TypeIcon size={10} />
             <span className="flex-1">{TYPE_LABELS[filter]}</span>
@@ -690,7 +693,7 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
                   void openRowMenu(item, { x: e.clientX, y: e.clientY }, false)
                 }}
                 onMouseMove={() => { if (selected !== idx) setSelected(idx) }}
-                className={`relative flex min-w-0 cursor-pointer items-center gap-2 rounded-lg px-2 py-2 ${
+                className={`relative flex min-w-0 cursor-pointer items-center gap-2 rounded-lg px-2 py-2 ${LIST_ROW_SCROLL} ${
                   idx === selected ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50'
                 }`}
               >
@@ -710,10 +713,11 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
                       <TabFavicon favicon={item.favicon} />
                     </>
                   ) : (
-                    <TypeIcon
-                      size={16}
-                      className="text-muted-foreground/60"
-                      style={item.type === 'tabGroup' && item.groupColor ? { color: 'var(--gc-resolved)' } : undefined}
+                    // The mode's gradient; a group keeps its own colour.
+                    <EntityIcon
+                      icon={TypeIcon}
+                      mode={vimMode}
+                      style={item.type === 'tabGroup' && item.groupColor ? { stroke: 'var(--gc-resolved)' } : undefined}
                     />
                   )}
                 </span>

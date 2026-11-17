@@ -9,6 +9,12 @@ interface Props {
   variant?: 'full' | 'small'
   /** Glitch as the pointer comes onto the mark too. */
   glitchOnHover?: boolean
+  /** Glitch once as it's first shown. */
+  glitchOnMount?: boolean
+  /** Vim's mode, for a full badge that wears it (a blank tab's): INSERT
+   *  swaps the trios — green-yellow, tearing into COMMAND's blue-violet.
+   *  Without it the badge is the app icon's, whatever the mode. */
+  mode?: 'command' | 'insert' | null
   /** Its side in px. Without it the full badge fills its box and the small
    *  one is 18 px. */
   size?: number
@@ -22,7 +28,7 @@ interface Props {
  *  jump sideways for half a second (.brand-mark in globals.css). Still
  *  where Settings → Appearance → Motion says so (lib/motion.ts), and while
  *  its window isn't the one in use. */
-export function BrandMark({ glitchKey = 0, variant = 'small', glitchOnHover = false, size }: Props) {
+export function BrandMark({ glitchKey = 0, variant = 'small', glitchOnHover = false, glitchOnMount = false, mode, size }: Props) {
   const ref = useRef<HTMLSpanElement>(null)
   const first = useRef(true)
   const [hovers, setHovers] = useState(0)
@@ -32,7 +38,10 @@ export function BrandMark({ glitchKey = 0, variant = 'small', glitchOnHover = fa
   const uid = `bm${useId().replace(/[^\w-]/g, '')}`
 
   useEffect(() => {
-    if (first.current) { first.current = false; return }
+    if (first.current) {
+      first.current = false
+      if (!glitchOnMount) return
+    }
     const el = ref.current
     // The window the mark is drawn in: Settings → About is a window of its own.
     if (!el || el.ownerDocument.documentElement.hasAttribute('data-window-inactive')) return
@@ -42,13 +51,16 @@ export function BrandMark({ glitchKey = 0, variant = 'small', glitchOnHover = fa
     el.setAttribute('data-glitch', '')
     const t = setTimeout(() => el.removeAttribute('data-glitch'), 600)
     return () => clearTimeout(t)
-  }, [glitchKey, hovers])
+    // The mode changing tears it once too.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [glitchKey, hovers, mode])
 
   return (
     <span
       ref={ref}
       className="brand-mark"
       data-variant={variant}
+      data-mode={mode ?? undefined}
       aria-hidden="true"
       style={size ? { width: size, height: size } : undefined}
       onPointerEnter={glitchOnHover ? () => setHovers((n) => n + 1) : undefined}
