@@ -575,8 +575,11 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
   const deleting = rowDialog?.kind === 'delete-workspace' ? rowDialog : null
 
   const TypeIcon = TYPE_ICONS[filter]
-  // Two columns are the wide layout: the page's whole width.
-  const widthClass = columns === 2 ? 'max-w-none' : 'max-w-2xl'
+  // The header and the results are one width, their edges in one line: wide
+  // enough in one column for the header's row (the kinds, the scope, the
+  // columns) unwrapped; two columns are the wide layout, the page's whole
+  // width.
+  const widthClass = columns === 2 ? 'max-w-none' : 'max-w-5xl'
   const total = items.length
   const countLabel = query.trim() ? `${results.length}/${total}` : `${total}`
 
@@ -589,12 +592,12 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
     >
       {/* Header: the title, then the kinds and the scope. */}
       <div className="shrink-0 border-b border-border">
-        <div className={`mx-auto flex items-center gap-3 px-6 pt-5 pb-3 ${widthClass}`}>
+        <div className={`mx-auto flex items-center gap-3 px-4 pt-5 pb-3 ${widthClass}`}>
           <Search size={18} className="shrink-0 text-primary" />
           <h1 className="text-lg font-semibold tracking-tight">Search Everything</h1>
         </div>
-        <div className={`mx-auto flex items-center gap-1.5 px-6 pb-4 ${widthClass}`}>
-          <div className="flex h-8 items-center rounded-md bg-secondary p-0.5" role="radiogroup" aria-label="What to search">
+        <div className={`mx-auto flex items-center gap-1.5 whitespace-nowrap px-4 pb-4 ${widthClass}`}>
+          <div className="flex h-8 shrink-0 items-center rounded-md bg-secondary p-0.5" role="radiogroup" aria-label="What to search">
             {FILTER_TYPES.map((type) => {
               const Icon = TYPE_ICONS[type]
               const active = filter === type
@@ -628,7 +631,7 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
               tabIndex={-1}
               onClick={toggleScope}
               title={`Search this workspace or every one (${SCOPE_KEY_CAP})`}
-              className="ml-auto flex h-7 items-center gap-1.5 px-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+              className="ml-auto flex h-7 shrink-0 items-center gap-1.5 px-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
               {scope === 'current' ? 'This workspace' : 'All workspaces'}
               <span
