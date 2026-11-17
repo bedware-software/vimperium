@@ -1477,12 +1477,12 @@ export function Toolbar({ windowWorkspaceId, sidebarVisible, pageFullscreen, vim
   const helpOpen = useHelpPanelStore((s) => s.open)
   const headerHints = useMemo(() => ({ on: helpOpen && hintsOn, pending: vimPending ?? '' }), [helpOpen, hintsOn, vimPending])
   const downloadsHint = useHeaderHint('open-downloads', totalDownloads > 0, undefined, headerHints)
-  // Back and Reload are a web page's: on a page this window draws (the
-  // keys' help itself, Downloads…) there's no history to go back in and
-  // nothing to load again, so their keys do nothing and aren't shown.
-  const backHint = useHeaderHint('back', security !== 'internal', undefined, headerHints)
+  // Shown on the keys' help too — a page this window draws, where Back and
+  // Reload themselves do nothing: the help is the only place these badges
+  // show at all, and it's where you look a key up to use on a web page.
+  const backHint = useHeaderHint('back', true, undefined, headerHints)
   const forwardHint = useHeaderHint('forward', canGoForward, undefined, headerHints)
-  const reloadHint = useHeaderHint('reload', security !== 'internal', undefined, headerHints)
+  const reloadHint = useHeaderHint('reload', true, undefined, headerHints)
   const urlHint = useHeaderHint('focus-url', !urlEditorOpen, undefined, headerHints)
   const securityHint = useHeaderHint('site-info', security !== 'internal', HEADER_HINT_BOTTOM_RIGHT, headerHints)
 
