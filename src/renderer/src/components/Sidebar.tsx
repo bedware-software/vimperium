@@ -133,7 +133,7 @@ const LIST_SCALES = [1.25] as const
 const LIST_BOTTOM_PAD = 2
 
 /** How long the cursor rests on a row before the row shows by itself. */
-const CURSOR_REST_MS = 2000
+const CURSOR_REST_MS = 1000
 
 export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hintsOn }: Props) {
   const activeTabId = useAppStore((s) => s.activeTabId)

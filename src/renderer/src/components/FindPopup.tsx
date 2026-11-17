@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronUp, ChevronDown, Link, Search, X } from 'lucide-react'
 import { useAppStore } from '../store/app-store'
 import { DetachedWindow } from './DetachedWindow'
@@ -7,6 +7,7 @@ import { Hint, HintBar, LEAVE_INSERT_CAP, vimKeyCaps, vimKeyCapsAll } from './Ke
 import { usePopupVimMode } from '../lib/vim-mode'
 import { usePagePlacement } from '../lib/page-placement'
 import type { VimKeymap } from '../lib/vim-keymap'
+import { cyrillicReadings } from '../lib/translit'
 
 const isMac = navigator.platform.toLowerCase().includes('mac')
 
@@ -35,8 +36,26 @@ interface FoundInPageEvent {
   activeMatchOrdinal: number
   matches: number
   finalUpdate: boolean
+  /** What this is the result of searching for. */
+  text?: string
   /** The active match is on a link or a button: its address ('' with none). */
   link?: string
+}
+
+/** First in the box: what follows is searched for as it's typed, and only
+ *  so. == finds an = itself. */
+const EXACT_PREFIX = '='
+
+/** What to ask the page for, in turn, for what's typed: itself, then —
+ *  while nothing matches — its Cyrillic readings (lib/translit.ts), so
+ *  "rojdenie" finds "рождение" from an English keyboard. After = only
+ *  itself. */
+function findTexts(typed: string): string[] {
+  if (typed.startsWith(EXACT_PREFIX)) {
+    const text = typed.slice(EXACT_PREFIX.length)
+    return text ? [text] : []
+  }
+  return typed ? [typed, ...cyrillicReadings(typed)] : []
 }
 
 interface MatchInfo {
@@ -54,7 +73,9 @@ interface MatchInfo {
  * stream. In Vim mode it opens in INSERT, only for typing what to find (the
  * first match lights up as you type); Enter or Ctrl+C goes to COMMAND, the
  * one place j/k (n/N) step through the matches, i types again; Esc closes
- * from either. A match on a link (or a button) says so in the field, and
+ * from either. What's typed in Latin letters and found nowhere is looked
+ * for in Cyrillic too (lib/translit.ts), the field saying what it found;
+ * = first looks for exactly what's typed. A match on a link (or a button) says so in the field, and
  * Enter in COMMAND — Ctrl+Enter anywhere — clicks it, closing Find.
  * Without Vim mode Enter / Shift+Enter step, as in any browser.
  */
@@ -70,14 +91,24 @@ export function FindPopup({ open, focusTick, onClose, anchorRef, vimKeymap }: Pr
   const activeTabId = useAppStore((s) => s.activeTabId)
   const placement = usePagePlacement(open, anchorRef, 'right', WIDTH)
 
+  // What the page is asked for: what's typed, then its other readings
+  // while nothing matches. `tryRef` is the one being asked now; `found`
+  // the one that matched (shown in the field when it isn't what's typed).
+  const texts = useMemo(() => findTexts(query), [query])
+  const textsRef = useRef(texts)
+  textsRef.current = texts
+  const tryRef = useRef(0)
+  const [foundText, setFoundText] = useState('')
+
   const findNext = useCallback((forward: boolean): void => {
-    if (!query || !activeTabId) return
+    const text = textsRef.current[tryRef.current]
+    if (!text || !activeTabId) return
     // `findNext: false` = advance within the existing session (the typing
     // effect below seeded it with findNext: true). Pairing with `forward`
     // gives prev/next navigation over the same matches.
-    window.electronAPI?.tabFindInPage?.(activeTabId, query, { findNext: false, forward })
+    window.electronAPI?.tabFindInPage?.(activeTabId, text, { findNext: false, forward })
     lastSearchedTabIdRef.current = activeTabId
-  }, [query, activeTabId])
+  }, [activeTabId])
 
   /** Clicks what the active match is on, and closes: false when it's on
    *  nothing a click opens. */
@@ -129,6 +160,19 @@ export function FindPopup({ open, focusTick, onClose, anchorRef, vimKeymap }: Pr
       if (evt?.type !== 'found-in-page') return
       const found = raw as FoundInPageEvent
       if (!activeTabId || found.tabId !== activeTabId) return
+      // An answer to a text no longer asked for (an earlier keystroke's, an
+      // earlier reading's) says nothing about this one.
+      const asked = textsRef.current[tryRef.current]
+      if (found.text !== undefined && found.text !== asked) return
+      // Nothing matches: its next reading, if there's one — and no "No
+      // results" in between.
+      if (found.matches === 0 && tryRef.current + 1 < textsRef.current.length) {
+        if (!found.finalUpdate) return
+        tryRef.current += 1
+        window.electronAPI?.tabFindInPage?.(activeTabId, textsRef.current[tryRef.current], { findNext: true })
+        return
+      }
+      setFoundText(found.matches > 0 ? asked ?? '' : '')
       // Only the final update knows about the link: until it comes, the
       // match isn't one.
       setResult({ active: found.activeMatchOrdinal, total: found.matches, link: found.matches > 0 ? found.link ?? null : null })
@@ -156,8 +200,10 @@ export function FindPopup({ open, focusTick, onClose, anchorRef, vimKeymap }: Pr
       lastSearchedTabIdRef.current = null
     }
     if (!activeTabId) return
-    if (!query) {
+    tryRef.current = 0
+    if (texts.length === 0) {
       setResult(null)
+      setFoundText('')
       if (lastSearchedTabIdRef.current) {
         window.electronAPI?.tabStopFindInPage?.(lastSearchedTabIdRef.current, 'clearSelection')
         lastSearchedTabIdRef.current = null
@@ -165,11 +211,11 @@ export function FindPopup({ open, focusTick, onClose, anchorRef, vimKeymap }: Pr
       return
     }
     const t = setTimeout(() => {
-      window.electronAPI?.tabFindInPage?.(activeTabId, query, { findNext: true })
+      window.electronAPI?.tabFindInPage?.(activeTabId, texts[0], { findNext: true })
       lastSearchedTabIdRef.current = activeTabId
     }, 40)
     return () => clearTimeout(t)
-  }, [query, activeTabId, open])
+  }, [texts, activeTabId, open])
 
   // Closing drops the highlights on whichever tab we searched last.
   useEffect(() => {
@@ -206,6 +252,8 @@ export function FindPopup({ open, focusTick, onClose, anchorRef, vimKeymap }: Pr
       ? `${result.active}/${result.total}`
       : 'No results'
     : ''
+  // What matched, when it isn't what's typed (its Cyrillic reading).
+  const reading = result && result.total > 0 && foundText && foundText !== texts[0] ? foundText : ''
   const onLink = result?.link != null
   const clickLabel = result?.link ? 'Open the link' : 'Click it'
   const shift = isMac ? '⇧' : 'Shift'
@@ -240,10 +288,16 @@ export function FindPopup({ open, focusTick, onClose, anchorRef, vimKeymap }: Pr
               onKeyDown={handleKeyDown}
               onFocus={vim.onBoxFocus}
               onBlur={vim.onBoxBlur}
-              placeholder="Find in page"
+              placeholder="Find in page (= exact)"
               spellCheck={false}
               className="flex-1 min-w-0 bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground"
             />
+            {/* Found as another reading of what's typed: which. */}
+            {reading && (
+              <span className="max-w-[9rem] shrink-0 truncate text-xs text-muted-foreground select-none" title={`Found as “${reading}”`}>
+                → {reading}
+              </span>
+            )}
             {/* The match is on a link or a button: Enter clicks it. */}
             {onLink && (
               <span
@@ -261,7 +315,7 @@ export function FindPopup({ open, focusTick, onClose, anchorRef, vimKeymap }: Pr
           <button
             type="button"
             onClick={() => findNext(false)}
-            disabled={!query}
+            disabled={texts.length === 0}
             title={`Previous match (${prevKeys})`}
             className="p-1 rounded hover:bg-accent disabled:opacity-40 disabled:cursor-default"
           >
@@ -270,7 +324,7 @@ export function FindPopup({ open, focusTick, onClose, anchorRef, vimKeymap }: Pr
           <button
             type="button"
             onClick={() => findNext(true)}
-            disabled={!query}
+            disabled={texts.length === 0}
             title={`Next match (${nextKeys})`}
             className="p-1 rounded hover:bg-accent disabled:opacity-40 disabled:cursor-default"
           >

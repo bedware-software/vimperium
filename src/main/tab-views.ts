@@ -74,6 +74,8 @@ export type TabEvent =
       activeMatchOrdinal: number
       matches: number
       finalUpdate: boolean
+      /** What was searched for (the last find asked of the tab). */
+      text?: string
       /** The active match is on something a click opens — a link, a
        *  button: its address (or '' with none). Only on the final update. */
       link?: string
@@ -844,6 +846,7 @@ function wireEvents(rec: TabRecord): void {
     const found = {
       type: 'found-in-page' as const,
       tabId: rec.tabId,
+      text: findTexts.get(rec.tabId),
       requestId: result.requestId,
       activeMatchOrdinal: result.activeMatchOrdinal,
       matches: result.matches,
@@ -1608,6 +1611,10 @@ export function tabStop(tabId: string): void {
   rec.view.webContents.stop()
 }
 
+/** What each tab was last asked to find: its results say so, so whoever
+ *  asked can tell an answer to an earlier text from one to the latest. */
+const findTexts = new Map<string, string>()
+
 export function tabFindInPage(
   tabId: string,
   text: string,
@@ -1616,6 +1623,7 @@ export function tabFindInPage(
   const rec = tabs.get(tabId)
   if (!rec) return 0
   if (!text) return 0
+  findTexts.set(tabId, text)
   return rec.view.webContents.findInPage(text, options)
 }
 
@@ -1624,6 +1632,7 @@ export function tabStopFindInPage(
   action: 'clearSelection' | 'keepSelection' | 'activateSelection',
 ): void {
   const rec = tabs.get(tabId)
+  findTexts.delete(tabId)
   if (!rec) return
   rec.view.webContents.stopFindInPage(action)
 }
