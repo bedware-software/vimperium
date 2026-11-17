@@ -6,8 +6,8 @@
 // (lib/address-filter.ts), typing at once when it opens. In the bar ↑/↓ and
 // PageUp/PageDown move through the results, Enter opens the selected one,
 // Tab / Shift+Tab step through the four kinds, Alt+S flips the scope (this
-// workspace / every one) for tabs and groups; Esc leaves the bar for
-// COMMAND, the query kept.
+// workspace / every one) for tabs and groups; Ctrl+C leaves the bar for
+// COMMAND, the query kept, and Esc closes the page from there too.
 //
 // In COMMAND (lib/vim-mode.ts usePageKeys) the scroll keys move the
 // selection, Enter opens it, i / gi type in the bar again, m opens the
@@ -262,6 +262,7 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
     placeholder: placeholderFor(filter, scopeApplies && windowWorkspaceId ? scopedToCurrent : null),
     onKey: (e) => barKey(e),
     onEnter: () => openAt(selected),
+    onEscape: () => closePage('search'),
   })
 
   const results = useMemo(() => {

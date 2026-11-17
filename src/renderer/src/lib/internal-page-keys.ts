@@ -5,10 +5,11 @@
 // undoes that, y copies, m is the row's menu, i and / go to its filter (the
 // address bar, lib/address-filter.ts), Enter, Space, s for the sort… The window's commands it has a meaning for
 // come on the window's keymap (a rebind carries over, and the page's hints
-// show what's bound); the rest of the window's keys don't run here. Esc (or
+// show what's bound); the rest of the window's keys don't run here. Ctrl+C (or
 // Ctrl+[) lets go of the page for COMMAND, where the keys are the browser's
 // as on any page — dd closes the tab, Ctrl+J/K step through the Sidebar —
-// and i comes back in (lib/vim-mode.ts: a focus inside data-vim-page is
+// and i comes back in; Esc closes the page, from either mode, as it closes
+// a popup (lib/vim-mode.ts: a focus inside data-vim-page is
 // INSERT).
 
 import { useEffect, useMemo, useRef } from 'react'
@@ -193,8 +194,8 @@ export function titleWithKey(label: string, key: string | undefined): string {
   return key ? `${label} (${key})` : label
 }
 
-/** The help's last line: Esc gives the keys back to the browser, whose
- *  own keys then work as on any page. */
+/** The help's last line: Esc closes the page; Ctrl+C gives the keys back to
+ *  the browser, whose own keys then work as on any page. */
 export function windowKeysNote(keymap: VimKeymap): string | null {
   const first = (command: string): string | null => {
     const key = keysFor(keymap, command)[0]
@@ -210,7 +211,7 @@ export function windowKeysNote(keymap: VimKeymap): string | null {
   if (sidebar) parts.push(`${sidebar} shows or hides the Sidebar`)
   const back = first('insert-mode')
   if (back) parts.push(`${back} comes back here`)
-  return `Esc gives the keys back to the browser (COMMAND), as on a web page${parts.length > 0 ? `: ${parts.join(', ')}` : ''}.`
+  return `Esc closes the page. ${displayKeySequence('<C-c>')} gives the keys back to the browser (COMMAND), as on a web page${parts.length > 0 ? `: ${parts.join(', ')}` : ''}.`
 }
 
 /**
@@ -251,7 +252,7 @@ export function useInternalPageKeys<A extends string>({ table, run, ownsKeyboard
       (action, source) => runRef.current(action, source),
     )
     const onKeyDown = (e: KeyboardEvent): void => {
-      // A key the page doesn't own — COMMAND's, after Esc or Ctrl+[ (which
+      // A key the page doesn't own — COMMAND's, after Ctrl+C or Ctrl+[ (which
       // main takes, so the page never sees it), or Ctrl walking the Sidebar
       // — drops a pending prefix, or the first d of a dd left behind would
       // make the next d back in delete. Before the defaultPrevented check:
@@ -263,8 +264,7 @@ export function useInternalPageKeys<A extends string>({ table, run, ownsKeyboard
       if (e.defaultPrevented || e.metaKey || e.altKey) return
       if (!router.onKey(e)) return
       e.preventDefault()
-      // Ahead of App's global Escape (which hands the page's keys back for
-      // COMMAND) and the page's own handlers.
+      // Ahead of App's global Escape and the page's own handlers.
       e.stopPropagation()
     }
     // A pending key (the first d of dd) waits however long, as COMMAND's

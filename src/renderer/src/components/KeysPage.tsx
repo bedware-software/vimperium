@@ -8,7 +8,8 @@
 // The filter is the address bar (lib/address-filter.ts): it finds a key by
 // what it does, by the keys, by the command or by its section — what matches
 // stays under its section's heading, counted. ? on an empty filter closes
-// the page, as ? opened it; Esc leaves the filter for COMMAND, where j/k,
+// the page, as ? opened it, and so does Esc, typing or not, as on every page
+// this window draws; Ctrl+C leaves the filter for COMMAND, where j/k,
 // Ctrl+D/U and gg/G scroll the page and i (or gi) types in the filter again.
 // Keys typed so far of a sequence dim the page's rows they can't become.
 
@@ -23,7 +24,8 @@ import {
   displayKeySequence, keysFor, settingsCommandLabel, settingsCommandsInOrder, settingsKeymap, vimCommandLabel,
   type ParsedVimKeymap, type VimKeymap,
 } from '../lib/vim-keymap'
-import { usePageKeys } from '../lib/vim-mode'
+import { isEscapeKey, usePageKeys } from '../lib/vim-mode'
+import { closePage } from '../lib/page-nav'
 import { SEQUENCE_JOIN } from '../../../shared/vim-keys'
 import { LEAVE_INSERT_CAP } from './KeyHints'
 import { cn } from '../lib/utils'
@@ -119,6 +121,7 @@ export function KeysPage({ keymap, vimPending }: KeysPageProps) {
     // Enter leaves the filter for COMMAND, to scroll what it found; with
     // nothing found, what's typed goes as an address.
     onEnter: () => found > 0,
+    onEscape: () => closePage('keys'),
   })
 
   // A new filter starts from the top.
@@ -180,7 +183,8 @@ export function KeysPage({ keymap, vimPending }: KeysPageProps) {
   // COMMAND's keys on the page: the scroll keys scroll it, i and gi type in
   // the filter.
   usePageKeys({
-    intercept: () => false,
+    // Esc closes the page: where you were shows again.
+    intercept: (e) => isEscapeKey(e) && closePage('keys'),
     command: (command) => {
       const el = scrollRef.current
       if (!el) return false
@@ -256,7 +260,7 @@ export function KeysPage({ keymap, vimPending }: KeysPageProps) {
               {query ? `${found} of ${total}` : total}
             </span>
             <span className="ml-auto hidden truncate text-xs text-muted-foreground sm:block">
-              ? closes · Settings → Keyboard Shortcuts edits them
+              Esc or ? closes · Settings → Keyboard Shortcuts edits them
             </span>
           </div>
           <div ref={scrollRef} data-vim-scroll="" className="@container min-h-0 flex-1 overflow-y-auto">

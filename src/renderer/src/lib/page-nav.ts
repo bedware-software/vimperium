@@ -9,7 +9,7 @@
 import { create } from 'zustand'
 import { useAppStore } from '../store/app-store'
 import type { Workspace } from '../store/types'
-import { SEARCH_URL, internalPageOf, isTransientInternalUrl, type InternalPage } from './internal-pages'
+import { SEARCH_URL, internalPageOf, type InternalPage } from './internal-pages'
 
 /** What Search Everything shows: one kind of thing. */
 export type SearchFilter = 'profile' | 'workspace' | 'tabGroup' | 'tab'
@@ -36,7 +36,7 @@ useAppStore.subscribe((s) => {
   const now = placeOf(s)
   if (now.tabId === lastPlace.tabId && now.groupId === lastPlace.groupId && now.workspaceId === lastPlace.workspaceId) return
   const tab = s.activeTabId ? s.getActiveTab() : null
-  if (tab && isTransientInternalUrl(tab.url) && lastPlace.tabId !== tab.id && lastPlace.workspaceId === now.workspaceId) {
+  if (tab && internalPageOf(tab.url) !== null && lastPlace.tabId !== tab.id && lastPlace.workspaceId === now.workspaceId) {
     origins.set(tab.id, lastPlace)
   }
   lastPlace = now

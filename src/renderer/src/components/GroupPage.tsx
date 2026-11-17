@@ -1,6 +1,7 @@
 // The page area while parked on a tab group (a click on its header, or its
 // label in COMMAND): the group's tabs, the split picker's look laid out on
-// the page, in one column or two (the switch by the count, remembered).
+// the page, in one column or two (the switch by the count, or c in COMMAND;
+// remembered).
 // Enter on the selected one, or a click, shows that tab.
 //
 // The filter is the address bar (lib/address-filter.ts): while the group
@@ -25,6 +26,7 @@ import { useHintLabels, useHintTargets } from '../lib/hint-labels'
 import { fuzzyFilter } from '../lib/fuzzy'
 import { focusAddressFilter, useAddressFilter, type AddressFilterKeyEvent } from '../lib/address-filter'
 import { keyTokenFromEvent } from '../lib/vim-keymap'
+import { SEQUENCE_JOIN } from '../../../shared/vim-keys'
 import { usePageKeys, type VimMode } from '../lib/vim-mode'
 import type { VimKeymap } from '../lib/vim-keymap'
 import { cn } from '../lib/utils'
@@ -44,6 +46,9 @@ interface Props {
 type Columns = 1 | 2
 
 const HALF_PAGE_ROWS = 5
+/** The page's own key, ahead of the keymap while the keymap leaves it free:
+ *  one column or two. */
+const COLUMNS_KEY_TOKEN = 'c'
 const COLUMNS_KEY = 'vimperium-group-page-columns'
 
 function loadColumns(): Columns {
@@ -62,7 +67,7 @@ function saveColumns(columns: Columns): void {
 // Sidebar lists it too — one tab, one label in both places.
 const hintId = (tabId: string): string => `tab:${tabId}`
 
-export function GroupPage({ group, vimMode, vimPending, hintsOn }: Props) {
+export function GroupPage({ group, vimKeymap, vimMode, vimPending, hintsOn }: Props) {
   const [selected, setSelected] = useState(0)
   const [columns, setColumns] = useState<Columns>(loadColumns)
   const listRef = useRef<HTMLDivElement>(null)
@@ -126,10 +131,22 @@ export function GroupPage({ group, vimMode, vimPending, hintsOn }: Props) {
     return arrowKey(e.key)
   }
 
-  /** Enter, typed outside the filter. */
+  // c is the page's while no binding of the user's starts with it.
+  const columnsKeyFree = useMemo(() => {
+    if (!vimKeymap) return true
+    for (const seq of vimKeymap.keys()) if (seq.split(SEQUENCE_JOIN)[0] === COLUMNS_KEY_TOKEN) return false
+    return true
+  }, [vimKeymap])
+
+  /** Enter and c, typed outside the filter. */
   const rowKey = (e: KeyboardEvent): boolean => {
     if (e.metaKey || e.ctrlKey || e.altKey) return false
-    return keyTokenFromEvent(e) === '<CR>' && open(selected)
+    const token = keyTokenFromEvent(e)
+    if (token === COLUMNS_KEY_TOKEN && columnsKeyFree) {
+      if (!e.repeat) setColumns((n) => (n === 1 ? 2 : 1))
+      return true
+    }
+    return token === '<CR>' && open(selected)
   }
 
   // COMMAND's labels on its rows.
@@ -202,10 +219,14 @@ export function GroupPage({ group, vimMode, vimPending, hintsOn }: Props) {
             <span className="shrink-0 text-sm text-muted-foreground tabular-nums">
               {filtered ? `${rows.length} of ${count}` : count} {count === 1 ? 'tab' : 'tabs'}
             </span>
+            {/* The switch's key, while the keys are COMMAND's. */}
+            {vimMode === 'command' && columnsKeyFree && (
+              <kbd className="ml-auto shrink-0 font-mono text-[11px]" title="One column / two">{COLUMNS_KEY_TOKEN}</kbd>
+            )}
             <div
               role="radiogroup"
               aria-label="Layout"
-              className="ml-auto flex h-8 shrink-0 items-center rounded-md bg-secondary p-0.5"
+              className={cn('flex h-8 shrink-0 items-center rounded-md bg-secondary p-0.5', !(vimMode === 'command' && columnsKeyFree) && 'ml-auto')}
             >
               {([1, 2] as const).map((n) => {
                 const Icon = n === 1 ? Rows3 : Columns2
@@ -218,7 +239,7 @@ export function GroupPage({ group, vimMode, vimPending, hintsOn }: Props) {
                     aria-checked={active}
                     tabIndex={-1}
                     onClick={() => setColumns(n)}
-                    title={n === 1 ? 'One column' : 'Two columns'}
+                    title={`${n === 1 ? 'One column' : 'Two columns'}${columnsKeyFree ? ` (${COLUMNS_KEY_TOKEN})` : ''}`}
                     className={cn(
                       'flex h-7 w-8 items-center justify-center rounded transition-colors',
                       active ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',

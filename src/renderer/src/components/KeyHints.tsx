@@ -59,6 +59,23 @@ export function HintBar({ children, wrap = false, className }: BarProps) {
   )
 }
 
+/** Where a popup's keys strip would be while it's hidden, in COMMAND: how
+ *  to bring it up — ? shows it (usePopupVimMode's showKeys). Null in INSERT
+ *  (? types there) and while the strip shows. */
+export function KeysPrompt({ mode, shown, className }: {
+  mode: 'command' | 'insert' | null
+  /** The strip is up. */
+  shown: boolean
+  className?: string
+}) {
+  if (mode !== 'command' || shown) return null
+  return (
+    <div className={cn('flex shrink-0 items-center justify-end gap-1 px-4 pb-2 pt-1 text-[11px] text-muted-foreground select-none', className)}>
+      Keys <kbd className="font-mono">?</kbd>
+    </div>
+  )
+}
+
 /** The Sidebar's keys, at the bottom of it while the keys' help is open: a
  *  column of what each does and its keys, as narrow as the Sidebar is —
  *  one per line, never wrapping into a jumble. */

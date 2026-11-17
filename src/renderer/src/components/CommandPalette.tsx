@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { Command } from 'lucide-react'
 import { DetachedWindow } from './DetachedWindow'
 import { InputField } from './InputField'
-import { Hint, HintBar, LEAVE_INSERT_CAP, RowHint, vimKeyCaps } from './KeyHints'
+import { Hint, HintBar, KeysPrompt, LEAVE_INSERT_CAP, RowHint, vimKeyCaps } from './KeyHints'
 import { hintIndex, usePopupHints } from '../lib/hint-labels'
 import { useAppStore } from '../store/app-store'
 import { actionHint, type HintSettings } from '../lib/shortcut-hints'
@@ -418,6 +418,7 @@ export function CommandPalette({ open, onOpenChange, onAction, vimKeymap }: Prop
 
         {/* The keys, along the bottom as everywhere. */}
         <div data-detached-drag-handle>
+          <KeysPrompt mode={vim.mode} shown={vim.showKeys} />
           {vim.showKeys && vim.mode === 'command' && (
 <HintBar>
             {vim.mode === 'command' ? (

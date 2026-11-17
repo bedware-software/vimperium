@@ -1,4 +1,4 @@
-import { Fragment, useState, useRef, useEffect, useCallback, useMemo } from 'react'
+import { Fragment, useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } from 'react'
 import { useAppStore, getSidebarOrder, GROUP_COLORS } from '../store/app-store'
 import { log } from '../lib/log'
 import { InlineRenameInput } from './InlineRenameInput'
@@ -125,6 +125,11 @@ interface Props {
 // Its rows' ids among the window's hint targets: one per thing, so a tab the
 // group page lists too wears the same label there (lib/hint-labels.ts).
 const hintId = (rowId: string, group: boolean): string => `${group ? 'group' : 'tab'}:${rowId}`
+
+/** How much bigger the list is drawn while it all fits, the biggest first. */
+const LIST_SCALES = [2, 1.75, 1.5, 1.25] as const
+/** The list's bottom padding (pb-0.5), px at scale 1. */
+const LIST_BOTTOM_PAD = 2
 
 export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hintsOn }: Props) {
   const activeTabId = useAppStore((s) => s.activeTabId)
@@ -257,6 +262,46 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
   const dragStartPos = useRef<{ x: number; y: number } | null>(null)
   const dragActivated = useRef(false)
   const sidebarRef = useRef<HTMLDivElement>(null)
+
+  // ── Scale ──
+  // Few rows in a tall Sidebar are drawn bigger — the whole list, caps,
+  // favicons, titles and all (CSS zoom): the biggest of LIST_SCALES at which
+  // every row and New Tab still fit without scrolling, 1 once they don't.
+  // Worked out from the rows' height at 1 and the list's room, neither of
+  // which depends on the scale, so it can't loop. Held still during a drag:
+  // the rows mustn't change size under the pointer.
+  const listRef = useRef<HTMLDivElement | null>(null)
+  // The list as mounted (not while there's no workspace to list).
+  const [listEl, setListEl] = useState<HTMLDivElement | null>(null)
+  const bindList = useCallback((el: HTMLDivElement | null) => {
+    listRef.current = el
+    setListEl(el)
+  }, [])
+  const [listScale, setListScale] = useState(1)
+  const listScaleRef = useRef(1)
+  listScaleRef.current = listScale
+  const fitListScale = useCallback(() => {
+    const list = listRef.current
+    const first = list?.firstElementChild
+    const last = list?.lastElementChild
+    if (!list || !first || !last) return
+    const room = list.getBoundingClientRect().height
+    // As drawn, over the scale it's drawn at; + the list's bottom padding.
+    const natural = (last.getBoundingClientRect().bottom - first.getBoundingClientRect().top) / listScaleRef.current + LIST_BOTTOM_PAD
+    if (room <= 0 || natural <= 0) return
+    const next = LIST_SCALES.find((s) => natural * s <= room + 0.5) ?? 1
+    if (next !== listScaleRef.current) setListScale(next)
+  }, [])
+  const draggingNow = dragging !== null
+  // After every render: a row came or went, a group folded.
+  useLayoutEffect(() => { if (!draggingNow) fitListScale() })
+  // The Sidebar's room changed: the window's height, the keys' strip.
+  useEffect(() => {
+    if (!listEl || draggingNow) return
+    const ro = new ResizeObserver(fitListScale)
+    ro.observe(listEl)
+    return () => ro.disconnect()
+  }, [fitListScale, draggingNow, listEl])
 
   // ── Drag handlers ──
   const startDrag = useCallback((type: 'tab' | 'group', id: string, ids: string[], e: React.MouseEvent) => {
@@ -939,7 +984,7 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
         // Just under the row, past the label column (its left border) and
         // the favicon column.
         const rect = row.getBoundingClientRect()
-        const point = { x: rect.left + row.clientLeft + 24, y: rect.bottom }
+        const point = { x: rect.left + (row.clientLeft + 24) * listScaleRef.current, y: rect.bottom }
         if (groupById(vimCursorId)) void openGroupMenu(vimCursorId, point, true)
         else void openTabMenu(vimCursorId, point, true)
         break
@@ -1239,7 +1284,7 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
   return (
     <>
       <div ref={sidebarRef} style={{ width }} className="bg-toolbar border-r border-border flex flex-col shrink-0 overflow-hidden select-none relative">
-        <div data-sidebar-list="" className="flex-1 overflow-y-auto pt-0 pb-0.5">
+        <div ref={bindList} data-sidebar-list="" style={listScale === 1 ? undefined : { zoom: listScale }} className="flex-1 overflow-y-auto pt-0 pb-0.5">
           {sidebarItems.map((item, sidebarIdx) => {
             if (item.type === 'tab') {
               return renderTabRow(item.tab, null, sidebarIdx)

@@ -181,10 +181,12 @@ function FilterBox({ spec }: { spec: AddressFilterSpec }) {
       return
     }
     if (e.key === 'Escape') {
-      // COMMAND, the filter kept: the rows it left wear their labels.
       e.preventDefault()
       e.stopPropagation()
-      inputRef.current?.blur()
+      // The page's own Esc: what's up over it closes, or the page does.
+      // The group page has none — COMMAND, the filter kept: the rows it
+      // left wear their labels.
+      if (!spec.onEscape?.()) inputRef.current?.blur()
       return
     }
     if (spec.onKey?.(e)) e.preventDefault()

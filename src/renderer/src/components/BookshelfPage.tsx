@@ -30,7 +30,7 @@ import { MoveBookshelfDialog, type BookshelfMoveTarget } from './MoveBookshelfDi
 import { ConfirmDialog } from './ConfirmDialog'
 import { KeyCap, RowHint, vimKeyCaps } from './KeyHints'
 import { useHintLabels, useHintTargets } from '../lib/hint-labels'
-import { usePageKeys } from '../lib/vim-mode'
+import { isEscapeKey, usePageKeys } from '../lib/vim-mode'
 import { focusAddressFilter, useAddressFilter, type AddressFilterKeyEvent } from '../lib/address-filter'
 import { closePage } from '../lib/page-nav'
 import { isInternalUrl } from '../lib/internal-pages'
@@ -362,6 +362,7 @@ export function BookshelfPage({ profileId, vimKeymap, vimMode, vimPending, hints
     label: 'Bookshelf',
     placeholder: 'Filter the Bookshelf…',
     onKey: (e) => barKey(e),
+    onEscape: () => escapePage(),
     onEnter: (e) => {
       const row = cursorRowRef.current
       if (!row) return false
@@ -909,8 +910,18 @@ export function BookshelfPage({ profileId, vimKeymap, vimMode, vimPending, hints
    *  its keys. */
   const busy = editing || moveTarget !== null || confirmGroup !== null
 
+  /** Esc, in COMMAND or typed in the filter: a multi-selection goes
+   *  first, then the page closes, back to where you were. */
+  const escapePage = (): boolean => {
+    if (selectedIds.size > 0) {
+      setSelectedIds(new Set())
+      return true
+    }
+    return closePage('bookshelf')
+  }
+
   /** Keys ahead of the keymap in COMMAND: Enter opens, Esc drops a
-   *  multi-selection. */
+   *  multi-selection, then closes the page. */
   const pageIntercept = (e: KeyboardEvent): boolean => {
     if (busy || e.ctrlKey || e.metaKey || e.altKey) return false
     if (keyTokenFromEvent(e) === '<CR>') {
@@ -918,11 +929,7 @@ export function BookshelfPage({ profileId, vimKeymap, vimMode, vimPending, hints
       activateRow(cursorRow, e.shiftKey ? 'background' : 'front')
       return true
     }
-    if (e.key === 'Escape' && selectedIds.size > 0) {
-      setSelectedIds(new Set())
-      return true
-    }
-    return false
+    return isEscapeKey(e) && escapePage()
   }
 
   const pageCommand = (command: string): boolean => {

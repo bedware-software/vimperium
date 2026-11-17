@@ -5,7 +5,10 @@
 // chip before it. What's typed is the page's query; ↑/↓, PageUp/PageDown
 // and Tab typed there move through the page's rows, Enter opens the
 // selected one — or, with nothing to open, what's typed as an address. Esc
-// leaves the box for COMMAND, the filter kept.
+// closes the page (its spec's onEscape: what's up over it first), and
+// Ctrl+C leaves the box for COMMAND, the filter kept (lib/vim-mode.ts) —
+// as in a popup's field. The group page isn't a tab to close: Esc there
+// leaves the box for COMMAND.
 //
 // e (or a click on the bar, Cmd+L, the page's gi, i and /) types in it;
 // E is the address editor, as on any page.
@@ -34,6 +37,9 @@ export interface AddressFilterSpec {
   /** Enter: opens the selected row — false when there's none, and the bar
    *  opens what's typed as an address instead. */
   onEnter?: (e: AddressFilterKeyEvent) => boolean
+  /** Esc: closes what's up over the page, or the page itself; true when it
+   *  did. Without it (or false) Esc leaves the box for COMMAND. */
+  onEscape?: () => boolean
 }
 
 interface AddressFilterState {
@@ -89,6 +95,7 @@ export function useAddressFilter(owner: string, spec: AddressFilterSpec | null):
       placeholder: placeholder ?? '',
       onKey: (e) => specRef.current?.onKey?.(e) ?? false,
       onEnter: (e) => specRef.current?.onEnter?.(e) ?? false,
+      onEscape: () => specRef.current?.onEscape?.() ?? false,
     }
     // A new name or placeholder (Search Everything's filter switched) keeps
     // what's typed; another owner, or another page with the same one,

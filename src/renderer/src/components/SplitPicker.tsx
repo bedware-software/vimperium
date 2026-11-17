@@ -10,7 +10,7 @@ import { DetachedWindow, type PopupPlacement } from './DetachedWindow'
 import { TabFavicon } from './TabFavicon'
 import { CommentChip } from './CommentChip'
 import { InputField } from './InputField'
-import { Hint, HintBar, LEAVE_INSERT_CAP, RowHint, vimKeyCaps } from './KeyHints'
+import { Hint, HintBar, KeysPrompt, LEAVE_INSERT_CAP, RowHint, vimKeyCaps } from './KeyHints'
 import { hintIndex, usePopupHints } from '../lib/hint-labels'
 import { SplitGlyph } from './SplitPanes'
 import { fuzzyFilter } from '../lib/fuzzy'
@@ -232,6 +232,7 @@ export function SplitPicker({ split, paneRef, vimKeymap, focusTick }: Props) {
             )
           })}
         </div>
+        <KeysPrompt mode={vim.mode} shown={vim.showKeys} />
         {vim.showKeys && vim.mode === 'command' && (
 <HintBar>
           {vim.mode === 'command' ? (

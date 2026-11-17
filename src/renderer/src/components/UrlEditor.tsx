@@ -28,7 +28,7 @@ import { useAppStore } from '../store/app-store'
 import { TabFavicon } from './TabFavicon'
 import { DetachedWindow, type PopupPlacement } from './DetachedWindow'
 import { InputField } from './InputField'
-import { Hint, HintBar, vimKeyCaps } from './KeyHints'
+import { Hint, HintBar, KeysPrompt, vimKeyCaps } from './KeyHints'
 import { closeUrlEditor, useUrlEditorStore } from '../lib/url-editor'
 import { useAddressSuggestions, type Disposition } from '../lib/use-address-suggestions'
 import { blockByKey, blockKeyLabel, isBlockKey, removeBlock, replaceBlock, siteOnly, startBlock, upOneLevel, urlBlocks, type UrlBlock } from '../lib/url-blocks'
@@ -775,6 +775,12 @@ export function UrlEditor({ anchorRef, vimKeymap }: Props) {
           ) : null}
         </HintBar>
         </div>
+        )}
+        {/* In COMMAND with the strip hidden: how to bring it up. */}
+        {!intent && !flash && vim.mode === 'command' && !vim.showKeys && (
+          <div ref={setBarEl} className="mt-auto shrink-0">
+            <KeysPrompt mode={vim.mode} shown={vim.showKeys} />
+          </div>
         )}
       </div>
     </DetachedWindow>

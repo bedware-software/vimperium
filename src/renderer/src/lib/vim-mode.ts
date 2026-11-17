@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { KeySequencer, SEQUENCE_JOIN, isCtrlToken, keyTokenFromEvent, type VimKeymap, type VimKeymapEntries } from '../../../shared/vim-keys'
 import type { SidebarCommand } from './vim-keymap'
 import { log } from './log'
+import { useAddressFilterStore } from './address-filter'
 
 // Vim mode. A window is in one of two modes:
 //   COMMAND — plain keys run the commands from Settings' keymap: scrolling
@@ -306,6 +307,27 @@ export function isCopyKey(e: KeyboardEvent, field: Element): boolean {
  *  it copies (isCopyKey) — or Ctrl+[, vim's other Esc. */
 export function isLeaveInsertKey(e: KeyboardEvent): boolean {
   return isCtrlChord(e, 'KeyC') || isCtrlChord(e, 'BracketLeft')
+}
+
+/** Ctrl+C that leaves a page this window draws for COMMAND, as it leaves a
+ *  popup's field: typed on the page while it has the keys (Downloads,
+ *  Bangs), or in the address bar while it's a page's filter. Esc closes the
+ *  page instead, from either mode. A field of the page's own (the bang
+ *  form's) keeps its Ctrl+C; so does the address bar on a web page. Off the
+ *  Mac, with part of the filter selected, Ctrl+C copies it — the whole of
+ *  it selected is what going into the filter does, not a selection to copy. */
+function leavesPageInsert(e: KeyboardEvent): boolean {
+  if (!isCtrlChord(e, 'KeyC')) return false
+  const target = e.target
+  if (!(target instanceof HTMLElement)) return false
+  if (target instanceof HTMLInputElement && target.id === 'url-bar') {
+    if (!useAddressFilterStore.getState().owner) return false
+    const from = target.selectionStart ?? 0
+    const to = target.selectionEnd ?? 0
+    const part = to > from && to - from < target.value.length
+    return isMac || !part
+  }
+  return isInternalPage(target) && !isEditable(target)
 }
 
 // Keys that only ready a chord: they make no selection.
@@ -776,6 +798,13 @@ export function useVimMode({ enabled, keymap, onCommand, focusPage, isActiveTab 
     if (!enabled) return
 
     const onKeyDown = (e: KeyboardEvent): void => {
+      // Ctrl+C on a page this window draws, or in its filter: COMMAND.
+      if (modeRef.current === 'insert' && leavesPageInsert(e)) {
+        e.preventDefault()
+        e.stopPropagation()
+        enterCommand(false)
+        return
+      }
       if (modeRef.current !== 'command') return
       // Typing into a chrome field (URL bar, rename) stays typing.
       if (isEditable(e.target)) return
@@ -891,7 +920,7 @@ export function useVimMode({ enabled, keymap, onCommand, focusPage, isActiveTab 
       document.removeEventListener('focusin', onFocusIn)
       document.removeEventListener('focusout', onFocusOut)
     }
-  }, [enabled, feed, reset, setMode, endSidebarKeys, clearCtrlTimers])
+  }, [enabled, feed, reset, setMode, endSidebarKeys, clearCtrlTimers, enterCommand])
 
   return { mode, insertInChrome, pending, sidebarKeys, enterCommand, enterInsert, startTabWalk, returnToPage, endSidebarKeys }
 }

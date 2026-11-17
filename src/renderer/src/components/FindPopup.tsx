@@ -3,7 +3,7 @@ import { ChevronUp, ChevronDown, Search, X } from 'lucide-react'
 import { useAppStore } from '../store/app-store'
 import { DetachedWindow } from './DetachedWindow'
 import { InputField } from './InputField'
-import { Hint, HintBar, LEAVE_INSERT_CAP, vimKeyCaps, vimKeyCapsAll } from './KeyHints'
+import { Hint, HintBar, KeysPrompt, LEAVE_INSERT_CAP, vimKeyCaps, vimKeyCapsAll } from './KeyHints'
 import { usePopupVimMode } from '../lib/vim-mode'
 import { usePagePlacement } from '../lib/page-placement'
 import type { VimKeymap } from '../lib/vim-keymap'
@@ -247,6 +247,7 @@ export function FindPopup({ open, focusTick, onClose, anchorRef, vimKeymap }: Pr
             <X size={14} />
           </button>
         </div>
+        <KeysPrompt mode={vim.mode} shown={vim.showKeys} className="h-10 px-3 py-0" />
         {vim.showKeys && vim.mode === 'command' && (
 <HintBar>
           {vim.mode === 'command' ? (

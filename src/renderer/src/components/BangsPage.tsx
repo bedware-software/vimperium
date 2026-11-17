@@ -20,7 +20,8 @@ import {
   BANG_CATEGORIES, DEFAULT_BANGS, bangProblem, expandBang, normalizeLabels, normalizeTrigger, type Bang,
 } from '../../../shared/bangs'
 import { SEARCH_ENGINES, searchEngineProblem } from '../../../shared/search-engines'
-import { keepsChromeKeyboard } from '../lib/vim-mode'
+import { isEscapeKey, keepsChromeKeyboard, usePageKeys } from '../lib/vim-mode'
+import { closePage } from '../lib/page-nav'
 import {
   CONTEXT_MENU_KEYS, LIST_MOVES, cmd, helpKeys, titleWithKey, useInternalPageKeys, windowKeysNote,
   type ListMove, type PageKeyRunner, type PageKeyTable,
@@ -195,6 +196,7 @@ export function BangsPage() {
     label: 'Bangs',
     placeholder: 'Search bangs',
     onKey: (e) => filterKey(e),
+    onEscape: () => escapePage(),
     onEnter: () => {
       // The bang form up: back into it, as Enter on the page does.
       if (editor) {
@@ -504,6 +506,23 @@ export function BangsPage() {
   const focusEditor = (): void => {
     rootRef.current?.querySelector<HTMLInputElement>('[role="dialog"] input')?.focus()
   }
+  /** Esc, wherever it's typed — on the page with the keys (INSERT), in its
+   *  filter, in COMMAND: what's up over the page closes first (the bang
+   *  form, the keys' help), then the page does, back to where you were.
+   *  Ctrl+C is what leaves for COMMAND (lib/vim-mode.ts). */
+  const escapePage = (): boolean => {
+    if (editor) {
+      setEditor(null)
+      return true
+    }
+    if (helpOpen) {
+      setHelpOpen(false)
+      return true
+    }
+    return closePage('bangs')
+  }
+  // In COMMAND, ahead of the keymap.
+  usePageKeys({ intercept: (e) => isEscapeKey(e) && escapePage(), command: () => false })
   const runKey: PageKeyRunner<BangsAction> = (action) => {
     if (action !== 'reset') resetArmedRef.current = 0
     if (editor) {
@@ -519,10 +538,7 @@ export function BangsPage() {
       return true
     }
     switch (action) {
-      case 'escape':
-        if (!helpOpen) return false
-        setHelpOpen(false)
-        return true
+      case 'escape': return escapePage()
       case 'help': setHelpOpen((v) => !v); return true
       case 'down': moveBy(1); return true
       case 'up': moveBy(-1); return true
@@ -629,12 +645,13 @@ export function BangsPage() {
       ref={rootRef}
       tabIndex={-1}
       // The focus in it is INSERT, as in a web page: its own keys run
-      // (lib/internal-page-keys.ts); Esc lets go of it for COMMAND. The bang
+      // (lib/internal-page-keys.ts); Ctrl+C lets go of it for COMMAND, Esc
+      // closes the page. The bang
       // form inside is data-vim-page too: a form keeps its own keys.
       data-vim-page=""
       // i lands on the page: with the bang form up, it goes back into it.
       onFocus={(e) => { if (editor && e.target === e.currentTarget) focusEditor() }}
-      // The keys leaving the page (Esc for COMMAND, a click on the chrome)
+      // The keys leaving the page (Ctrl+C for COMMAND, a click on the chrome)
       // take its help along: nothing but its own keys would close it.
       onBlur={(e) => { if (!(e.relatedTarget instanceof Node && e.currentTarget.contains(e.relatedTarget))) setHelpOpen(false) }}
       className="absolute inset-0 z-50 flex flex-col bg-background text-foreground outline-none"
