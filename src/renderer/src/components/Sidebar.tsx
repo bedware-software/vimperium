@@ -132,6 +132,9 @@ const LIST_SCALES = [1.25] as const
 /** The list's bottom padding (pb-0.5), px at scale 1. */
 const LIST_BOTTOM_PAD = 2
 
+/** How long the cursor rests on a row before the row shows by itself. */
+const CURSOR_REST_MS = 2000
+
 export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hintsOn }: Props) {
   const activeTabId = useAppStore((s) => s.activeTabId)
   const activeTabGroupId = useAppStore((s) => s.activeTabGroupId)
@@ -570,6 +573,25 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
     setSidebarCursorAway(cursorAway)
     return () => setSidebarCursorAway(false)
   }, [cursorAway])
+  // The cursor resting on a row the arrows took it to shows that row by
+  // itself, as Enter would: no need to press it. Not while it's moving —
+  // the rows passed on the way never show, so nothing flashes by — and not
+  // while more than its own row is picked (Shift+arrows: that's picking).
+  const restingOn = cursorAway && selectedIds.size <= 1 ? vimCursorId : null
+  useEffect(() => {
+    if (!restingOn) return
+    const timer = setTimeout(() => {
+      if (!cursorSelectionRef.current) return
+      cursorSelectionRef.current = false
+      setSelectedIds(new Set())
+      const s = useAppStore.getState()
+      const isGroup = !!s.getActiveWorkspace()?.tabGroups.some((g) => g.id === restingOn)
+      log.action('sidebar:cursor-rest', { id: restingOn, group: isGroup })
+      if (isGroup) s.setActiveGroup(restingOn)
+      else s.setActiveTab(restingOn)
+    }, CURSOR_REST_MS)
+    return () => clearTimeout(timer)
+  }, [restingOn])
   // Rows picked: one Esc unpicks them (COMMAND's, bound while there are
   // some; the plain key without Vim mode).
   const rowsPicked = visible && selectedIds.size > 0
