@@ -127,7 +127,7 @@ interface Props {
 const hintId = (rowId: string, group: boolean): string => `${group ? 'group' : 'tab'}:${rowId}`
 
 /** How much bigger the list is drawn while it all fits, the biggest first. */
-const LIST_SCALES = [1.5, 1.25] as const
+const LIST_SCALES = [1.25] as const
 /** The list's bottom padding (pb-0.5), px at scale 1. */
 const LIST_BOTTOM_PAD = 2
 
