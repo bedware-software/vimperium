@@ -8,13 +8,14 @@ import { fuzzyFilter } from './fuzzy'
 import { PERMISSION_KINDS, PERMISSION_LABEL } from './permissions'
 
 export type SettingsSection =
-  | 'general' | 'appearance' | 'darkPages' | 'passwords' | 'network' | 'enterprise'
+  | 'general' | 'search' | 'appearance' | 'darkPages' | 'passwords' | 'network' | 'enterprise'
   | 'shortcuts' | 'extensions' | 'permissions' | 'sync' | 'about'
 
 /** The sections in the order Settings lists them — About last, at the
  *  bottom. J / K go through them in this order. */
 export const SETTINGS_SECTIONS: ReadonlyArray<{ id: SettingsSection; label: string }> = [
   { id: 'general', label: 'General' },
+  { id: 'search', label: 'Search' },
   { id: 'appearance', label: 'Appearance' },
   { id: 'darkPages', label: 'Dark pages' },
   { id: 'passwords', label: 'Passwords' },
@@ -57,13 +58,14 @@ const STATIC: SettingsIndexEntry[] = [
   { section: 'general', item: 'general:search-engine', title: 'Default Search Engine', keywords: 'google yandex duckduckgo bing unduck' },
   { section: 'general', item: 'general:custom-engine', title: 'Custom search engine', keywords: 'url template %s', fallback: 'general:search-engine' },
   { section: 'general', item: 'general:suggestions', title: 'Show search suggestions', keywords: 'address bar autocomplete' },
-  { section: 'general', item: 'general:search-fields:tab:name', title: 'Search Everything goes by', keywords: 'filter fields tabs groups workspaces title comment address path search' },
   { section: 'general', item: 'general:bangs', title: 'Bangs', keywords: '!w shortcuts search' },
   { section: 'general', item: 'general:manage-bangs', title: 'Manage bangs', keywords: 'bangs page' },
   { section: 'general', item: 'general:default-browser', title: 'Default browser', keywords: 'make default open links' },
   { section: 'general', item: 'general:other-browser', title: 'Open links in another browser', keywords: 'pass on safari chrome' },
   { section: 'general', item: 'general:test-notification', title: 'Notifications', keywords: 'test notification toast' },
   { section: 'general', item: 'general:wipe', title: 'Wipe all data', keywords: 'danger zone reset delete everything' },
+  // Search
+  { section: 'search', item: 'search:fields:tab:name', title: 'Search Everything goes by', keywords: 'filter fields tabs groups workspaces title comment address path' },
   // Appearance
   { section: 'appearance', item: 'appearance:theme', title: 'Theme', keywords: 'dark light system colours' },
   { section: 'appearance', item: 'appearance:light-variant', title: 'Light variant', keywords: 'theme bright soft', fallback: 'appearance:theme' },

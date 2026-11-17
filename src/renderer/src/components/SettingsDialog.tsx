@@ -355,6 +355,7 @@ type Tab = SettingsTab
 
 const SECTION_ICONS: Record<SettingsSection, LucideIcon> = {
   general: SlidersHorizontal,
+  search: Search,
   appearance: Palette,
   darkPages: Moon,
   passwords: KeyRound,
@@ -2805,52 +2806,6 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                 </button>
               </div>
 
-              {/* Search Everything: what its filter goes by. */}
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Search Everything Goes By</label>
-                <p className="text-[11px] text-muted-foreground mb-2">
-                  What the filter of Search Everything looks through, for each kind of thing. <span className="font-mono">&gt;</span> first in the filter looks through all of it whatever is picked here.
-                </p>
-                <div className="flex flex-col gap-2">
-                  {SEARCH_FIELD_KINDS.map(({ kind, label }) => (
-                    <div key={kind} className="flex items-center gap-3">
-                      <span className="w-44 shrink-0 text-xs text-muted-foreground">{label}</span>
-                      <div className="flex h-8 items-center rounded-md bg-secondary p-0.5" role="group" aria-label={`Search ${label.toLowerCase()} by`}>
-                        {SEARCH_FIELD_OPTIONS[kind].map((option) => {
-                          const on = searchFields[kind].includes(option.id)
-                          // The last one stays: a kind searched by nothing finds nothing.
-                          const last = on && searchFields[kind].length === 1
-                          return (
-                            <button
-                              key={option.id}
-                              type="button"
-                              role="checkbox"
-                              aria-checked={on}
-                              aria-disabled={last}
-                              data-vim-item={`general:search-fields:${kind}:${option.id}`}
-                              title={last ? `${option.hint} — at least one stays on` : option.hint}
-                              onClick={() => {
-                                if (last) return
-                                setSearchFields((prev) => normalizeSearchFields({
-                                  ...prev,
-                                  [kind]: on ? prev[kind].filter((id) => id !== option.id) : [...prev[kind], option.id],
-                                }))
-                              }}
-                              className={cn(
-                                'flex h-7 items-center rounded px-2.5 text-xs font-medium transition-colors',
-                                on ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
-                              )}
-                            >
-                              {option.label}
-                            </button>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
               {/* Default browser */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">Default browser</label>
@@ -2996,6 +2951,58 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                     <Trash2 size={12} />
                     Wipe all data
                   </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'search' && (
+            <div className="space-y-6">
+              {/* Search Everything: what its filter goes by. */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">Search Everything Goes By</label>
+                <p className="text-[11px] text-muted-foreground mb-2">
+                  What the filter of Search Everything looks through, for each kind of thing, in the order it goes by them: a match in an earlier one comes up higher. <span className="font-mono">&gt;</span> first in the filter looks through all of it whatever is picked here; <span className="font-mono">=</span> first finds only what&apos;s typed as it is, not its letters spread about.
+                </p>
+                <div className="flex flex-col gap-2">
+                  {SEARCH_FIELD_KINDS.map(({ kind, label }) => (
+                    <div key={kind} className="flex items-center gap-3">
+                      <span className="w-44 shrink-0 text-xs text-muted-foreground">{label}</span>
+                      <div className="flex h-8 items-center rounded-md bg-secondary p-0.5" role="group" aria-label={`Search ${label.toLowerCase()} by`}>
+                        {SEARCH_FIELD_OPTIONS[kind].map((option) => {
+                          const on = searchFields[kind].includes(option.id)
+                          // The last one stays: a kind searched by nothing finds nothing.
+                          const last = on && searchFields[kind].length === 1
+                          return (
+                            <button
+                              key={option.id}
+                              type="button"
+                              role="checkbox"
+                              aria-checked={on}
+                              aria-disabled={last}
+                              data-vim-item={`search:fields:${kind}:${option.id}`}
+                              title={last ? `${option.hint} — at least one stays on` : option.hint}
+                              onClick={() => {
+                                if (last) return
+                                setSearchFields((prev) => normalizeSearchFields({
+                                  ...prev,
+                                  [kind]: on ? prev[kind].filter((id) => id !== option.id) : [...prev[kind], option.id],
+                                }))
+                              }}
+                              className={cn(
+                                'flex h-7 items-center rounded px-2.5 text-xs font-medium transition-colors',
+                                on ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+                              )}
+                            >
+                              {/* Its place among the ones picked: the order the search goes by. */}
+                              {on && <span className="mr-1.5 tabular-nums text-muted-foreground">{searchFields[kind].indexOf(option.id) + 1}</span>}
+                              {option.label}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>

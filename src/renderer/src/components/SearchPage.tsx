@@ -28,6 +28,7 @@ import { focusAddressFilter, useAddressFilter, type AddressFilterKeyEvent } from
 import { closePage, closePageTab, useSearchPageRequest, type SearchFilter } from '../lib/page-nav'
 import { internalPageOf } from '../lib/internal-pages'
 import { useSearchFields } from '../lib/search-fields'
+import { SEARCH_FIELD_OPTIONS, type SearchFieldKind } from '../../../shared/search-fields'
 import { useHintLabels, useHintTargets, useReservedHintKeys } from '../lib/hint-labels'
 import { ColumnsSwitch, usePageColumns, type Columns } from './ColumnsSwitch'
 import { EntityIcon, LIST_PAGE_ROOT, LIST_ROW_SCROLL, ListPageHeader, PageScopeSwitch, listBoxClass, listColumnCount } from './ListPage'
@@ -133,6 +134,9 @@ const TYPE_KEY_LIST = Object.values(TYPE_KEYS)
 /** First in the filter: search tabs by the whole path to them — profile,
  *  workspace, group — and not only by their title and address. */
 const HIERARCHY_PREFIX = '>'
+/** First too (before or after >): what's typed is searched for as it is —
+ *  a substring — not as letters spread through the text. */
+const EXACT_PREFIX = '='
 const SCOPE_KEY_CAP = 'Tab'
 const HALF_PAGE_ROWS = 10
 
@@ -289,18 +293,24 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
   // > first in the filter: tabs are searched by everything on the way to
   // them too (below). The bar's pill says so.
   const [wholePath, setWholePath] = useState(false)
+  const [exactOnly, setExactOnly] = useState(false)
   const typed = useAddressFilter('search', {
-    label: wholePath ? `${TYPE_LABELS[filter]} › whole path` : TYPE_LABELS[filter],
+    label: `${TYPE_LABELS[filter]}${wholePath ? ' › whole path' : ''}${exactOnly ? ' › exact' : ''}`,
     placeholder: placeholderFor(filter, scopeApplies && windowWorkspaceId ? scopedToCurrent : null),
     onKey: (e) => barKey(e),
     onEnter: () => openAt(selected),
     onEscape: () => closePage('search'),
   })
 
-  const hierarchy = typed.trimStart().startsWith(HIERARCHY_PREFIX)
+  // The markers ahead of the text, in either order: > and =.
+  const marks = /^\s*([>=]{1,2})/.exec(typed)?.[1] ?? ''
+  const markers = marks[0] === marks[1] ? marks.slice(0, 1) : marks
+  const hierarchy = markers.includes(HIERARCHY_PREFIX)
+  const exact = markers.includes(EXACT_PREFIX)
   useEffect(() => { setWholePath(hierarchy) }, [hierarchy])
+  useEffect(() => { setExactOnly(exact) }, [exact])
   /** What's searched for: the filter's text, the > aside. */
-  const query = hierarchy ? typed.trimStart().slice(HIERARCHY_PREFIX.length).trim() : typed
+  const query = markers ? typed.trimStart().slice(markers.length).trim() : typed
 
   const fields = useSearchFields((s) => s.fields)
   const results = useMemo(() => {
@@ -313,14 +323,21 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
       // group's names brought up too many tabs nobody meant.
       const by = item.type === 'profile' ? null : fields[item.type]
       if (by && !hierarchy) {
-        return [
-          { value: by.includes('name') ? item.name : undefined, weight: 1 },
-          { value: by.includes('comment') ? item.comment : undefined, weight: 0.9 },
-          { value: by.includes('url') ? address : undefined, weight: 0.5 },
-          // The path has the thing's own name last: without the name
-          // picked, only what's before it.
-          { value: by.includes('path') ? (by.includes('name') ? item.path : pathBefore(item)) : undefined, weight: 0.7 },
-        ]
+        // Each picked field, counting as Settings lists them (the first
+        // most). The path has the thing's own name last: without the name
+        // picked, only what's before it.
+        const value = (id: string): string | undefined => {
+          switch (id) {
+            case 'name': return item.name
+            case 'comment': return item.comment
+            case 'url': return address
+            case 'path': return by.includes('name') ? item.path : pathBefore(item)
+          }
+          return undefined
+        }
+        return SEARCH_FIELD_OPTIONS[item.type as SearchFieldKind]
+          .filter((option) => by.includes(option.id))
+          .map((option) => ({ value: value(option.id), weight: option.weight }))
       }
       // > first in the filter (and a profile, always): everything. A
       // combined haystack so a query can run across path, address and
@@ -333,8 +350,8 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
         { value: item.path, weight: 0.7 },
         { value: haystack, weight: 0.5 },
       ]
-    })
-  }, [query, items, hierarchy, fields])
+    }, exact)
+  }, [query, items, hierarchy, exact, fields])
 
   // A request (ot ow og op, the toolbar's search): its kind, typing at once.
   // The kind asked for isn't remembered as the one to open on next time.

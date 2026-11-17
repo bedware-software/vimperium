@@ -31,9 +31,10 @@ function isWordStart(text: string, i: number): boolean {
 
 /**
  * Score how well `query` matches `text`. Returns 0 if no match, otherwise a positive
- * score where higher means a better match.
+ * score where higher means a better match. `exact`: only the query as it's
+ * typed counts (a substring), not its letters spread through the text.
  */
-export function fuzzyScore(query: string, text: string): number {
+export function fuzzyScore(query: string, text: string, exact = false): number {
   if (!query) return 0
   if (!text) return 0
 
@@ -54,6 +55,8 @@ export function fuzzyScore(query: string, text: string): number {
     score += Math.max(0, 50 - text.length)
     return score
   }
+  // Exact: the query as it's typed, or nothing.
+  if (exact) return 0
 
   // Subsequence match: every char of q must appear in order in tCmp.
   let score = 0
@@ -89,11 +92,11 @@ export interface FuzzyField {
  * Score `query` against multiple candidate fields of one item. Returns the best
  * weighted field score, or 0 if none match.
  */
-export function fuzzyScoreFields(query: string, fields: FuzzyField[]): number {
+export function fuzzyScoreFields(query: string, fields: FuzzyField[], exact = false): number {
   let best = 0
   for (const f of fields) {
     if (!f.value) continue
-    const s = fuzzyScore(query, f.value) * (f.weight ?? 1)
+    const s = fuzzyScore(query, f.value, exact) * (f.weight ?? 1)
     if (s > best) best = s
   }
   return best
@@ -107,11 +110,12 @@ export function fuzzyFilter<T>(
   query: string,
   items: readonly T[],
   getFields: (item: T) => FuzzyField[],
+  exact = false,
 ): T[] {
   if (!query.trim()) return items.slice()
   const scored: { item: T; score: number; originalIdx: number }[] = []
   for (let i = 0; i < items.length; i++) {
-    const score = fuzzyScoreFields(query, getFields(items[i]))
+    const score = fuzzyScoreFields(query, getFields(items[i]), exact)
     if (score > 0) scored.push({ item: items[i], score, originalIdx: i })
   }
   scored.sort((a, b) => {

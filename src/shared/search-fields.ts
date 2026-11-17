@@ -1,7 +1,8 @@
 // What Search Everything's filter goes by, for each kind of thing it lists
-// (Settings → General). A tab by its title, comment and address; a group
+// (Settings → Search). A tab by its title, comment and address; a group
 // and a workspace by their name and where they are. `>` first in the
-// filter searches by everything whatever is picked here. Profiles have a
+// filter searches by everything whatever is picked here; `=` first takes
+// what's typed as it is, not its letters spread about (the two together too). Profiles have a
 // name and nothing else.
 
 export type SearchFieldKind = 'tab' | 'tabGroup' | 'workspace'
@@ -10,6 +11,9 @@ export interface SearchFieldOption {
   id: string
   label: string
   hint: string
+  /** How much a match in it counts: a match in a field that counts more
+   *  comes up higher. */
+  weight: number
 }
 
 export const SEARCH_FIELD_KINDS: ReadonlyArray<{ kind: SearchFieldKind; label: string }> = [
@@ -18,20 +22,22 @@ export const SEARCH_FIELD_KINDS: ReadonlyArray<{ kind: SearchFieldKind; label: s
   { kind: 'workspace', label: 'Workspaces' },
 ]
 
+/** Each kind's fields in the order the search goes by them: the first
+ *  counts most. Settings lists them in this order, numbered. */
 export const SEARCH_FIELD_OPTIONS: Record<SearchFieldKind, readonly SearchFieldOption[]> = {
   tab: [
-    { id: 'name', label: 'Title', hint: "The tab's title" },
-    { id: 'comment', label: 'Comment', hint: 'The comment you gave it' },
-    { id: 'url', label: 'Address', hint: "The page's address" },
-    { id: 'path', label: 'Path', hint: "Its profile's, workspace's and group's names" },
+    { id: 'name', label: 'Title', hint: "The tab's title", weight: 1 },
+    { id: 'comment', label: 'Comment', hint: 'The comment you gave it', weight: 0.9 },
+    { id: 'path', label: 'Path', hint: "Its profile's, workspace's and group's names", weight: 0.7 },
+    { id: 'url', label: 'Address', hint: "The page's address", weight: 0.5 },
   ],
   tabGroup: [
-    { id: 'name', label: 'Name', hint: "The group's name" },
-    { id: 'path', label: 'Path', hint: "Its profile's and workspace's names" },
+    { id: 'name', label: 'Name', hint: "The group's name", weight: 1 },
+    { id: 'path', label: 'Path', hint: "Its profile's and workspace's names", weight: 0.7 },
   ],
   workspace: [
-    { id: 'name', label: 'Name', hint: "The workspace's name" },
-    { id: 'path', label: 'Path', hint: "Its profile's name" },
+    { id: 'name', label: 'Name', hint: "The workspace's name", weight: 1 },
+    { id: 'path', label: 'Path', hint: "Its profile's name", weight: 0.7 },
   ],
 }
 
