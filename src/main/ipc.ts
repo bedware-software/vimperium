@@ -309,7 +309,9 @@ function pinPopup(popup: BrowserWindow, parent: BrowserWindow, left: number, top
   } else {
     const { width, height } = popup.getBounds()
     pinnedSpots.set(popup, { left, top, width, height })
-    popup.setParentWindow(parent)
+    // Already set on Windows (index.ts, did-create-window): setting it again
+    // on a shown window would activate the popup.
+    if (popup.getParentWindow() !== parent) popup.setParentWindow(parent)
     parent.on('move', apply)
     parent.on('resize', apply)
     popup.once('closed', () => {

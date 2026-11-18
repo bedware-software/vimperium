@@ -3361,6 +3361,11 @@ export function createWorkspaceWindow(profileId: string, workspaceId: string, wo
   // setWindowOpenHandler callback returns `allow`, and this event fires.
   win.webContents.on('did-create-window', (childWindow) => {
     registerDetachedPopup(childWindow, pendingPopupId, pendingPopupModal ? win : null, win)
+    // Windows: setParentWindow on a window already shown activates it, taking
+    // the keyboard from the page (which-key's strip dropped the pending
+    // prefix). A pinned popup (it has an id) is parented while still hidden;
+    // pinPopup then finds the parent set. macOS doesn't activate, left as is.
+    if (process.platform === 'win32' && pendingPopupId) childWindow.setParentWindow(win)
     pendingPopupId = null
     pendingPopupModal = false
     // setBounds rather than constructor bounds: a window.open popup built
