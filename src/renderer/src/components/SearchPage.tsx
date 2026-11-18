@@ -1,6 +1,6 @@
-// Search Everything as a page (vimperium://search): ot ow og op open it on
-// one kind of thing — tabs, tab groups, workspaces, profiles — and picking
-// a result goes there, the page's tab closing behind it.
+// Search Everything as a page (vimperium://search): f opens it on the kind
+// of thing it showed last — tabs, tab groups, workspaces, profiles — and
+// picking a result goes there, the page's tab closing behind it.
 //
 // It has no box of its own: the address bar is its filter
 // (lib/address-filter.ts), typing at once when it opens. In the bar ↑/↓ and
@@ -15,8 +15,8 @@
 // tabs, profiles — ahead of the keymap's own g… and t… here), Tab flips
 // the scope, and Esc closes the page — back to the tab you were
 // on. Every result wears a label that picks it (lib/hint-labels.ts), the one
-// the Sidebar gives the same tab or group. ot ow og op, typed here, ask for
-// the page again on another kind (lib/page-nav.ts).
+// the Sidebar gives the same tab or group. The kind picked here is the one
+// f opens the page on next time; f, typed here, types in the bar again.
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Search, User, Layout, Layers, Globe } from 'lucide-react'
@@ -122,7 +122,7 @@ let handledRequest = useSearchPageRequest.getState().v
 let shownFilter: FilterType | null = null
 
 /** COMMAND's key for each kind, ahead of the keymap on this page: the
- *  letter ot ow og op open it with. */
+ *  letter it's named by. */
 const TYPE_KEYS: Record<FilterType, string> = {
   profile: 'p',
   workspace: 'w',
@@ -353,8 +353,9 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
     }, exact)
   }, [query, items, hierarchy, exact, fields])
 
-  // A request (ot ow og op, the toolbar's search): its kind, typing at once.
-  // The kind asked for isn't remembered as the one to open on next time.
+  // A request (f, the toolbar's search): the kind shown last, typing at
+  // once. One that names its kind (pick-*, when bound) shows that, and it
+  // isn't remembered as the one to open on next time.
   // Only a request takes the keyboard: the page shown again any other way
   // (a tab closed and this one picked, a click on its row, launch) leaves
   // COMMAND as it was, so the next keys aren't typed into the filter.

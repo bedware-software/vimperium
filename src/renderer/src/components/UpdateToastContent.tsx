@@ -19,7 +19,7 @@ export function UpdateToastContent({
   onClose: () => void
   onInstall: () => void
   onMeasured?: (size: { width: number; height: number }) => void
-}): JSX.Element {
+}): React.JSX.Element {
   if (status.phase === 'checking') {
     return (
       <Shell onClose={onClose} onMeasured={onMeasured}>
@@ -119,7 +119,7 @@ function Shell({
   children: ReactNode
   onClose: () => void
   onMeasured?: (size: { width: number; height: number }) => void
-}): JSX.Element {
+}): React.JSX.Element {
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {

@@ -1,5 +1,5 @@
 // Opening the pages this window draws in the page area, in place of the
-// panels and popups they were: Search Everything (ot ow og op), the keys'
+// panels and popups they were: Search Everything (f), the keys'
 // help (?), the Bookshelf (tb). Each is a tab of its own (vimperium://…,
 // lib/internal-pages.ts) — one per workspace, shown again when it's there —
 // with the address bar for its filter (lib/address-filter.ts). They open
@@ -25,7 +25,7 @@ export const useSearchPageRequest = create<{ filter: SearchFilter | null; v: num
 interface Origin { workspaceId: string | null; tabId: string | null; groupId: string | null }
 const origins = new Map<string, Origin>()
 
-// Kept up to date on every way of reaching a page's tab — ? / tb / ot, but
+// Kept up to date on every way of reaching a page's tab — ? / tb / f, but
 // also a Sidebar click, a label, gt, a closed tab falling back on it — so
 // closing it goes back to where you came from this time, not the first.
 function placeOf(s: ReturnType<typeof useAppStore.getState>): Origin {

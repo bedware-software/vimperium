@@ -331,6 +331,7 @@ declare global {
       installUpdate: () => Promise<void>
       getUpdaterStatus: () => Promise<UpdateStatus>
       getAppVersion: () => Promise<string>
+      getAppPaths?: () => Promise<{ userData: string; cache: string; logs: string; appName: string }>
       onUpdaterStatus: (callback: (status: UpdateStatus) => void) => () => void
 
       // Tab hosting (WebContentsView in main)
@@ -603,8 +604,9 @@ const REPEATED_BY_DOT = new Set([
 
 const SIDEBAR_VISIBLE_KEY = 'vimperium-sidebar-visible'
 
-/** Vim's COMMAND keys that open Search Everything on one kind of thing,
- *  typing (INSERT) at once. */
+/** Vim's commands that open Search Everything on one kind of thing,
+ *  typing (INSERT) at once — unbound since keymap v21: f (search) opens it
+ *  on the kind it showed last. */
 const VIM_PICK_FILTERS: Record<string, SearchFilter> = {
   'pick-workspace': 'workspace',
   'pick-tab': 'tab',

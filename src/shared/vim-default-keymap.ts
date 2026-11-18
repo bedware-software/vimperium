@@ -32,11 +32,11 @@ export const DEFAULT_VIM_KEYMAP = `" Vim mode keys.
 " acts on:
 "   n  new       nt (or nn) a tab, ng a group, nw a workspace, np a profile
 "   d  delete    dd closes the tab, dg its group, dw deletes the workspace
-"   o  open      ot ow og op search tabs, workspaces, groups, profiles;
-"                od Downloads, ob Bangs, om the menu, and the rest below
+"   o  open      od Downloads, ob Bangs, om the menu, and the rest below
 "   t  toggle    ts the Sidebar, tb the Bookshelf
-" x closes the tab too, one key, and u undoes: it brings back what x, dd
-" or dg closed. <C-w> is vim's window prefix: <C-w>c closes the tab, <C-w>w
+" f finds: it opens Search Everything on the kind of thing it showed last,
+" and t w g p there pick the kind. x closes the tab too, one key, and u
+" undoes: it brings back what x, dd or dg closed. <C-w> is vim's window prefix: <C-w>c closes the tab, <C-w>w
 " goes to the split's other pane, <C-w>q ends the split. The arrows move
 " the Sidebar's cursor, Ctrl+j/k move the tab (or the group) up and down
 " it, and Tab shows or hides it. A tab is picked by its label too.
@@ -126,14 +126,9 @@ delete-workspace    dw
 reopen-closed-tab   u
 
 " ── COMMAND: o, open ──────────────────────────────────────────────────
-" ot ow og op open Search Everything on one kind of thing, typing (INSERT);
-" Ctrl+C goes to its COMMAND keys. The menus open with the keyboard on them:
-" om the app's menu, oe extensions, oi the site's padlock, oD dark pages,
-" oP and oW the toolbar's profile and workspace lists.
-pick-tab            ot
-pick-workspace      ow
-pick-group          og
-pick-profile        op
+" The menus open with the keyboard on them: om the app's menu, oe
+" extensions, oi the site's padlock, oD dark pages, oP and oW the toolbar's
+" profile and workspace lists.
 open-downloads      od
 open-bangs          ob
 app-menu            om
@@ -148,9 +143,12 @@ workspace-menu      oW
 toggle-bookshelf    tb
 
 " ── COMMAND: app commands (the regular shortcuts' ids) ────────────────
-" search opens Search Everything on the
-" kind of thing it showed last (ot ow og op on one kind). e types in the
-" address bar, the address in place; E is the address editor, the address
+" search (f) opens Search Everything on the kind of thing it showed last,
+" typing (INSERT); Ctrl+C goes to its COMMAND keys, where t w g p pick the
+" kind — tabs, workspaces, groups, profiles — and the one picked is the one
+" f opens on next time. pick-tab, pick-workspace, pick-group and
+" pick-profile, when bound, open it on that kind whatever it showed last.
+" e types in the address bar, the address in place; E is the address editor, the address
 " block by block. <C-6> goes back to the tab you were on before this one
 " (vim's alternate buffer), and again returns. . does the last change
 " again: a tab closed, a row moved, the zoom, a number in the address.
@@ -161,7 +159,11 @@ next-tab
 prev-tab
 focus-url           e
 edit-url            E
-search
+search              f
+pick-tab
+pick-workspace
+pick-group
+pick-profile
 command-palette     <C-p> :
 copy-url            y
 paste-url
@@ -222,7 +224,7 @@ quit
 " its name where these keys leave the letters free, and typing it picks the
 " result (vimium's hints); typing in the box, digits type. search-row-N
 " picks result N, when bound.
-" Search Everything is a page now (ot ow og op): the address bar is its
+" Search Everything is a page now (f): the address bar is its
 " box, Tab there switches what it shows, and its rows wear the window's
 " labels, as the group page's do.
 search-row-1
@@ -292,69 +294,17 @@ export function contextOf(command: string): VimContext {
 }
 
 // ── Migration ──
-//
-// v2 renamed the WEB mode BROWSE (web-* commands are browse-* now) and
-// moved some COMMAND defaults. v3 folded BROWSE into COMMAND: the page's
-// keys (browse-*) are COMMAND keys now, under plain names, and the Sidebar's
-// cursor moved onto Ctrl chords, so j/k/h/l/gg/G/x are the page's. v4 put
-// the tab numbers (tab-1…tab-9) on Ctrl too, with the Sidebar that shows
-// them: a plain digit picked a tab out of sight when it's hidden. v5 took
-// the address bar off Ctrl (<C-l> brought the Sidebar up on the way) and
-// onto e, moving the address editor to E. v6 put the address editor on e
-// (the plain address bar went unbound), opened Search Everything on one kind
-// of thing from w/t/p (pick-*), moved new-tab to <CR> and unbound paste-url,
-// next-tab and prev-tab, whose keys those took. v7 swapped the splits to
-// vim's (V side by side, S one above the other) and put row-unfold on <C-l>,
-// with row-fold only folding, and set-comment on gcc. v8 made the address
-// editor's keys vim's: u undoes (was U) and <C-r> redoes, up a level and the
-// site went behind g (gu, gt), the title's copy behind y (yt, was n), and
-// removing onto d (was r), D removing the whole address. v9 left results
-// to two-letter labels in COMMAND, unbinding the digits of search-row-N. v10
-// took the Sidebar off Ctrl held (it flashed on every Ctrl chord) and onto
-// the arrows, history onto <C-o>/<C-i> (was [ and ]), the Command Palette
-// onto <C-p> (was :) and toggling the Sidebar onto <Space> (was \). v11
-// put the browser's own pages behind o: od Downloads (was D), ob Bangs.
-// v12 added dark pages (D this site). v13 made COMMAND read like vim's:
-// half a page on <C-d>/<C-u> (was d/u), the Sidebar back on Ctrl chords
-// (<C-j>/<C-k>/<C-h>/<C-l>, was the arrows) and toggled by <Tab> or ts (was
-// <Space>), and verbs as prefixes — n new (nt, was <CR>; nv, was N; ng and
-// np new), d delete (dd, was x; dg and dv new), o open (ot ow op, were t w
-// p; og, the menus), t toggle (tb, was B) — with u reopening a closed tab
-// (was T); it also listed the palette's commands, unbound, so they can be
-// bound. v14 put a new workspace on nw (was nv: w is a workspace, as in ow
-// and oW) and gave a new tab nn beside nt. v15 put deleting the workspace
-// on dw (was dv), w as in nw and ow; labelled the Sidebar's rows, so the
-// tab numbers lost <C-1>…<C-9> (unbound now), and put the row's menu on m
-// (was <C-m>), live while the Sidebar is shown. v16 left Search Everything
-// on everything unbound (was f): what COMMAND opens goes through o. v17
-// dropped Search Everything's All filter (search-all, a) and moved its
-// filters onto Ctrl+1–4 (were p w g t); and it put adding the page to the
-// Bookshelf on nb (n new, as nt and ng). v18 put the filters back on p w g
-// t, the letters they're named by. v19 put the address bar back on e, the
-// address editor on E, and Ctrl+j/k on moving the row (were stepping
-// through the rows, which labels do now; moving was Ctrl+Shift+j/k). v20
-// gave the Sidebar a cursor of its own on the arrows — ↓/↑ pick a row
-// without showing it (row-down, row-up; Enter shows it), Shift+↓/↑ pick
-// more (row-select-down, row-select-up) — and put folding on ←/→ (was
-// Ctrl+h/l); it made <C-w> vim's window prefix (<C-w>w the other pane, was
-// <C-w> alone; <C-w>q ends the split beside q; <C-w>c closes the tab) and
-// gave close-tab x, took history off h and l (<C-o>/<C-i> only), put the
-// Command Palette on : too, dropped the browser's own buttons' labels
-// (chrome-hints, ;) and added <C-6> (alternate-tab), . (repeat), ]] and [[
-// (next-page, prev-page), <C-a>/<C-x> (increment-url, decrement-url) and
-// <C-v> (pass-key). A saved
-// keymap keeps every binding its owner changed — unless it now clashes with
-// another binding, then it takes the new default — and the new defaults for
-// the rest, including commands it couldn't know about. A key a version
-// brings in that the owner's own binding already uses stays the owner's:
-// the command it's new for goes without it (unbound, if it was its only
-// one). A command v13 to v15 moved that loses all its new keys that way keeps its
-// old key instead, when nothing uses that now — x still closes the tab for
-// an owner whose own d took dd's place; one v13 added has no old key and
-// goes unbound. And a line the owner changed that kept a moved command's
-// old default beside keys of their own (`half-page-down d <C-d>`) keeps
-// their keys, with the new default in place of the old one, so the old d
-// doesn't take dd, dg and dw's place.
+// Each V<n>_DEFAULT_KEYS below holds what version n had for the commands the
+// next version moved. Rules migrateVimKeymap keeps:
+// - a binding the owner changed stays, unless it now clashes with another in
+//   its context: then it takes the new default;
+// - a key a version brings in that an owner's binding already uses (or
+//   prefixes) stays the owner's; the command goes without it;
+// - a moved command that loses all its new keys that way falls back to its
+//   old key if that's free (never <CR> for new-tab); one that's new has none;
+// - an owner's line that kept the old default beside keys of their own
+//   (`half-page-down d <C-d>`) keeps their keys plus the new default, so the
+//   stale d doesn't shadow dd/dg/dw.
 
 /** v3's name for an older command: null when v3 has no such command. */
 const RENAMED_IN_V3: Record<string, string | null> = {
@@ -549,6 +499,16 @@ const V19_DEFAULT_KEYS: Record<string, string> = {
   'command-palette': '<C-p>',
 }
 
+/** v20 defaults of the commands v21 rebound: Search Everything on f, its
+ *  one-kind keys unbound. */
+const V20_DEFAULT_KEYS: Record<string, string> = {
+  search: '',
+  'pick-tab': 'ot',
+  'pick-workspace': 'ow',
+  'pick-group': 'og',
+  'pick-profile': 'op',
+}
+
 /** Commands v20 added: the Sidebar's cursor. Their keys yield to an
  *  owner's as v12's do. */
 const NEW_IN_V20 = new Set([
@@ -673,7 +633,7 @@ function sameKeys(a: string, b: string): boolean {
 }
 
 /**
- * Carries a keymap saved under older defaults (v1 to v19) over to the
+ * Carries a keymap saved under older defaults (v1 to v20) over to the
  * current ones: the default text, with each binding the owner changed (or
  * removed) as they had it. Null when that comes out as the plain default —
  * nothing to keep. `log` hears each key the migration had to decide on for
@@ -682,7 +642,7 @@ function sameKeys(a: string, b: string): boolean {
  */
 export function migrateVimKeymap(
   saved: string,
-  fromVersion: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19,
+  fromVersion: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20,
   log: (message: string) => void = () => {},
 ): string | null {
   // What the owner had, by the old name.
@@ -713,6 +673,7 @@ export function migrateVimKeymap(
     (fromVersion <= 17 ? V17_DEFAULT_KEYS[command] : undefined) ??
     (fromVersion <= 18 ? V18_DEFAULT_KEYS[command] : undefined) ??
     (fromVersion <= 19 ? V19_DEFAULT_KEYS[command] : undefined) ??
+    (fromVersion <= 20 ? V20_DEFAULT_KEYS[command] : undefined) ??
     fallback
   // Whether the saved keymap's version had the command: one it lacks isn't
   // missing because its owner unbound it.
@@ -738,7 +699,8 @@ export function migrateVimKeymap(
     (fromVersion <= 16 && command in V16_DEFAULT_KEYS) ||
     (fromVersion <= 17 && command in V17_DEFAULT_KEYS) ||
     (fromVersion <= 18 && command in V18_DEFAULT_KEYS) ||
-    (fromVersion <= 19 && command in V19_DEFAULT_KEYS)
+    (fromVersion <= 19 && command in V19_DEFAULT_KEYS) ||
+    (fromVersion <= 20 && command in V20_DEFAULT_KEYS)
 
   const lines = DEFAULT_VIM_KEYMAP.split('\n')
   // command → [line index, keys] for every binding line, as it stands.
@@ -825,6 +787,7 @@ export function migrateVimKeymap(
     ...(fromVersion <= 18 ? Object.keys(V18_DEFAULT_KEYS) : []),
     ...(fromVersion <= 19 ? NEW_IN_V20 : []),
     ...(fromVersion <= 19 ? Object.keys(V19_DEFAULT_KEYS) : []),
+    ...(fromVersion <= 20 ? Object.keys(V20_DEFAULT_KEYS) : []),
   ])
   // Commands that lost every key that way, with what took them ("dd (your
   // d, half-page-down)").

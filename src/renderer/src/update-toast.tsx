@@ -11,11 +11,12 @@ interface UpdateToastSpec {
   themeVariant?: string
 }
 
-function Popup(): JSX.Element | null {
+function Popup(): React.JSX.Element | null {
   const [spec, setSpec] = useState<UpdateToastSpec | null>(null)
 
   useEffect(() => {
-    const cleanup = window.electronAPI.onUpdateToastPopupSpec?.((next: UpdateToastSpec) => {
+    const cleanup = window.electronAPI.onUpdateToastPopupSpec?.((raw) => {
+      const next = raw as UpdateToastSpec
       setSpec(next)
       const root = document.documentElement
       if (next.theme) root.setAttribute('data-theme', next.theme)

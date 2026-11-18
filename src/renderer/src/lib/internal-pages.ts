@@ -9,7 +9,7 @@ export type InternalPage = 'downloads' | 'bangs' | 'search' | 'keys' | 'bookshel
 
 export const DOWNLOADS_URL = 'vimperium://downloads'
 export const BANGS_URL = 'vimperium://bangs'
-/** Search Everything (ot ow og op): there while you pick, gone once you
+/** Search Everything (f): there while you pick, gone once you
  *  have — never in the closed tabs u brings back. */
 export const SEARCH_URL = 'vimperium://search'
 /** The keys' help (?): shown and hidden as the panel it was — never in the

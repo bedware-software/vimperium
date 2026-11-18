@@ -18,7 +18,8 @@ function Popup() {
   const [spec, setSpec] = useState<DropdownSpec | null>(null)
 
   useEffect(() => {
-    const cleanup = window.electronAPI.onDropdownPopupSpec?.((next: DropdownSpec) => {
+    const cleanup = window.electronAPI.onDropdownPopupSpec?.((raw) => {
+      const next = raw as DropdownSpec
       setSpec(next)
       // Mirror parent theme on the popup's <html>; CSS uses these attrs.
       const root = document.documentElement
