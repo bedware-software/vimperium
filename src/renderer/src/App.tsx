@@ -1018,6 +1018,11 @@ export default function App() {
             s.closeGroup(s.activeTabGroupId)
           }
           break
+        case 'close-duplicate-tabs': {
+          const wsId = windowWorkspaceId ?? s.activeWorkspaceId
+          if (wsId) log.action('close-duplicate-tabs', { workspaceId: wsId, closed: s.closeDuplicateTabs(wsId) })
+          break
+        }
         case 'reopen-closed-tab':
           s.reopenClosedTab(windowWorkspaceId ?? undefined)
           break

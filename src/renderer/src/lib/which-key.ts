@@ -31,6 +31,7 @@ const SHORT_LABELS: Record<string, string> = {
   'new-profile': 'Profile',
   'close-tab': 'Tab',
   'close-group': 'Group',
+  'close-duplicate-tabs': 'Duplicate Tabs',
   'delete-workspace': 'Workspace',
   'pick-tab': 'Tab',
   'pick-workspace': 'Workspace',

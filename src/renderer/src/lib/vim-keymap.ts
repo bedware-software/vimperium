@@ -95,6 +95,7 @@ const VIM_COMMAND_LABELS: Record<string, string> = {
   'new-group': ACTION_LABELS['new-group'],
   'new-profile': ACTION_LABELS['new-profile'],
   'close-group': ACTION_LABELS['close-group'],
+  'close-duplicate-tabs': ACTION_LABELS['close-duplicate-tabs'],
   'app-menu': ACTION_LABELS['app-menu'],
   'profile-menu': ACTION_LABELS['profile-menu'],
   'workspace-menu': ACTION_LABELS['workspace-menu'],

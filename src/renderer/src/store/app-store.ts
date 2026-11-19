@@ -235,7 +235,8 @@ function findHistoricalTabId(w: Workspace, excludeId?: string): string | null {
 // In-memory only (not persisted, like tab activation history above). Each
 // close pushes a snapshot so Ctrl+Shift+T can pop the most-recent one back.
 // Stored newest-last (chronological); reopen pops from the end. A closed
-// group is one entry, so a single Ctrl+Shift+T brings all of it back.
+// group is one entry, so a single Ctrl+Shift+T brings all of it back; so is
+// what closeDuplicateTabs closed.
 type ClosedEntry =
   | {
       kind: 'tab'
@@ -255,6 +256,12 @@ type ClosedEntry =
       /** Index within the workspace's sidebarOrder at close time. */
       orderIndex: number
     }
+  | {
+      kind: 'tabs'
+      /** Ungrouped tabs, ascending by `index` (their places before any of
+       *  them closed): reinserted in that order, each lands where it was. */
+      tabs: Array<{ tab: Tab; index: number; orderIndex: number }>
+    }
 const closedTabsByWorkspace = new Map<string, ClosedEntry[]>()
 const CLOSED_TAB_LIMIT = 20
 
@@ -263,7 +270,10 @@ function pushClosedTab(workspaceId: string, entry: ClosedEntry): void {
   // the Bookshelf) isn't one to bring back. A group's snapshot has them
   // taken out already (snapshotGroup); one that held nothing else would
   // come back empty, so it isn't remembered either.
-  if (entry.kind === 'tab' ? isTransientInternalUrl(entry.tab.url) : entry.group.tabs.length === 0) return
+  if (entry.kind === 'tabs') {
+    entry.tabs = entry.tabs.filter((t) => !isTransientInternalUrl(t.tab.url))
+    if (entry.tabs.length === 0) return
+  } else if (entry.kind === 'tab' ? isTransientInternalUrl(entry.tab.url) : entry.group.tabs.length === 0) return
   let stack = closedTabsByWorkspace.get(workspaceId)
   if (!stack) { stack = []; closedTabsByWorkspace.set(workspaceId, stack) }
   stack.push(entry)
@@ -538,6 +548,11 @@ export interface AppState {
    *  copies) in sidebar order. */
   duplicateItems: (ids: string[]) => string[]
   closeTab: (id: string) => void
+  /** Closes the workspace's ungrouped tabs that repeat another ungrouped
+   *  tab's address, keeping one of each: the active tab, else one with a
+   *  comment, else the first. Tabs in groups are neither closed nor counted.
+   *  One reopenClosedTab brings them all back. Returns how many closed. */
+  closeDuplicateTabs: (workspaceId: string) => number
   /** Pop the most-recently-closed tab in `workspaceId` (default: the active
    *  workspace) back into existence, restoring its original group/position
    *  where possible, and activate it. No-op when the stack is empty. */
@@ -1227,6 +1242,37 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   })),
 
+  closeDuplicateTabs: (workspaceId) => {
+    let closed = 0
+    set(produce((s: AppState) => {
+      const w = findWorkspaceById(s, workspaceId)
+      if (!w?.tabs || w.tabs.length < 2) return
+      const byUrl = new Map<string, Tab[]>()
+      for (const t of w.tabs) {
+        const same = byUrl.get(t.url)
+        if (same) same.push(t)
+        else byUrl.set(t.url, [t])
+      }
+      const doomed = new Set<string>()
+      for (const same of byUrl.values()) {
+        if (same.length < 2) continue
+        const keep = same.find((t) => t.id === s.activeTabId) ?? same.find((t) => t.comment) ?? same[0]
+        for (const t of same) if (t !== keep) doomed.add(t.id)
+      }
+      if (doomed.size === 0) return
+      const order = ensureSidebarOrder(w)
+      pushClosedTab(w.id, {
+        kind: 'tabs',
+        tabs: w.tabs.flatMap((t, index) => (doomed.has(t.id) ? [{ tab: { ...t }, index, orderIndex: order.indexOf(t.id) }] : [])),
+      })
+      w.tabs = w.tabs.filter((t) => !doomed.has(t.id))
+      w.sidebarOrder = order.filter((id) => !doomed.has(id))
+      for (const id of doomed) dropFromTabHistory(w.id, id)
+      closed = doomed.size
+    }))
+    return closed
+  },
+
   reopenClosedTab: (workspaceId) => set(produce((s: AppState) => {
     const wsId = workspaceId ?? s.activeWorkspaceId
     if (!wsId) return
@@ -1247,6 +1293,19 @@ export const useAppStore = create<AppState>((set, get) => ({
       // collapsed one parks on its header rather than springing open.
       s.activeTabGroupId = g.id
       s.activeTabId = g.isCollapsed ? null : g.tabs[0]?.id ?? null
+      return
+    }
+
+    if (entry.kind === 'tabs') {
+      // The active tab stays: it's the one the duplicates were closed around.
+      if (!w.tabs) w.tabs = []
+      const order = ensureSidebarOrder(w)
+      const restored = entry.tabs.map((t) => ({ ...t, tab: cloneTab(t.tab) }))
+      for (const { tab, index } of restored) w.tabs.splice(Math.min(index, w.tabs.length), 0, tab)
+      // sidebarOrder needn't run as w.tabs does: its own ascending pass.
+      for (const { tab, orderIndex } of [...restored].sort((a, b) => a.orderIndex - b.orderIndex)) {
+        order.splice(orderIndex >= 0 ? Math.min(orderIndex, order.length) : order.length, 0, tab.id)
+      }
       return
     }
 

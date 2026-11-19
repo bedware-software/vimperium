@@ -45,6 +45,7 @@ export const ACTION_LABELS: Record<string, string> = {
   'dark-pages-menu': 'Dark Pages Menu',
   'new-group': 'New Group',
   'close-group': 'Close Group',
+  'close-duplicate-tabs': 'Close Duplicate Tabs',
   'add-to-new-group': 'Add to New Group',
   'ungroup-tab': 'Ungroup Tab',
   'ungroup-all-tabs': 'Ungroup All Tabs',

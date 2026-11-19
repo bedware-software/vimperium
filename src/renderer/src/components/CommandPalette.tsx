@@ -45,6 +45,7 @@ const COMMANDS: CommandItem[] = [
   { id: 'close-group', label: 'Close Group', category: 'Active Group', keywords: 'delete remove' },
   { id: 'new-tab', label: 'New Tab', category: 'Tabs' },
   { id: 'new-group', label: 'New Group…', category: 'Tabs', keywords: 'tab group create' },
+  { id: 'close-duplicate-tabs', label: 'Close Duplicate Tabs', category: 'Tabs', keywords: 'delete remove dedupe same' },
   { id: 'reopen-closed-tab', label: 'Reopen Closed Tab', category: 'Tabs', keywords: 'undo restore' },
   { id: 'next-tab', label: 'Next Tab', category: 'Tabs' },
   { id: 'prev-tab', label: 'Previous Tab', category: 'Tabs' },

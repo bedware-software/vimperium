@@ -31,12 +31,13 @@ export const DEFAULT_VIM_KEYMAP = `" Vim mode keys.
 " A letter that starts a pair is a verb, and the second letter says what it
 " acts on:
 "   n  new       nt (or nn) a tab, ng a group, nw a workspace, np a profile
-"   d  delete    dd closes the tab, dg its group, dw deletes the workspace
+"   d  delete    dd closes the tab, dg its group, dw deletes the workspace,
+"                dD closes the duplicate tabs
 "   o  open      od Downloads, ob Bangs, om the menu, and the rest below
 "   t  toggle    ts the Sidebar, tb the Bookshelf
 " f finds: it opens Search Everything on the kind of thing it showed last,
 " and t w g p there pick the kind. x closes the tab too, one key, and u
-" undoes: it brings back what x, dd or dg closed. <C-w> is vim's window prefix: <C-w>c closes the tab, <C-w>w
+" undoes: it brings back what x, dd, dg or dD closed. <C-w> is vim's window prefix: <C-w>c closes the tab, <C-w>w
 " goes to the split's other pane, <C-w>q ends the split. The arrows move
 " the Sidebar's cursor, Ctrl+j/k move the tab (or the group) up and down
 " it, and Tab shows or hides it. A tab is picked by its label too.
@@ -118,10 +119,14 @@ new-profile         np
 
 " ── COMMAND: d, delete ────────────────────────────────────────────────
 " x closes the tab, as dd and <C-w>c do, and dg its group, all its tabs;
-" u brings them back, the last closed first. dw deletes the workspace,
-" once you say so.
+" u brings them back, the last closed first. dD closes the duplicates:
+" of the tabs outside groups showing the same address one stays — the one
+" you're on, else one with a comment, else the first — and the tabs in
+" groups are left alone; one u brings them all back. dw deletes the
+" workspace, once you say so.
 close-tab           x dd <C-w>c
 close-group         dg
+close-duplicate-tabs dD
 delete-workspace    dw
 reopen-closed-tab   u
 
@@ -516,6 +521,9 @@ const NEW_IN_V20 = new Set([
   'alternate-tab', 'repeat', 'next-page', 'prev-page', 'increment-url', 'decrement-url', 'pass-key',
 ])
 
+/** Commands v22 added. Their keys yield to an owner's as v12's do. */
+const NEW_IN_V22 = new Set(['close-duplicate-tabs'])
+
 /** v17 defaults of the commands v18 rebound: Search Everything's filters,
  *  back on p w g t. */
 const V17_DEFAULT_KEYS: Record<string, string> = {
@@ -642,7 +650,7 @@ function sameKeys(a: string, b: string): boolean {
  */
 export function migrateVimKeymap(
   saved: string,
-  fromVersion: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20,
+  fromVersion: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21,
   log: (message: string) => void = () => {},
 ): string | null {
   // What the owner had, by the old name.
@@ -678,7 +686,7 @@ export function migrateVimKeymap(
   // Whether the saved keymap's version had the command: one it lacks isn't
   // missing because its owner unbound it.
   const existed = (command: string): boolean =>
-    (fromVersion <= 19 && NEW_IN_V20.has(command)) || (fromVersion <= 12 && NEW_IN_V13.has(command)) || (fromVersion <= 11 && NEW_IN_V12.has(command)) || (fromVersion <= 10 && NEW_IN_V11.has(command)) || (fromVersion <= 7 && NEW_IN_V8.has(command)) || (fromVersion <= 6 && NEW_IN_V7.has(command)) || (fromVersion <= 5 && NEW_IN_V6.has(command)) ? false
+    (fromVersion <= 21 && NEW_IN_V22.has(command)) || (fromVersion <= 19 && NEW_IN_V20.has(command)) || (fromVersion <= 12 && NEW_IN_V13.has(command)) || (fromVersion <= 11 && NEW_IN_V12.has(command)) || (fromVersion <= 10 && NEW_IN_V11.has(command)) || (fromVersion <= 7 && NEW_IN_V8.has(command)) || (fromVersion <= 6 && NEW_IN_V7.has(command)) || (fromVersion <= 5 && NEW_IN_V6.has(command)) ? false
     : fromVersion >= 3
       ? !(command in RENAMED_IN_V3)
       : !NEW_IN_V3.has(command) && !(fromVersion === 1 && NEW_IN_V2.has(command))
@@ -788,6 +796,7 @@ export function migrateVimKeymap(
     ...(fromVersion <= 19 ? NEW_IN_V20 : []),
     ...(fromVersion <= 19 ? Object.keys(V19_DEFAULT_KEYS) : []),
     ...(fromVersion <= 20 ? Object.keys(V20_DEFAULT_KEYS) : []),
+    ...(fromVersion <= 21 ? NEW_IN_V22 : []),
   ])
   // Commands that lost every key that way, with what took them ("dd (your
   // d, half-page-down)").

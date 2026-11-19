@@ -182,6 +182,7 @@ const DEFAULT_KEYBINDINGS: Record<string, string[]> = {
   // shortcut survives (main's table has the same keys).
   'new-group': [],
   'close-group': [],
+  'close-duplicate-tabs': [],
   'add-to-new-group': [],
   'ungroup-tab': [],
   'ungroup-all-tabs': [],
