@@ -160,13 +160,13 @@ toggle-bookshelf    tb
 " r reloads the page. R has it reload by itself: a menu at the Reload
 " button asks how often — a second, 5, 10… or your own — and R again
 " stops it. Each tab has its own; the button shows how often.
-" <Space> is Go: a box at the bottom of the page for the page's links,
-" buttons and tabs. Type a part of what one says — every match lights up,
-" one of them the pick; the arrows move the pick, <CR> clicks it and the
-" box stays for the next. Latin letters find Cyrillic too (zadachi finds
-" задачи, and so does pflfxb, the same keys on the Russian layout). Tab
-" switches whether a control with only an icon is found by its title.
-" <Space> again, or Esc, closes it; Shift+Space types a space.
+" <Space> is Go: a box low in the window for the page's links, buttons
+" and tabs. Type a part of what one says — every match lights up, one of
+" them the pick; the arrows move the pick, <CR> presses it as a mouse
+" would and the box stays for the next. Latin letters find Cyrillic too
+" (zadachi finds задачи, and so does pflfxb, the same keys on the Russian
+" layout). Tab switches whether a control with only an icon is found by
+" its title, Ctrl+K empties the box, Esc or Ctrl+C closes it.
 alternate-tab       <C-6>
 repeat              .
 close-window

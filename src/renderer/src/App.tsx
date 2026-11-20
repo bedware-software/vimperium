@@ -673,6 +673,7 @@ export default function App() {
   }, [])
   const [findBarOpen, setFindBarOpen] = useState(false)
   const [goOpen, setGoOpen] = useState(false)
+  const [goFocusTick, setGoFocusTick] = useState(0)
   // Counter that ticks on every find-in-page shortcut so a second Cmd+F
   // while the popup is already open re-focuses + selects the input (matches
   // Chrome / Firefox). The FindPopup runs a focus effect on every increment.
@@ -1129,7 +1130,9 @@ export default function App() {
             showNotice('Go:', 'only on a web page')
             break
           }
-          setGoOpen((v) => !v)
+          // Again while it's up: its box takes the keyboard back.
+          setGoOpen(true)
+          setGoFocusTick((t) => t + 1)
           break
         case 'open-downloads':
           s.showInternalPage(DOWNLOADS_URL)
@@ -1850,7 +1853,7 @@ export default function App() {
             anchorRef={webviewColumnRef}
             vimKeymap={vimReady ? vimKeymap.find : null}
           />
-          <GoPanel open={goOpen} onClose={closeGo} anchorRef={webviewColumnRef} />
+          <GoPanel open={goOpen} focusTick={goFocusTick} onClose={closeGo} anchorRef={webviewColumnRef} />
           <WebviewPanel
             splitPickerKeymap={vimReady ? paletteKeymap(vimKeymap.search) : null}
             splitPickerFocusTick={splitPickerFocusTick}

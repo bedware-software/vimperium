@@ -8,7 +8,7 @@
 
 import { useSyncExternalStore } from 'react'
 
-export type VimEdge = 'comet-rail' | 'comet-rail-sides' | 'comet' | 'comet-sides' | 'aurora' | 'living' | 'glint' | 'off'
+export type VimEdge = 'comet-rail' | 'comet-rail-sides' | 'comet' | 'comet-sides' | 'aurora' | 'living' | 'glint' | 'ember' | 'off'
 
 export const VIM_EDGES: readonly { id: VimEdge; label: string; hint: string }[] = [
   { id: 'comet-rail', label: 'Comet on rail', hint: 'A comet runs round the edge over a faint ring in the mode\'s colours.' },
@@ -18,6 +18,7 @@ export const VIM_EDGES: readonly { id: VimEdge; label: string; hint: string }[] 
   { id: 'aurora', label: 'Aurora', hint: 'The mode\'s three colours slowly circle the edge, with a soft halo.' },
   { id: 'living', label: 'Living border', hint: 'The colours drift in place while the glow slowly swells and fades.' },
   { id: 'glint', label: 'Glint', hint: 'A ring in the mode\'s colours with a glint passing along it now and then.' },
+  { id: 'ember', label: 'Ember', hint: 'A still ring with a glow, in the orange Go marks its pick with; green while typing.' },
   { id: 'off', label: 'Off', hint: 'A plain edge: the mode\'s key cap alone shows the mode.' },
 ] as const
 

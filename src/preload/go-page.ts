@@ -19,8 +19,9 @@ const GENERIC_MAX_TEXT = 120
 const LABEL_MAX = 80
 const COLOR = '#f97316'
 const MAX_BOXES = 400
-// The panel covers the bottom of the page: a pick under it isn't in view.
-const PANEL_ROOM = 130
+// How much of the page's bottom the panel covers, until it says (a query's
+// `room`): a pick under it isn't in view.
+let panelRoom = 130
 const REFRESH_MS = 300
 
 interface Match {
@@ -107,16 +108,36 @@ function findMatches(texts: string[], attrs: boolean): Match[] {
 
 function inView(el: Element): boolean {
   const r = el.getBoundingClientRect()
-  return r.bottom > 0 && r.top < innerHeight - PANEL_ROOM && r.right > 0 && r.left < innerWidth
+  return r.bottom > 0 && r.top < innerHeight - panelRoom && r.right > 0 && r.left < innerWidth
 }
 
 function reveal(el: Element): void {
   const r = el.getBoundingClientRect()
-  if (r.top >= 0 && r.bottom <= innerHeight - PANEL_ROOM && r.left >= 0 && r.right <= innerWidth) return
+  if (r.top >= 0 && r.bottom <= innerHeight - panelRoom && r.left >= 0 && r.right <= innerWidth) return
   el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' })
 }
 
-/** `click`: presses `el` as a mouse does (webview-stealth's clickLikeMouse). */
+/** Where a mouse would press `el`: the middle of its first box (a link
+ *  wrapped over two lines has its bounding box's middle off the text).
+ *  Null when that spot is off screen or something else lies over it. */
+function pressPoint(el: HTMLElement): { x: number; y: number } | null {
+  reveal(el)
+  const r = el.getClientRects()[0] ?? el.getBoundingClientRect()
+  const x = r.left + r.width / 2
+  const y = r.top + r.height / 2
+  if (x < 0 || y < 0 || x >= innerWidth || y >= innerHeight) return null
+  const hit = document.elementFromPoint(x, y)
+  if (!hit) return null
+  if (hit === el || el.contains(hit)) return { x, y }
+  // elementFromPoint stops at a shadow host: el inside it is under the spot.
+  for (let up: Node | null = el; up; up = up.parentNode ?? (up instanceof ShadowRoot ? up.host : null)) {
+    if (up === hit) return { x, y }
+  }
+  return null
+}
+
+/** `click`: presses `el` with made-up events (webview-stealth's
+ *  clickLikeMouse) — the fallback where a real press can't land. */
 export function installGoPage(click: (el: HTMLElement) => void): void {
   // The preload can run twice in a page (session preload and the view's own).
   const flag = '__vimperiumGoPage'
@@ -273,16 +294,25 @@ export function installGoPage(click: (el: HTMLElement) => void): void {
     }
     const link = pick.el.closest('a[href]')
     if (newTab && link instanceof HTMLAnchorElement) ipcRenderer.send('vimperium-open-in-new-tab', link.href)
-    else click(pick.el)
+    else {
+      // A real press, sent by main (webContents.sendInputEvent) with the
+      // page focused: made-up events carry no user activation and the
+      // panel holds the focus, so a page's clipboard write (a copy icon)
+      // was refused.
+      const at = pressPoint(pick.el)
+      if (at) ipcRenderer.send('vimperium-go-click', at)
+      else click(pick.el)
+    }
   }
 
   ipcRenderer.on('vimperium-go', (_e, raw: unknown) => {
-    const msg = raw as { op?: unknown; seq?: unknown; texts?: unknown; attrs?: unknown; dx?: unknown; dy?: unknown; newTab?: unknown } | null
+    const msg = raw as { op?: unknown; seq?: unknown; texts?: unknown; attrs?: unknown; room?: unknown; dx?: unknown; dy?: unknown; newTab?: unknown } | null
     switch (msg?.op) {
       case 'query':
         seq = typeof msg.seq === 'number' ? msg.seq : 0
         texts = Array.isArray(msg.texts) ? msg.texts.filter((t): t is string => typeof t === 'string') : []
         attrs = msg.attrs !== false
+        if (typeof msg.room === 'number' && Number.isFinite(msg.room)) panelRoom = Math.max(0, Math.min(innerHeight / 2, msg.room))
         if (texts.length === 0) {
           close()
           report()

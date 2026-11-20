@@ -1313,7 +1313,7 @@ function openInputHints(onClosed: () => void): InputHints | null {
         border: picked ? `3px solid ${HINT_COLOR}` : `2px dashed ${HINT_COLOR}`,
         borderRadius: '4px',
         background: picked ? 'rgba(249, 115, 22, 0.18)' : 'rgba(249, 115, 22, 0.06)',
-        boxShadow: picked ? '0 0 0 2px rgba(0, 0, 0, 0.35)' : 'none',
+        boxShadow: picked ? '0 0 0 2px rgba(0, 0, 0, 0.35), 0 0 12px 2px rgba(249, 115, 22, 0.6)' : 'none',
       })
       root.appendChild(box)
     })

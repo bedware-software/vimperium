@@ -41,7 +41,7 @@ export interface Settings {
   vimIndicator: string
   /** How a field's edge shows Vim's mode (renderer lib/vim-edge.ts):
    *  'comet-rail', 'comet-rail-sides', 'comet', 'comet-sides', 'aurora',
-   *  'living', 'glint' or 'off'. */
+   *  'living', 'glint', 'ember' or 'off'. */
   vimEdge: string
   /** The edge on every field that shows the mode, not the address bar
    *  alone. */
@@ -128,7 +128,7 @@ const KNOWN_LIGHT_VARIANTS = new Set(['light-default', 'light-bright', 'light-so
 const KNOWN_DARK_VARIANTS = new Set(['dark-default', 'dark-deep', 'dark-soft'])
 const KNOWN_DENSITIES = new Set(['compact', 'normal'])
 const KNOWN_VIM_INDICATORS = new Set(['rim-label', 'rim', 'label', 'tint', 'base', 'dot', 'plain'])
-const KNOWN_VIM_EDGES = new Set(['comet-rail', 'comet-rail-sides', 'comet', 'comet-sides', 'aurora', 'living', 'glint', 'off'])
+const KNOWN_VIM_EDGES = new Set(['comet-rail', 'comet-rail-sides', 'comet', 'comet-sides', 'aurora', 'living', 'glint', 'ember', 'off'])
 /** The edge's seconds, kept within the slider's range (lib/vim-edge.ts). */
 function edgeSeconds(value: unknown, min: number, max: number, fallback: number): number {
   return typeof value === 'number' && Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallback

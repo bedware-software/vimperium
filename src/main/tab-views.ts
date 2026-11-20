@@ -75,6 +75,8 @@ export type TabEvent =
       matches: number
       finalUpdate: boolean
     }
+  // Go pressed its pick with the page focused: the panel takes the keyboard back.
+  | { type: 'go-clicked'; tabId: string }
   // Go's matches on the page (preload/go-page.ts), for its panel.
   | {
       type: 'go-result'
@@ -2776,6 +2778,32 @@ export function installTabPreloadListeners(): void {
     if (!win || !rec || rec.windowId !== win.id || typeof msg !== 'object' || msg === null) return
     const wc = rec.view.webContents
     if (!wc.isDestroyed()) wc.send('vimperium-go', msg)
+  })
+  // Go's Enter: a real mouse press at the pick, the page focused for it
+  // (the Clipboard API refuses an unfocused document). The panel's window
+  // had the focus; the 'go-clicked' event has it take it back.
+  ipcMain.on('vimperium-go-click', (event, raw: unknown) => {
+    const tabId = wcIdToTabId.get(event.sender.id)
+    const rec = tabId ? tabs.get(tabId) : undefined
+    const at = raw as { x?: unknown; y?: unknown } | null
+    if (!tabId || !rec || typeof at?.x !== 'number' || typeof at.y !== 'number') return
+    const wc = rec.view.webContents
+    const win = BrowserWindow.fromId(rec.windowId)
+    if (!win || win.isDestroyed() || wc.isDestroyed()) return
+    // The page counts in its own pixels, the view in points: zoom apart.
+    const zoom = wc.getZoomFactor() || 1
+    const x = Math.round(at.x * zoom)
+    const y = Math.round(at.y * zoom)
+    win.focus()
+    focusTabPage(rec)
+    // A beat for the focus to reach the page ahead of the press.
+    setTimeout(() => {
+      if (wc.isDestroyed()) return
+      wc.sendInputEvent({ type: 'mouseMove', x, y })
+      wc.sendInputEvent({ type: 'mouseDown', x, y, button: 'left', clickCount: 1 })
+      wc.sendInputEvent({ type: 'mouseUp', x, y, button: 'left', clickCount: 1 })
+      sendToWindowRenderer(rec.windowId, 'tab-event', { type: 'go-clicked', tabId } satisfies TabEvent)
+    }, 50)
   })
   ipcMain.on('vimperium-go-result', (event, raw: unknown) => {
     const tabId = wcIdToTabId.get(event.sender.id)

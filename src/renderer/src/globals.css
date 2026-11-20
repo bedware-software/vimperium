@@ -862,6 +862,12 @@ kbd.vim-mode[data-indicator="dot"]::before {
   animation: mode-edge-glint calc(var(--speed) * 0.6) ease-in-out infinite;
 }
 
+/* Ember: nothing moves — a ring and its glow in the colour of Go's pick
+ * (COLOR in preload/go-page.ts) for COMMAND, INSERT's own green. */
+.mode-edge[data-edge="ember"] > [data-for="command"] { --c1: #f97316; }
+.mode-edge[data-edge="ember"] > span > i { background: var(--c1); }
+.mode-edge[data-edge="ember"] > span > i > i { display: none; }
+
 /* Still while its window isn't the one in use (lib/vim-edge.ts), and
  * wherever the root says data-reduce-motion — Settings → Appearance →
  * Motion (lib/motion.ts): Never, or Follow system while the OS asks for

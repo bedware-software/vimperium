@@ -1,24 +1,32 @@
-// Go: a panel at the bottom centre of the page area for picking a link or
-// a control by typing what it says. The matching and the highlights are
-// the page's (preload/go-page.ts), reached through main ('go:send', the
-// 'go-result' tab event). One mode only — the box always types; the keys
-// that aren't text (arrows, Enter, Tab, Space) are the panel's.
+// Go: a panel low in the middle of the window for picking a link or a
+// control by typing what it says. The matching and the highlights are the
+// page's (preload/go-page.ts), reached through main ('go:send', the
+// 'go-result' tab event). One mode only — the box always types.
 
 import { useEffect, useRef, useState } from 'react'
 import { Navigation } from 'lucide-react'
 import { useAppStore } from '../store/app-store'
 import { DetachedWindow, type PopupPlacement } from './DetachedWindow'
 import { InputField } from './InputField'
-import { Hint, HintBar } from './KeyHints'
+import { Hint, HintBar, LEAVE_INSERT_CAP } from './KeyHints'
 import { cyrillicReadings } from '../lib/translit'
 import { cn } from '../lib/utils'
+import { isCopyKey, isLeaveInsertKey } from '../lib/vim-mode'
+import { displayKeySequence } from '../lib/vim-keymap'
 
 const WIDTH = 660
-// Header (h-7), the field's row (h-11), the hint bar (h-10), the border.
-const HEIGHT = 114
-// Keep in step with PANEL_ROOM in preload/go-page.ts (HEIGHT + this).
-const INSET_BOTTOM = 16
+// Header (h-9), the field's row (h-11), the hint bar (h-10), the border.
+const HEIGHT = 122
+// How far up the window its bottom edge sits, as a share of the height.
+const LIFT = 0.16
 const ATTRS_KEY = 'go-by-title'
+// Where a drag left it, as an offset from its own spot: it follows the
+// window's size like the spot does.
+const OFFSET_KEY = 'go-offset'
+// After a press the page had the focus for (main's 'go-clicked'): how long
+// the page keeps it — its click handlers run, a copy lands — before the
+// panel takes the keyboard back.
+const REFOCUS_MS = 250
 
 const isMac = navigator.platform.toLowerCase().includes('mac')
 
@@ -41,33 +49,64 @@ function readAttrs(): boolean {
   }
 }
 
-/** Hazard stripes running out from the word to one side, fading. */
-function Stripes({ side }: { side: 'left' | 'right' }) {
-  const away = side === 'left' ? 'to left' : 'to right'
+function readOffset(): { dx: number; dy: number } {
+  try {
+    const v = JSON.parse(window.localStorage.getItem(OFFSET_KEY) ?? 'null') as { dx?: unknown; dy?: unknown } | null
+    if (typeof v?.dx === 'number' && typeof v.dy === 'number') return { dx: v.dx, dy: v.dy }
+  } catch { /* the default spot */ }
+  return { dx: 0, dy: 0 }
+}
+
+function writeOffset(offset: { dx: number; dy: number }): void {
+  try {
+    window.localStorage.setItem(OFFSET_KEY, JSON.stringify(offset))
+  } catch { /* not remembered */ }
+}
+
+// The header's whole look is GoHeader and HeaderLines: the owner is trying
+// variants, so nothing else knows how it's drawn (HEIGHT counts its h-9).
+
+/** A side's two lines, a ladder's steps: the lower one to the panel's
+ *  edge, the one at mid-height half as far. */
+function HeaderLines({ side }: { side: 'left' | 'right' }) {
+  const fromWord = side === 'left' ? 'right-0' : 'left-0'
   return (
-    <span
-      aria-hidden="true"
-      className="h-2 flex-1"
-      style={{
-        backgroundImage: `repeating-linear-gradient(${side === 'left' ? '-60deg' : '60deg'}, var(--color-primary) 0 5px, transparent 5px 11px)`,
-        maskImage: `linear-gradient(${away}, black, transparent)`,
-        WebkitMaskImage: `linear-gradient(${away}, black, transparent)`,
-      }}
-    />
+    <span aria-hidden="true" className="relative h-full flex-1">
+      <span className={cn('absolute top-1/2 h-px w-1/2 bg-primary/70', fromWord)} />
+      <span className="absolute inset-x-0 bottom-1.5 h-px bg-primary/70" />
+    </span>
   )
 }
 
-export function GoPanel({ open, onClose, anchorRef }: {
+/** Also the handle the panel is dragged by; a double click puts it back. */
+function GoHeader({ onReset }: { onReset: () => void }) {
+  return (
+    <div data-detached-drag-handle onDoubleClick={onReset} className="flex h-9 shrink-0 cursor-move items-center gap-3 px-3 select-none">
+      <HeaderLines side="left" />
+      <span className="text-xl font-semibold leading-none text-primary">Go</span>
+      <HeaderLines side="right" />
+    </div>
+  )
+}
+
+export function GoPanel({ open, focusTick, onClose, anchorRef }: {
   open: boolean
+  /** Bumped by Go's key while the panel is up: the box takes the keyboard
+   *  back (a click on the page had it). */
+  focusTick: number
   onClose: () => void
-  /** The page area: the panel sits at its bottom centre. */
+  /** The page area: how much of its bottom the panel covers is told to
+   *  the page, which keeps its pick clear of it. */
   anchorRef: React.RefObject<HTMLElement | null>
 }) {
   const [query, setQuery] = useState('')
   const [attrs, setAttrs] = useState(readAttrs)
   const [result, setResult] = useState<GoResult | null>(null)
   const [popupWindow, setPopupWindow] = useState<Window | null>(null)
-  const [box, setBox] = useState<{ placement: PopupPlacement; width: number } | null>(null)
+  const [box, setBox] = useState<{ placement: PopupPlacement; width: number; room: number } | null>(null)
+  const [offset, setOffset] = useState(readOffset)
+  // Bumped to have the popup's window take the keyboard (DetachedWindow).
+  const [refocus, setRefocus] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
   const activeTabId = useAppStore((s) => s.activeTabId)
   // The tab whose page has Go's highlights up, to take them down.
@@ -75,41 +114,37 @@ export function GoPanel({ open, onClose, anchorRef }: {
   const seqRef = useRef(0)
 
   useEffect(() => {
-    const el = anchorRef.current
-    if (!open || !el) return
+    if (!open) return
     const measure = (): void => {
-      const r = el.getBoundingClientRect()
-      const width = Math.max(320, Math.min(WIDTH, Math.round(r.width) - 32))
-      const next = {
-        placement: { left: Math.round(r.left + (r.width - width) / 2), top: Math.round(r.bottom - HEIGHT - INSET_BOTTOM) },
-        width,
-      }
-      setBox((prev) => (prev && prev.width === next.width && prev.placement.left === next.placement.left && prev.placement.top === next.placement.top ? prev : next))
+      const width = Math.max(320, Math.min(WIDTH, window.innerWidth - 32))
+      const clamp = (v: number, max: number): number => Math.max(0, Math.min(Math.max(0, max), v))
+      const left = clamp(Math.round((window.innerWidth - width) / 2 + offset.dx), window.innerWidth - width)
+      const top = clamp(Math.round(window.innerHeight * (1 - LIFT) - HEIGHT + offset.dy), window.innerHeight - HEIGHT)
+      const pageBottom = anchorRef.current?.getBoundingClientRect().bottom ?? window.innerHeight
+      const next = { placement: { left, top }, width, room: Math.max(0, Math.round(pageBottom - top)) }
+      setBox((prev) => (prev && prev.width === next.width && prev.room === next.room && prev.placement.left === left && prev.placement.top === top ? prev : next))
     }
     measure()
-    const ro = new ResizeObserver(measure)
-    ro.observe(el)
     window.addEventListener('resize', measure)
-    return () => {
-      ro.disconnect()
-      window.removeEventListener('resize', measure)
-    }
-  }, [open, anchorRef])
+    return () => window.removeEventListener('resize', measure)
+  }, [open, anchorRef, offset])
 
   useEffect(() => {
     if (!open || !popupWindow) return
     const t = setTimeout(() => inputRef.current?.focus(), 0)
     return () => clearTimeout(t)
-  }, [open, popupWindow])
+  }, [open, popupWindow, focusTick, refocus])
 
   const send = (tabId: string, msg: Record<string, unknown>): void => window.electronAPI?.goSend?.(tabId, msg)
 
   const ask = (tabId: string, text: string, byTitle: boolean): void => {
     seqRef.current += 1
     // As typed, then its Cyrillic readings: the page matches any of them.
-    send(tabId, { op: 'query', seq: seqRef.current, texts: text ? [text, ...cyrillicReadings(text)] : [], attrs: byTitle })
+    send(tabId, { op: 'query', seq: seqRef.current, texts: text ? [text, ...cyrillicReadings(text)] : [], attrs: byTitle, room: roomRef.current })
     askedTabRef.current = text ? tabId : null
   }
+  const roomRef = useRef(0)
+  roomRef.current = box?.room ?? 0
   const askRef = useRef({ query, attrs })
   askRef.current = { query, attrs }
 
@@ -137,6 +172,8 @@ export function GoPanel({ open, onClose, anchorRef }: {
       if (evt.type === 'go-result') {
         const found = raw as GoResult
         if (found.seq === seqRef.current) setResult(found)
+      } else if (evt.type === 'go-clicked') {
+        setTimeout(() => setRefocus((n) => n + 1), REFOCUS_MS)
       } else if (evt.type === 'dom-ready' && askRef.current.query) {
         // A new document knows nothing of what was asked of the last one.
         ask(activeTabId, askRef.current.query, askRef.current.attrs)
@@ -167,15 +204,25 @@ export function GoPanel({ open, onClose, anchorRef }: {
     if (askedTabRef.current) send(askedTabRef.current, { op: 'move', dx, dy })
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent): void => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
+    // Ctrl+C (Ctrl+[) closes, as it leaves any popup's box — unless it copies.
+    if (isLeaveInsertKey(e.nativeEvent) && !isCopyKey(e.nativeEvent, e.currentTarget)) {
+      e.preventDefault()
+      onClose()
+      return
+    }
+    // By its place on the keyboard: the Russian layout's Ctrl+Л too.
+    if (e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey && e.code === 'KeyK') {
+      e.preventDefault()
+      setQuery('')
+      return
+    }
     if (e.ctrlKey || e.metaKey || e.altKey) return
     switch (e.key) {
       case ' ':
-        // Space closes, as it opened; with Shift it's a space in the box.
-        if (e.shiftKey) return
-        e.preventDefault()
-        // The press that opened it, still held, isn't one to close it.
-        if (!e.repeat) onClose()
+        // Nothing to find by a space alone — and the Space that opened the
+        // panel, still held, repeats into the box.
+        if (!query.trim()) e.preventDefault()
         return
       case 'Escape':
         e.preventDefault()
@@ -213,15 +260,17 @@ export function GoPanel({ open, onClose, anchorRef }: {
       height={HEIGHT}
       resizable={false}
       placement={box.placement}
+      focusTick={focusTick + refocus}
+      onMoved={(spot) => {
+        const next = { dx: offset.dx + spot.left - box.placement.left, dy: offset.dy + spot.top - box.placement.top }
+        setOffset(next)
+        writeOffset(next)
+      }}
       onClose={onClose}
       onWindowChange={setPopupWindow}
     >
       <div className="h-full bg-popover text-popover-foreground border border-border overflow-hidden flex flex-col">
-        <div className="flex h-7 shrink-0 items-center gap-3 px-3 pt-1 select-none">
-          <Stripes side="left" />
-          <span className="text-[13px] font-bold uppercase leading-none tracking-[0.45em] pl-[0.45em] text-primary">Go</span>
-          <Stripes side="right" />
-        </div>
+        <GoHeader onReset={() => { setOffset({ dx: 0, dy: 0 }); writeOffset({ dx: 0, dy: 0 }) }} />
         <div className="flex h-11 items-center gap-1.5 px-2">
           <InputField inputRef={inputRef} mode={null} className="flex-1 h-8 rounded-lg">
             <Navigation size={14} className="shrink-0 text-muted-foreground" />
@@ -261,8 +310,8 @@ export function GoPanel({ open, onClose, anchorRef }: {
           <Hint label="Go" keys={['Enter']} />
           <Hint label="New tab" keys={[shift, 'Enter']} />
           <Hint label={attrs ? 'Icons off' : 'Icons on'} keys={['Tab']} />
-          <Hint label="A space" keys={[shift, 'Space']} />
-          <Hint label="Close" keys={['Space']} />
+          <Hint label="Clear" keys={[displayKeySequence('<C-k>')]} />
+          <Hint label="Close" keys={['Esc', LEAVE_INSERT_CAP]} />
         </HintBar>
       </div>
     </DetachedWindow>
