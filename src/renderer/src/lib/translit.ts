@@ -1,9 +1,7 @@
-// Russian typed in Latin letters, for Find in page: "rojdenie" finds
-// "рождение". The page's find takes one exact text at a time, so what's
-// typed is tried as it is first and then, while nothing matches, as each
-// Cyrillic reading of it here — the likeliest first: translit (several
-// where a letter can be read two ways: j as ж or й, y as ы or й, c as ц or
-// к, e as е or э), then the same keys on the Russian layout ("ghbdtn" →
+// Russian typed in Latin letters, for Go (components/GoPanel.tsx):
+// "zadachi" finds "задачи". The readings, likeliest first: translit
+// (several where a letter reads two ways: j as ж or й, y as ы or й, c as ц
+// or к, e as е or э), then the same keys on the Russian layout ("ghbdtn" →
 // "привет"). The soft sign has no Latin letter in most people's translit:
 // "den" won't find "день" unless typed "den'".
 

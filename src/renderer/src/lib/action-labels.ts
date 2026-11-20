@@ -21,6 +21,7 @@ export const ACTION_LABELS: Record<string, string> = {
   'page-devtools': 'Toggle Page Developer Tools',
   'ui-devtools': 'Toggle UI Developer Tools',
   'find-in-page': 'Find in Page',
+  go: 'Go: Pick a Link by Typing',
   'save-page': 'Save Page As',
   'tab-1': 'Switch to Tab 1',
   'tab-2': 'Switch to Tab 2',

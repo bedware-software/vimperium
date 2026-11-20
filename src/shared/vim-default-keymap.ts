@@ -160,6 +160,13 @@ toggle-bookshelf    tb
 " r reloads the page. R has it reload by itself: a menu at the Reload
 " button asks how often — a second, 5, 10… or your own — and R again
 " stops it. Each tab has its own; the button shows how often.
+" <Space> is Go: a box at the bottom of the page for the page's links,
+" buttons and tabs. Type a part of what one says — every match lights up,
+" one of them the pick; the arrows move the pick, <CR> clicks it and the
+" box stays for the next. Latin letters find Cyrillic too (zadachi finds
+" задачи, and so does pflfxb, the same keys on the Russian layout). Tab
+" switches whether a control with only an icon is found by its title.
+" <Space> again, or Esc, closes it; Shift+Space types a space.
 alternate-tab       <C-6>
 repeat              .
 close-window
@@ -182,6 +189,7 @@ settings            ,
 page-devtools       I
 ui-devtools
 find-in-page        /
+go                  <Space>
 save-page
 tab-1
 tab-2
@@ -531,6 +539,9 @@ const NEW_IN_V22 = new Set(['close-duplicate-tabs'])
 /** Commands v23 added. Their keys yield to an owner's as v12's do. */
 const NEW_IN_V23 = new Set(['auto-reload'])
 
+/** Commands v24 added. Their keys yield to an owner's as v12's do. */
+const NEW_IN_V24 = new Set(['go'])
+
 /** v17 defaults of the commands v18 rebound: Search Everything's filters,
  *  back on p w g t. */
 const V17_DEFAULT_KEYS: Record<string, string> = {
@@ -648,7 +659,7 @@ function sameKeys(a: string, b: string): boolean {
 }
 
 /**
- * Carries a keymap saved under older defaults (v1 to v20) over to the
+ * Carries a keymap saved under older defaults over to the
  * current ones: the default text, with each binding the owner changed (or
  * removed) as they had it. Null when that comes out as the plain default —
  * nothing to keep. `log` hears each key the migration had to decide on for
@@ -657,7 +668,7 @@ function sameKeys(a: string, b: string): boolean {
  */
 export function migrateVimKeymap(
   saved: string,
-  fromVersion: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22,
+  fromVersion: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23,
   log: (message: string) => void = () => {},
 ): string | null {
   // What the owner had, by the old name.
@@ -693,7 +704,7 @@ export function migrateVimKeymap(
   // Whether the saved keymap's version had the command: one it lacks isn't
   // missing because its owner unbound it.
   const existed = (command: string): boolean =>
-    (fromVersion <= 22 && NEW_IN_V23.has(command)) || (fromVersion <= 21 && NEW_IN_V22.has(command)) || (fromVersion <= 19 && NEW_IN_V20.has(command)) || (fromVersion <= 12 && NEW_IN_V13.has(command)) || (fromVersion <= 11 && NEW_IN_V12.has(command)) || (fromVersion <= 10 && NEW_IN_V11.has(command)) || (fromVersion <= 7 && NEW_IN_V8.has(command)) || (fromVersion <= 6 && NEW_IN_V7.has(command)) || (fromVersion <= 5 && NEW_IN_V6.has(command)) ? false
+    (fromVersion <= 23 && NEW_IN_V24.has(command)) || (fromVersion <= 22 && NEW_IN_V23.has(command)) || (fromVersion <= 21 && NEW_IN_V22.has(command)) || (fromVersion <= 19 && NEW_IN_V20.has(command)) || (fromVersion <= 12 && NEW_IN_V13.has(command)) || (fromVersion <= 11 && NEW_IN_V12.has(command)) || (fromVersion <= 10 && NEW_IN_V11.has(command)) || (fromVersion <= 7 && NEW_IN_V8.has(command)) || (fromVersion <= 6 && NEW_IN_V7.has(command)) || (fromVersion <= 5 && NEW_IN_V6.has(command)) ? false
     : fromVersion >= 3
       ? !(command in RENAMED_IN_V3)
       : !NEW_IN_V3.has(command) && !(fromVersion === 1 && NEW_IN_V2.has(command))
@@ -805,6 +816,7 @@ export function migrateVimKeymap(
     ...(fromVersion <= 20 ? Object.keys(V20_DEFAULT_KEYS) : []),
     ...(fromVersion <= 21 ? NEW_IN_V22 : []),
     ...(fromVersion <= 22 ? NEW_IN_V23 : []),
+    ...(fromVersion <= 23 ? NEW_IN_V24 : []),
   ])
   // Commands that lost every key that way, with what took them ("dd (your
   // d, half-page-down)").

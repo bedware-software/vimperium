@@ -23,7 +23,7 @@ import { VimFormContext, stepIndex, useCloseWarning, useVimForm, useVimFormLabel
 import { SETTINGS_SECTIONS, filterSettingsIndex, settingsIndex, settingsSectionLabel, type SettingsIndexEntry, type SettingsSection } from '../lib/settings-index'
 import { cn } from '../lib/utils'
 import { InputField } from './InputField'
-import { Hint, HintBar, LEAVE_INSERT_CAP, vimKeyCaps, vimKeyCapsAll } from './KeyHints'
+import { Hint, HintBar, KeysHelp, LEAVE_INSERT_CAP, vimKeyCaps, vimKeyCapsAll } from './KeyHints'
 import { VimFormCursorHints, VimFormLabels } from './VimForm'
 import { VimSelect } from './VimSelect'
 import { Segmented } from './Segmented'
@@ -206,6 +206,7 @@ const DEFAULT_KEYBINDINGS: Record<string, string[]> = {
   'manage-extensions': [],
   'site-info': [],
   'auto-reload': [],
+  go: [],
   'dark-pages-menu': [],
   'dark-pages-settings': [],
   'zoom-in': [],
@@ -3937,8 +3938,18 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
             mode={vim.mode}
             firstLabel={hints.labels[0]}
             closeWarning={closeWarning}
-            showAllKeys={showAllKeys}
             filterShown={filterShown}
+          />
+        )}
+        {vimNav && showAllKeys && (
+          <KeysHelp
+            fixed
+            columns={2}
+            rows={[
+              ...settingsCommandsInOrder().map((command) => ({ keys: vimKeyCapsAll(settingsVimKeymap, command).join('  '), what: settingsCommandLabel(command) })),
+              ...(hints.labels[0] ? [{ keys: `${hints.labels[0]}…`, what: 'Go to a setting by its label' }] : []),
+            ]}
+            onClose={() => setShowAllKeys(false)}
           />
         )}
 
@@ -4036,33 +4047,21 @@ function AboutLink({ item, url, onOpen, children }: {
 }
 
 /** Settings' hint bar in Vim mode, above the footer: the keys for where
- *  the cursor is, the filter's results, an open list — or, once asked, all
- *  of Settings' keys, or what closing would throw away. */
-function SettingsHintBar({ form, keymap, mode, firstLabel, closeWarning, showAllKeys, filterShown }: {
+ *  the cursor is, the filter's results, an open list, or what closing would
+ *  throw away. All of Settings' keys are ?'s table (KeysHelp), not here. */
+function SettingsHintBar({ form, keymap, mode, firstLabel, closeWarning, filterShown }: {
   form: VimFormController
   keymap: VimKeymap | null
   mode: VimMode
   /** The first control's label, as an example of them. */
   firstLabel?: string
   closeWarning: boolean
-  showAllKeys: boolean
   filterShown: boolean
 }) {
   const { overlayOpen } = useVimFormSnapshot(form)
   const caps = (...commands: string[]): string[] => vimKeyCaps(keymap, ...commands)
   const bar = (children: React.ReactNode) => <HintBar wrap className="min-h-10">{children}</HintBar>
 
-  if (showAllKeys) {
-    return bar(
-      <>
-        {settingsCommandsInOrder().map((command) => (
-          <Hint key={command} label={settingsCommandLabel(command)} keys={vimKeyCapsAll(keymap, command)} />
-        ))}
-        {firstLabel && <Hint label="Go to a setting by its label" keys={[`${firstLabel}…`]} />}
-        <Hint label="Back" keys={caps('help')} />
-      </>,
-    )
-  }
   // INSERT: Ctrl+C leaves the field; Esc steps back out from it as from
   // COMMAND — the filter's results, else closing, which asks first with
   // unsaved changes (a field taking the keys took an earlier warning down).

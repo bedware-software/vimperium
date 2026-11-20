@@ -28,6 +28,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   vimSetState: (state: unknown): void => { ipcRenderer.send('vim:set-state', state) },
   // A page's COMMAND key typed while the chrome has the keyboard, for that page.
   vimRunInPage: (tabId: string, command: string): void => { ipcRenderer.send('vim:run-in-page', tabId, command) },
+  goSend: (tabId: string, msg: unknown): void => { ipcRenderer.send('go:send', tabId, msg) },
   // Ctrl pressed (true) or let go (false) anywhere in this window, with Vim mode on.
   onVimCtrl: (callback: (down: boolean) => void) => {
     const handler = (_e: Electron.IpcRendererEvent, down: unknown) => callback(down === true)

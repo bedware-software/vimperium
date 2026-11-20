@@ -2,7 +2,9 @@
 // surface — Downloads, Search Everything, the Command Palette, Find in Page,
 // the address editor, the pickers, the Sidebar and the Bookshelf: "Label
 // <key> <key>" items in the toolbar tone, each key its own cap, always along
-// the bottom.
+// the bottom. One rule everywhere (the owner's): the bar always shows, with
+// the main keys; where there are more, it ends in "Keys ?" and ? opens
+// KeysHelp — the bar itself never grows into the full list.
 
 import type { ReactNode } from 'react'
 import { cn } from '../lib/utils'
@@ -59,20 +61,81 @@ export function HintBar({ children, wrap = false, className }: BarProps) {
   )
 }
 
-/** Where a popup's keys strip would be while it's hidden, in COMMAND: how
- *  to bring it up — ? shows it (usePopupVimMode's showKeys). Null in INSERT
- *  (? types there) and while the strip shows. */
-export function KeysPrompt({ mode, shown, className }: {
-  mode: 'command' | 'insert' | null
-  /** The strip is up. */
-  shown: boolean
-  className?: string
+/** All of a surface's keys, as a table over it — what ? brings up wherever
+ *  the hint bar (always shown) names only the main ones. Covers the nearest
+ *  positioned ancestor, or the whole window with `fixed` (a popup's own).
+ *  Closing — Esc, ? again — is the owner's keys'; a click outside the card
+ *  or on its X asks through `onClose`. */
+export function KeysHelp({ rows, onClose, children, fixed = false, columns = 1 }: {
+  /** Keys (as text) and what they do; a row without keys is left out. */
+  rows: ReadonlyArray<{ keys: string; what: ReactNode }>
+  onClose: () => void
+  /** Notes under the table. */
+  children?: ReactNode
+  fixed?: boolean
+  /** Side-by-side tables, for a long list. */
+  columns?: 1 | 2
 }) {
-  if (mode !== 'command' || shown) return null
+  const shown = rows.filter((row) => row.keys)
+  const perColumn = Math.ceil(shown.length / columns)
+  const tables = Array.from({ length: columns }, (_, i) => shown.slice(i * perColumn, (i + 1) * perColumn))
   return (
-    <div className={cn('flex shrink-0 items-center justify-end gap-1 px-4 pb-2 pt-1 text-[11px] text-muted-foreground select-none', className)}>
-      Keys <kbd className="font-mono">?</kbd>
+    <div
+      className={cn(fixed ? 'fixed' : 'absolute', 'inset-0 z-50 flex items-center justify-center bg-background/70 backdrop-blur-[1px]')}
+      onClick={onClose}
+    >
+      <div
+        className={cn(
+          'flex max-h-[90%] max-w-[92%] flex-col rounded-lg border border-border bg-popover p-4 text-popover-foreground shadow-xl',
+          columns === 2 ? 'w-[760px]' : 'w-[440px]',
+        )}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-3 flex shrink-0 items-center justify-between">
+          <h2 className="text-sm font-semibold">Keyboard shortcuts</h2>
+          <button
+            onClick={onClose}
+            className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+            aria-label="Close keyboard shortcuts"
+            tabIndex={-1}
+          >
+            ✕
+          </button>
+        </div>
+        <div className="min-h-0 overflow-y-auto">
+          <div className={cn('grid gap-x-8', columns === 2 && 'grid-cols-2')}>
+            {tables.map((table, i) => (
+              <dl key={i} className="grid grid-cols-[auto_1fr] content-start gap-x-4 gap-y-1.5 text-xs">
+                {table.map((row, j) => (
+                  <div key={j} className="contents">
+                    <dt className="whitespace-nowrap font-mono text-foreground">{row.keys}</dt>
+                    <dd className="text-muted-foreground">{row.what}</dd>
+                  </div>
+                ))}
+              </dl>
+            ))}
+          </div>
+          {children}
+        </div>
+      </div>
     </div>
+  )
+}
+
+/** The hint bar's way to all the keys: "Keys ?" at its end, a click or the
+ *  key bringing KeysHelp up. */
+export function KeysHelpButton({ keyCap, onClick }: { keyCap: string | undefined; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded px-1.5 py-0.5 hover:bg-secondary hover:text-foreground"
+      title="All the keys"
+      tabIndex={-1}
+    >
+      Keys
+      {keyCap && <kbd>{keyCap}</kbd>}
+    </button>
   )
 }
 

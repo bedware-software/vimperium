@@ -13,7 +13,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Zap, X, Keyboard, Plus, Pencil, Trash2, RotateCcw, Power, PowerOff, Copy,
+  Zap, X, Plus, Pencil, Trash2, RotateCcw, Power, PowerOff, Copy,
   ArrowDownWideNarrow, ArrowUpNarrowWide,
 } from 'lucide-react'
 import {
@@ -29,7 +29,7 @@ import {
 import { log } from '../lib/log'
 import { focusAddressFilter, useAddressFilter, type AddressFilterKeyEvent } from '../lib/address-filter'
 import { openDropdownAsync, type DropdownAction } from './dropdown-protocol'
-import { Hint, HintBar, KeyCap } from './KeyHints'
+import { Hint, HintBar, KeyCap, KeysHelp, KeysHelpButton } from './KeyHints'
 
 type SortKey = 'category' | 'trigger' | 'name'
 type SortDir = 'asc' | 'desc'
@@ -851,8 +851,7 @@ export function BangsPage() {
         </div>
       </div>
 
-      {/* Its keys while its own help (?) is open; a flash always. */}
-      {(flash || helpOpen) && (
+      {/* The common keys, or a short confirmation after an action. */}
       <HintBar>
         {flash ? (
           <span className="text-foreground">{flash}</span>
@@ -869,59 +868,20 @@ export function BangsPage() {
             <Hint label="Actions" keys={hintKeys('menu')} />
           </div>
         )}
-        <button
-          onClick={() => setHelpOpen((v) => !v)}
-          className="flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 hover:bg-secondary hover:text-foreground"
-          title={titleWithKey('Keyboard shortcuts', keyOf('help'))}
-          tabIndex={-1}
-        >
-          <Keyboard size={13} />
-          {keyOf('help') && <kbd>{keyOf('help')}</kbd>}
-        </button>
+        <KeysHelpButton keyCap={keyOf('help')} onClick={() => setHelpOpen((v) => !v)} />
       </HintBar>
-      )}
 
       {helpOpen && (
-        <div
-          className="absolute inset-0 z-10 flex items-center justify-center bg-background/70 backdrop-blur-[1px]"
-          onClick={() => setHelpOpen(false)}
-        >
-          <div
-            className="w-[440px] max-w-[90%] rounded-lg border border-border bg-popover p-4 text-popover-foreground shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-sm font-semibold">Keyboard shortcuts</h2>
-              <button
-                onClick={() => setHelpOpen(false)}
-                className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
-                aria-label="Close keyboard shortcuts"
-              >
-                <X size={13} />
-              </button>
-            </div>
-            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-xs">
-              {KEY_HELP.map(([actions, what]) => {
-                const keys = helpKeys(pageKeys.caps, actions)
-                // A key the keymap took for something else: the menu (or ;)
-                // still reaches the action.
-                if (!keys) return null
-                return (
-                  <div key={what} className="contents">
-                    <dt className="font-mono text-foreground">{keys}</dt>
-                    <dd className="text-muted-foreground">{what}</dd>
-                  </div>
-                )
-              })}
-            </dl>
-            {helpNote && <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">{helpNote}</p>}
-            <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
-              In the address bar a <span className="font-mono">!trigger</span> anywhere in what you type fires its bang:
-              <span className="font-mono"> !w vim</span> and <span className="font-mono">vim !w</span> both open Wikipedia's search for “vim”;
-              <span className="font-mono"> !w</span> alone opens Wikipedia.
-            </p>
-          </div>
-        </div>
+        // A key the keymap took for something else has no row: the menu (or
+        // ;) still reaches the action.
+        <KeysHelp rows={KEY_HELP.map(([actions, what]) => ({ keys: helpKeys(pageKeys.caps, actions) ?? '', what }))} onClose={() => setHelpOpen(false)}>
+          {helpNote && <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">{helpNote}</p>}
+          <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
+            In the address bar a <span className="font-mono">!trigger</span> anywhere in what you type fires its bang:
+            <span className="font-mono"> !w vim</span> and <span className="font-mono">vim !w</span> both open Wikipedia's search for “vim”;
+            <span className="font-mono"> !w</span> alone opens Wikipedia.
+          </p>
+        </KeysHelp>
       )}
 
       {editor && (

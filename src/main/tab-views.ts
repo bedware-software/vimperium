@@ -74,11 +74,19 @@ export type TabEvent =
       activeMatchOrdinal: number
       matches: number
       finalUpdate: boolean
-      /** What was searched for (the last find asked of the tab). */
-      text?: string
-      /** The active match is on something a click opens — a link, a
-       *  button: its address (or '' with none). Only on the final update. */
-      link?: string
+    }
+  // Go's matches on the page (preload/go-page.ts), for its panel.
+  | {
+      type: 'go-result'
+      tabId: string
+      /** The query this answers. */
+      seq: number
+      total: number
+      /** The pick's place among the matches, from 1; 0 with none. */
+      index: number
+      label: string
+      byAttr: boolean
+      href: string
     }
   // Page HTML fullscreen (video playback). The fullscreen element fills
   // only the tab's view rect, so the window chrome stays on screen — the
@@ -858,40 +866,16 @@ function wireEvents(rec: TabRecord): void {
   wc.on('did-finish-load', () =>
     emit({ type: 'did-finish-load', tabId: rec.tabId, url: wc.getURL() })
   )
-  wc.on('found-in-page', (_e, result) => {
-    const found = {
-      type: 'found-in-page' as const,
+  wc.on('found-in-page', (_e, result) =>
+    emit({
+      type: 'found-in-page',
       tabId: rec.tabId,
-      text: findTexts.get(rec.tabId),
       requestId: result.requestId,
       activeMatchOrdinal: result.activeMatchOrdinal,
       matches: result.matches,
       finalUpdate: result.finalUpdate,
-    }
-    const area = result.selectionArea
-    if (!result.finalUpdate || result.matches === 0 || !area) {
-      emit(found)
-      return
-    }
-    // Whether the active match is on something a click opens (Find's Enter
-    // clicks it, and says so): what's under the match's middle, asked of
-    // the page. The match's box is in the view's points; the page counts in
-    // its own, zoom aside.
-    const zoom = wc.getZoomFactor() || 1
-    const x = (area.x + area.width / 2) / zoom
-    const y = (area.y + area.height / 2) / zoom
-    wc.executeJavaScript(`(() => {
-      const el = document.elementFromPoint(${x}, ${y})
-      const hit = el && el.closest('a[href], area[href], button, summary, [role="link"], [role="button"], [role="tab"], [role="menuitem"], input[type="submit"], input[type="button"], [onclick]')
-      if (!hit) return null
-      return typeof hit.href === 'string' ? hit.href : ''
-    })()`).then((link: unknown) => {
-      emit(typeof link === 'string' ? { ...found, link } : found)
-    }).catch((err: unknown) => {
-      log.warn('find: asking the page about the match failed', { tabId: rec.tabId, err: String(err) })
-      emit(found)
     })
-  })
+  )
 
   // window.open() handler. Two paths:
   //
@@ -1659,10 +1643,6 @@ export function tabStop(tabId: string): void {
   rec.view.webContents.stop()
 }
 
-/** What each tab was last asked to find: its results say so, so whoever
- *  asked can tell an answer to an earlier text from one to the latest. */
-const findTexts = new Map<string, string>()
-
 export function tabFindInPage(
   tabId: string,
   text: string,
@@ -1671,7 +1651,6 @@ export function tabFindInPage(
   const rec = tabs.get(tabId)
   if (!rec) return 0
   if (!text) return 0
-  findTexts.set(tabId, text)
   return rec.view.webContents.findInPage(text, options)
 }
 
@@ -1680,7 +1659,6 @@ export function tabStopFindInPage(
   action: 'clearSelection' | 'keepSelection' | 'activateSelection',
 ): void {
   const rec = tabs.get(tabId)
-  findTexts.delete(tabId)
   if (!rec) return
   rec.view.webContents.stopFindInPage(action)
 }
@@ -2790,6 +2768,31 @@ export function installTabPreloadListeners(): void {
     if (!win || !rec || rec.windowId !== win.id || typeof command !== 'string') return
     const wc = rec.view.webContents
     if (!wc.isDestroyed()) wc.send('vimperium-vim-run', command)
+  })
+
+  ipcMain.on('go:send', (event, tabId: unknown, msg: unknown) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    const rec = typeof tabId === 'string' ? tabs.get(tabId) : undefined
+    if (!win || !rec || rec.windowId !== win.id || typeof msg !== 'object' || msg === null) return
+    const wc = rec.view.webContents
+    if (!wc.isDestroyed()) wc.send('vimperium-go', msg)
+  })
+  ipcMain.on('vimperium-go-result', (event, raw: unknown) => {
+    const tabId = wcIdToTabId.get(event.sender.id)
+    const rec = tabId ? tabs.get(tabId) : undefined
+    if (!tabId || !rec || typeof raw !== 'object' || raw === null) return
+    const r = raw as { seq?: unknown; total?: unknown; index?: unknown; label?: unknown; byAttr?: unknown; href?: unknown }
+    const num = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) ? v : 0)
+    sendToWindowRenderer(rec.windowId, 'tab-event', {
+      type: 'go-result',
+      tabId,
+      seq: num(r.seq),
+      total: num(r.total),
+      index: num(r.index),
+      label: typeof r.label === 'string' ? r.label : '',
+      byAttr: r.byAttr === true,
+      href: typeof r.href === 'string' ? r.href : '',
+    } satisfies TabEvent)
   })
 
   ipcMain.on('vimperium-pseudo-fullscreen', (event, active: unknown) => {

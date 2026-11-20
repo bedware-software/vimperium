@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { Command } from 'lucide-react'
 import { DetachedWindow } from './DetachedWindow'
 import { InputField } from './InputField'
-import { Hint, HintBar, KeysPrompt, LEAVE_INSERT_CAP, RowCap, vimKeyCaps } from './KeyHints'
+import { Hint, HintBar, LEAVE_INSERT_CAP, RowCap, vimKeyCaps } from './KeyHints'
 import { hintIndex, usePopupHints } from '../lib/hint-labels'
 import { useAppStore } from '../store/app-store'
 import { actionHint, type HintSettings } from '../lib/shortcut-hints'
@@ -76,6 +76,7 @@ const COMMANDS: CommandItem[] = [
   { id: 'page-devtools', label: 'Toggle Page Developer Tools', category: 'Navigation' },
   { id: 'ui-devtools', label: 'Toggle UI Developer Tools', category: 'View' },
   { id: 'find-in-page', label: 'Find in Page...', category: 'Navigation' },
+  { id: 'go', label: 'Go: Pick a Link by Typing', category: 'Navigation', keywords: 'follow click link button hint jump' },
   { id: 'save-page', label: 'Save Page As…', category: 'Navigation' },
   { id: 'copy-url', label: 'Copy Address', category: 'Navigation', keywords: 'url link clipboard' },
   { id: 'paste-url', label: 'Open Copied Address', category: 'Navigation', keywords: 'url link clipboard paste' },
@@ -419,8 +420,7 @@ export function CommandPalette({ open, onOpenChange, onAction, vimKeymap }: Prop
 
         {/* The keys, along the bottom as everywhere. */}
         <div data-detached-drag-handle>
-          <KeysPrompt mode={vim.mode} shown={vim.showKeys} />
-          {vim.showKeys && vim.mode === 'command' && (
+          {vim.mode && (
 <HintBar>
             {vim.mode === 'command' ? (
               <>

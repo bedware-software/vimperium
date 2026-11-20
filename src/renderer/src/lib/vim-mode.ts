@@ -405,8 +405,8 @@ export function usePopupVimMode({ keymap, popup, box, initial, open, onCommand, 
   /** A selection the popup made in the field (an inline completion) isn't
    *  the user's: Ctrl+C leaves for COMMAND rather than copy it. */
   clearUserSelection: () => void
-  /** Whether its keys' strip shows: hidden till ? in COMMAND asks for it
-   *  (again, it goes) — unless its own keymap binds ?. */
+  /** ? in COMMAND toggles it — unless the popup's own keymap binds ?. No
+   *  popup reads it now: their strips always show (KeyHints.tsx's rule). */
   showKeys: boolean
 } {
   const [mode, setMode] = useState<VimMode | null>(null)

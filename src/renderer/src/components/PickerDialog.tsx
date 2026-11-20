@@ -10,7 +10,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Search, CornerDownLeft } from 'lucide-react'
 import { DetachedWindow } from './DetachedWindow'
 import { InputField } from './InputField'
-import { Hint, HintBar, KeysPrompt, RowCap, vimKeyCaps } from './KeyHints'
+import { Hint, HintBar, RowCap, vimKeyCaps } from './KeyHints'
 import { GroupPill } from './GroupPill'
 import { ScopeSwitch } from './ScopeSwitch'
 import { fuzzyFilter } from '../lib/fuzzy'
@@ -461,8 +461,7 @@ export function PickerDialog({
         </div>
 
         <div data-detached-drag-handle>
-          <KeysPrompt mode={vim.mode} shown={vim.showKeys} />
-          {vim.showKeys && vim.mode === 'command' && (
+          {vim.mode === 'command' && (
 <HintBar>
             <Hint label="Navigate" keys={vimKeyCaps(vimKeymap, 'cursor-down', 'cursor-up')} />
             <Hint label={confirmVerb} keys={[enterKey]} />

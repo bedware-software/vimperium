@@ -17,6 +17,7 @@ import { Toolbar } from './components/Toolbar'
 import { Sidebar } from './components/Sidebar'
 import { WebviewPanel } from './components/WebviewPanel'
 import { FindPopup } from './components/FindPopup'
+import { GoPanel } from './components/GoPanel'
 import { UrlEditor } from './components/UrlEditor'
 import { DEFAULT_URL_EDITOR_MODES, openUrlEditor, setUrlEditorModes, useUrlEditorStore, type UrlEditorMode } from './lib/url-editor'
 import { closeSplit, focusOtherPane, isSplitShown, otherPaneTab, startSplit, useSplitStore } from './lib/split-view'
@@ -377,6 +378,8 @@ declare global {
         tabId: string,
         action: 'clearSelection' | 'keepSelection' | 'activateSelection',
       ) => void
+      /** Go's panel to the page's half (preload/go-page.ts). */
+      goSend?: (tabId: string, msg: unknown) => void
       onTabEvent?: (callback: (evt: unknown) => void) => () => void
 
       // Extensions
@@ -669,6 +672,7 @@ export default function App() {
     return cleanup
   }, [])
   const [findBarOpen, setFindBarOpen] = useState(false)
+  const [goOpen, setGoOpen] = useState(false)
   // Counter that ticks on every find-in-page shortcut so a second Cmd+F
   // while the popup is already open re-focuses + selects the input (matches
   // Chrome / Firefox). The FindPopup runs a focus effect on every increment.
@@ -1117,6 +1121,15 @@ export default function App() {
           }
           setFindBarOpen(true)
           setFindBarFocusTick((t) => t + 1)
+          break
+        case 'go':
+          // Its matching runs in a web page's preload: a page this window
+          // draws has none.
+          if (isInternalUrl(s.getActiveTab()?.url)) {
+            showNotice('Go:', 'only on a web page')
+            break
+          }
+          setGoOpen((v) => !v)
           break
         case 'open-downloads':
           s.showInternalPage(DOWNLOADS_URL)
@@ -1639,6 +1652,8 @@ export default function App() {
     }
   }, [])
 
+  const closeGo = useCallback(() => setGoOpen(false), [])
+
   // ── Vim mode ──
   // Vim is the only mode. It starts once the settings are in — its keymap is
   // one of them, as it always has: for that beat at launch the keymaps
@@ -1795,7 +1810,7 @@ export default function App() {
     useAppStore.getState().setActiveTab(evt.tabId)
   }), [])
   const urlEditorOpen = useUrlEditorStore((st) => st.open)
-  const popupOpen = commandPaletteOpen || settingsOpen || findBarOpen || splitPicking || urlEditorOpen
+  const popupOpen = commandPaletteOpen || settingsOpen || findBarOpen || goOpen || splitPicking || urlEditorOpen
   // The address editor closing gives the keyboard back to the page; in Vim
   // mode COMMAND does that for every popup (below).
   const urlEditorWasOpenRef = useRef(urlEditorOpen)
@@ -1835,6 +1850,7 @@ export default function App() {
             anchorRef={webviewColumnRef}
             vimKeymap={vimReady ? vimKeymap.find : null}
           />
+          <GoPanel open={goOpen} onClose={closeGo} anchorRef={webviewColumnRef} />
           <WebviewPanel
             splitPickerKeymap={vimReady ? paletteKeymap(vimKeymap.search) : null}
             splitPickerFocusTick={splitPickerFocusTick}

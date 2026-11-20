@@ -12,6 +12,7 @@
 import { webFrame, ipcRenderer } from 'electron'
 import { KeySequencer, isCtrlToken, keyTokenFromEvent, runTimes, timesFor, type VimKeymap } from '../shared/vim-keys'
 import { installWebAuthnBridge } from './webauthn-bridge'
+import { installGoPage } from './go-page'
 import {
   MAIN_WORLD_LOG_PREFIX,
   PASSWORD_FILLED_ATTR,
@@ -1259,6 +1260,15 @@ function clickLikeMouse(el: HTMLElement): void {
   el.dispatchEvent(new PointerEvent('pointerup', pointer))
   el.dispatchEvent(new MouseEvent('mouseup', init))
   el.click()
+}
+
+if (STEALTH_ENABLED && window.top === window) {
+  try {
+    installGoPage(clickLikeMouse)
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.log('[vimperium-go] wiring failed:', err)
+  }
 }
 
 const HINT_COLOR = '#f97316'

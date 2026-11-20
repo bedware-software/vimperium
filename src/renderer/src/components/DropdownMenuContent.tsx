@@ -272,8 +272,10 @@ function ActionRow({
       {menuKey ? (
         // From the keyboard its one key is what matters (the regular
         // shortcuts are off in Vim mode anyway).
-        <span className="ml-4 inline-flex items-center text-muted-foreground">
+        <span className="ml-4 inline-flex items-center gap-1 text-muted-foreground">
           <kbd className="font-mono">{menuKey}</kbd>
+          {/* Its Shift key too (shiftId), where the capital is another key. */}
+          {action.shiftId && menuKey.toUpperCase() !== menuKey && <kbd className="font-mono">{menuKey.toUpperCase()}</kbd>}
         </span>
       ) : action.shortcut && action.shortcut.length > 0 && (
         <span className="inline-flex items-center gap-0.5 text-muted-foreground">
