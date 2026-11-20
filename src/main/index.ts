@@ -3432,8 +3432,9 @@ function toggleUiDevTools(win: Electron.BaseWindow | undefined): void {
 /** The app menu. Vim is the only mode, so the app's own items carry no
  *  accelerator — COMMAND's keys run them (an accelerator would take its
  *  combination from every page). What keeps a key is the OS's own: the
- *  roles' (copy, paste, undo, select all, hide, quit, minimize, reload,
- *  zoom, fullscreen). */
+ *  roles' (copy, paste, undo, select all, hide, quit, minimize, zoom,
+ *  fullscreen). No reload/forceReload roles: theirs is Ctrl+R, which would
+ *  reload the focused page (or the chrome) past COMMAND's r. */
 function buildMenu(): void {
   const template: Electron.MenuItemConstructorOptions[] = [
     {
@@ -3498,8 +3499,13 @@ function buildMenu(): void {
     {
       label: 'View',
       submenu: [
-        { role: 'reload' },
-        { role: 'forceReload' },
+        {
+          label: 'Reload UI',
+          click: (_item, win) => {
+            const wc = (win as Electron.BrowserWindow | undefined)?.webContents
+            if (wc && !wc.isDestroyed()) wc.reload()
+          },
+        },
         // Always target the workspace chrome renderer. Electron's role-based
         // toggle follows the focused WebContents, which is often the active
         // page's WebContentsView.

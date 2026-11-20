@@ -48,6 +48,7 @@ import {
   tabNavigate,
   tabReload,
   tabSavePage,
+  tabSetAutoReload,
   tabStop,
   tabStopFindInPage,
   tabToggleDevTools,
@@ -534,6 +535,10 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('tab:reload', (_e, tabId: string, ignoreCache: boolean) => {
     tabReload(tabId, ignoreCache)
+  })
+
+  ipcMain.handle('tab:auto-reload', (_e, tabId: string, seconds: number) => {
+    tabSetAutoReload(tabId, typeof seconds === 'number' ? seconds : 0)
   })
 
   ipcMain.handle('tab:stop', (_e, tabId: string) => {

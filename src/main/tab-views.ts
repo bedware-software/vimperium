@@ -1443,6 +1443,7 @@ function setActiveTab(windowId: number, tabId: string): void {
 export function destroyTab(tabId: string): void {
   const rec = tabs.get(tabId)
   if (!rec) return
+  tabSetAutoReload(tabId, 0)
   if (keyOwnerByWindow.get(rec.windowId) === tabId) keyOwnerByWindow.delete(rec.windowId)
   const wcId = rec.view.webContents.id
   // Notify electron-chrome-extensions so chrome.tabs.onRemoved fires
@@ -1603,6 +1604,31 @@ export function tabReload(tabId: string, ignoreCache: boolean): void {
   // Match the pre-focusOnNavigation:false behaviour: a user-triggered reload
   // moves keyboard focus back into the page. Always a window-focused action.
   focusTabPage(rec)
+}
+
+const autoReloadTimers = new Map<string, NodeJS.Timeout>()
+
+/** Reloads the tab every `seconds`; 0 stops. Who reloads and how often is
+ *  kept by the renderer (lib/auto-reload.ts) — here are only the timers. */
+export function tabSetAutoReload(tabId: string, seconds: number): void {
+  clearInterval(autoReloadTimers.get(tabId))
+  autoReloadTimers.delete(tabId)
+  if (!Number.isFinite(seconds) || seconds <= 0 || !tabs.has(tabId)) return
+  autoReloadTimers.set(tabId, setInterval(() => {
+    const rec = tabs.get(tabId)
+    if (!rec) {
+      tabSetAutoReload(tabId, 0)
+      return
+    }
+    const wc = rec.view.webContents
+    // A page still loading skips the beat: reloading it again would never
+    // let a page slower than the interval finish.
+    if (!rec.activated || wc.isDestroyed() || wc.isLoading()) return
+    // Not tabReload: that hands the page the keyboard, and this tab may be
+    // in the background.
+    reloadingTabs.add(tabId)
+    wc.reload()
+  }, Math.max(1, seconds) * 1000))
 }
 
 export function tabStop(tabId: string): void {

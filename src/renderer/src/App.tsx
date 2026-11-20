@@ -355,6 +355,7 @@ declare global {
       tabGoBack?: (tabId: string) => Promise<void>
       tabGoForward?: (tabId: string) => Promise<void>
       tabReload?: (tabId: string, ignoreCache?: boolean) => Promise<void>
+      tabSetAutoReload?: (tabId: string, seconds: number) => Promise<void>
       tabStop?: (tabId: string) => Promise<void>
       tabGetState?: (tabId: string) => Promise<{ isLoading: boolean; url: string; canGoBack: boolean; canGoForward: boolean } | null>
       tabExecuteJS?: (tabId: string, code: string) => Promise<unknown>
@@ -1174,6 +1175,10 @@ export default function App() {
           window.electronAPI.tabReload?.(s.activeTabId, true)
           break
         }
+        case 'auto-reload':
+          // The Toolbar owns the menu, hung off its Reload button.
+          window.dispatchEvent(new Event('vimperium-toggle-auto-reload'))
+          break
         case 'page-devtools':
           if (s.activeTabId) window.electronAPI.tabToggleDevTools?.(s.activeTabId)
           break

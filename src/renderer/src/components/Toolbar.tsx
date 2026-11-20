@@ -28,7 +28,9 @@ import { EXTENSION_MENU_KEYS, extensionMenuKey } from '../lib/vim-keymap'
 import { toggleHelpPanel, useHelpPanelStore } from '../lib/help-panel'
 import { useUrlEditorStore } from '../lib/url-editor'
 import { actionHint, type HintSettings } from '../lib/shortcut-hints'
-import { BANGS_URL, DOWNLOADS_URL, internalPageOf } from '../lib/internal-pages'
+import { BANGS_URL, DOWNLOADS_URL, internalPageOf, isInternalUrl } from '../lib/internal-pages'
+import { autoReloadLabel, parseAutoReloadInterval, setAutoReload, useAutoReloadStore } from '../lib/auto-reload'
+import { showNotice } from '../lib/notice'
 import { requestExtensionInstall } from '../lib/extension-install'
 
 // Trigger-side icon registry. Only the icons used on dropdown trigger
@@ -106,6 +108,15 @@ function readThemeAttrs(): { theme?: string; themeVariant?: string } {
     themeVariant: root.getAttribute('data-theme-variant') ?? undefined,
   }
 }
+
+// The auto-reload menu's rows: seconds, label, the row's own key.
+const AUTO_RELOAD_CHOICES: ReadonlyArray<readonly [number, string, string]> = [
+  [1, 'Every second', '1'],
+  [5, 'Every 5 seconds', '5'],
+  [10, 'Every 10 seconds', '0'],
+  [30, 'Every 30 seconds', '3'],
+  [60, 'Every minute', 'm'],
+]
 
 interface DropdownTriggerProps {
   iconName: IconName
@@ -970,6 +981,13 @@ export function Toolbar({ windowWorkspaceId, sidebarVisible, pageFullscreen, vim
   // The URL bar box — the address bar's suggestion list opens under it.
   const urlBarRef = useRef<HTMLDivElement>(null)
 
+  const reloadButtonRef = useRef<HTMLButtonElement>(null)
+  const autoReloadSeconds = useAutoReloadStore((s) => (activeTabId ? s.seconds[activeTabId] : undefined))
+  const [autoReloadDialogOpen, setAutoReloadDialogOpen] = useState(false)
+  // The tab the custom interval is asked for: another may be active by the
+  // time the dialog answers.
+  const autoReloadTabRef = useRef<string | null>(null)
+
   // Create/rename dialog state
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogTitle, setDialogTitle] = useState('')
@@ -1252,6 +1270,55 @@ export function Toolbar({ windowWorkspaceId, sidebarVisible, pageFullscreen, vim
       window.electronAPI.tabReload?.(activeTabId, true)
     }
   }
+
+  const startAutoReload = (tabId: string, seconds: number): void => {
+    setAutoReload(tabId, seconds)
+    showNotice(`Reloading every ${autoReloadLabel(seconds)}`)
+  }
+  /** Vim's R (App.tsx sends the event), or a right click on Reload: stops
+   *  the tab's auto-reload, or asks how often in a menu hung off the button. */
+  const toggleAutoReload = async (): Promise<void> => {
+    const tabId = activeTabId
+    if (!tabId) return
+    if (useAutoReloadStore.getState().seconds[tabId]) {
+      setAutoReload(tabId, 0)
+      showNotice('Auto-reload off')
+      return
+    }
+    if (!activeTab?.url || isInternalUrl(activeTab.url)) {
+      log.info('auto-reload: not a web page')
+      return
+    }
+    const r = reloadButtonRef.current?.getBoundingClientRect()
+    if (!r) return
+    const result = await openDropdownAsync({
+      kind: 'menu',
+      anchor: { x: r.left, y: r.top, width: r.width, height: r.height },
+      ...readThemeAttrs(),
+      header: 'Reload this tab',
+      actions: [
+        ...AUTO_RELOAD_CHOICES.map(([seconds, label, key]): DropdownAction => ({ id: String(seconds), label, iconName: 'RotateCw', key })),
+        { id: 'custom', label: 'Custom…', iconName: 'Pencil', key: 'c', divider: 'before' },
+      ],
+      keyboard: true,
+    })
+    if (!result || result.type !== 'action') return
+    if (result.actionId === 'custom') {
+      autoReloadTabRef.current = tabId
+      setAutoReloadDialogOpen(true)
+      return
+    }
+    startAutoReload(tabId, Number(result.actionId))
+  }
+  const toggleAutoReloadRef = useRef(toggleAutoReload)
+  toggleAutoReloadRef.current = toggleAutoReload
+  useEffect(() => {
+    const onToggle = (): void => {
+      toggleAutoReloadRef.current().catch((err: unknown) => log.warn('auto-reload menu failed', err))
+    }
+    window.addEventListener('vimperium-toggle-auto-reload', onToggle)
+    return () => window.removeEventListener('vimperium-toggle-auto-reload', onToggle)
+  }, [])
 
   const openProfileDialog = () => {
     setDialogTitle('New Profile')
@@ -1647,13 +1714,27 @@ export function Toolbar({ windowWorkspaceId, sidebarVisible, pageFullscreen, vim
           </button>
         )}
         <button
+          ref={reloadButtonRef}
           onClick={handleReloadOrStop}
-          className="relative h-8 w-8 shrink-0 flex items-center justify-center rounded-md bg-secondary hover:bg-muted text-secondary-foreground"
+          onContextMenu={(e) => {
+            e.preventDefault()
+            toggleAutoReload().catch((err: unknown) => log.warn('auto-reload menu failed', err))
+          }}
+          className={`relative h-8 w-8 shrink-0 flex items-center justify-center rounded-md bg-secondary hover:bg-muted ${autoReloadSeconds ? 'text-primary' : 'text-secondary-foreground'}`}
           style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-          title={isLoading ? 'Stop loading' : 'Reload page'}
+          title={
+            autoReloadSeconds
+              ? `Reloading every ${autoReloadLabel(autoReloadSeconds)} — right-click to stop`
+              : isLoading ? 'Stop loading' : 'Reload page — right-click to reload on a timer'
+          }
         >
           {reloadHint}
           {isLoading ? <X size={14} /> : <RotateCw size={14} />}
+          {autoReloadSeconds ? (
+            <span className="absolute -bottom-1 -right-1 min-w-[14px] h-[14px] px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-semibold leading-[14px] text-center pointer-events-none">
+              {autoReloadLabel(autoReloadSeconds)}
+            </span>
+          ) : null}
         </button>
 
         {/* Install-from-store badge. Appears only when the active tab is a
@@ -1729,6 +1810,21 @@ export function Toolbar({ windowWorkspaceId, sidebarVisible, pageFullscreen, vim
         confirmLabel={dialogAction.startsWith('rename') ? 'Rename' : 'Create'}
         onConfirm={handleDialogConfirm}
         onCancel={() => setDialogOpen(false)}
+      />
+
+      <InputDialog
+        open={autoReloadDialogOpen}
+        title="Reload every…"
+        placeholder="Seconds — or 2m, 1h"
+        confirmLabel="Start"
+        onConfirm={(value) => {
+          // An answer that's no interval leaves the dialog up to fix.
+          const seconds = parseAutoReloadInterval(value)
+          if (seconds === null) return
+          setAutoReloadDialogOpen(false)
+          if (autoReloadTabRef.current) startAutoReload(autoReloadTabRef.current, seconds)
+        }}
+        onCancel={() => setAutoReloadDialogOpen(false)}
       />
 
       <ConfirmDialog

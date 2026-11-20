@@ -202,6 +202,7 @@ const DEFAULT_KEYBINDINGS: Record<string, string[]> = {
   'extensions-menu': [],
   'manage-extensions': [],
   'site-info': [],
+  'auto-reload': [],
   'dark-pages-menu': [],
   'dark-pages-settings': [],
   'zoom-in': [],

@@ -16,6 +16,7 @@ export const ACTION_LABELS: Record<string, string> = {
   back: 'Navigate Back',
   forward: 'Navigate Forward',
   reload: 'Reload Page',
+  'auto-reload': 'Reload Page on a Timer (On / Off)',
   settings: 'Open Settings',
   'page-devtools': 'Toggle Page Developer Tools',
   'ui-devtools': 'Toggle UI Developer Tools',

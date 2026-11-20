@@ -72,6 +72,7 @@ const COMMANDS: CommandItem[] = [
   { id: 'back', label: 'Navigate Back', category: 'Navigation' },
   { id: 'forward', label: 'Navigate Forward', category: 'Navigation' },
   { id: 'reload', label: 'Reload Page', category: 'Navigation' },
+  { id: 'auto-reload', label: 'Reload Page on a Timer (On / Off)', category: 'Navigation', keywords: 'auto refresh interval every seconds' },
   { id: 'page-devtools', label: 'Toggle Page Developer Tools', category: 'Navigation' },
   { id: 'ui-devtools', label: 'Toggle UI Developer Tools', category: 'View' },
   { id: 'find-in-page', label: 'Find in Page...', category: 'Navigation' },
