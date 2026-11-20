@@ -126,6 +126,17 @@ const reloadingTabs = new Set<string>()
 
 const HIDDEN_BOUNDS: TabBounds = { x: 0, y: 0, width: 0, height: 0 }
 
+/** A page's own app-region: drag (a site built to run as a desktop app too)
+ *  makes that rectangle drag this window: Electron asks every
+ *  WebContentsView, and a hidden tab's sits at 0,0 — over the Toolbar, whose
+ *  buttons then neither hover nor click (seen on Windows: WM_NCHITTEST said
+ *  HTCAPTION over them with no window on top). Per document: called at each
+ *  commit and again at dom-ready, should the first come too early to stick. */
+function dropPageDragRegions(wc: Electron.WebContents): void {
+  wc.insertCSS('* { -webkit-app-region: no-drag !important; app-region: no-drag !important; }', { cssOrigin: 'user' })
+    .catch((err) => log.warn('tab: dropping page drag regions failed', String(err)))
+}
+
 // Tab views are normally transparent so the renderer shows through during
 // load. While a page is in HTML fullscreen we paint the view black as a
 // belt-and-suspenders backdrop behind the edge-to-edge video.
@@ -698,6 +709,7 @@ function wireEvents(rec: TabRecord): void {
   // the practical-effects case. Tampermonkey's wrapper handles its own
   // run-at semantics inside the user script anyway.
   wc.on('dom-ready', () => {
+    dropPageDragRegions(wc)
     const url = (() => { try { return wc.getURL() } catch { return '' } })()
     if (!url) return
     injectMatchingUserScripts(rec.partition, url, 'document_start', wc)
@@ -728,6 +740,7 @@ function wireEvents(rec: TabRecord): void {
     }
   })
   wc.on('did-navigate', (_e, url) => {
+    dropPageDragRegions(wc)
     emit({ type: 'did-navigate', tabId: rec.tabId, url })
     emitNavState()
     // Record the visit for the address bar's history — typed when the
