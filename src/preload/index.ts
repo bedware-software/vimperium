@@ -245,6 +245,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('tab:reload', tabId, ignoreCache),
   tabSetAutoReload: (tabId: string, seconds: number): Promise<void> =>
     ipcRenderer.invoke('tab:auto-reload', tabId, seconds),
+  tabSetMuted: (tabId: string, muted: boolean): Promise<void> => ipcRenderer.invoke('tab:set-muted', tabId, muted),
   tabStop: (tabId: string): Promise<void> => ipcRenderer.invoke('tab:stop', tabId),
   tabGetState: (tabId: string): Promise<{ isLoading: boolean; url: string; canGoBack: boolean; canGoForward: boolean } | null> =>
     ipcRenderer.invoke('tab:get-state', tabId),

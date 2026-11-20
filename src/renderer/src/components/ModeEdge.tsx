@@ -1,6 +1,6 @@
 import { useLayoutEffect, useMemo, useRef, type CSSProperties } from 'react'
 import type { VimMode } from '../lib/vim-mode'
-import { isSidesEdge, useVimEdge, useVimEdgeEverywhere, useVimEdgeTiming, vimEdgePace, type VimEdge } from '../lib/vim-edge'
+import { isSidesEdge, useVimEdge, useVimEdgeEverywhere, useVimEdgeGlow, useVimEdgeTiming, vimEdgePace, type VimEdge } from '../lib/vim-edge'
 
 interface Props {
   /** Null while Vim mode is off: no edge. */
@@ -23,10 +23,11 @@ export function ModeEdge({ mode, edge, addressBar = false }: Props) {
   const timing = useVimEdgeTiming()
   const look = edge ?? chosen
   // The pace, from Settings: the period, and a resting comet's timing.
+  const glow = useVimEdgeGlow()
   const pace = useMemo(() => {
     const { speed, ease } = vimEdgePace(look, timing.speed, timing.rest)
-    return { '--speed': speed, ...(ease ? { '--pass-ease': ease } : {}) } as CSSProperties
-  }, [look, timing])
+    return { '--speed': speed, '--halo': glow / 100, ...(ease ? { '--pass-ease': ease } : {}) } as CSSProperties
+  }, [look, timing, glow])
   const shown = mode !== null && look !== 'off' && (addressBar || everywhere || edge !== undefined)
   const ref = useRef<HTMLSpanElement>(null)
 

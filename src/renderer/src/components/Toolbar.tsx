@@ -22,9 +22,8 @@ import type { VimMode } from '../lib/vim-mode'
 import { VimModeBadge } from './VimModeBadge'
 import { ModeEdge } from './ModeEdge'
 import { WorkspaceStats } from './WorkspaceStats'
-import { HEADER_HINT_BOTTOM_RIGHT, HeaderHintsContext, useHeaderHint, useHeaderKeyHint } from './HeaderHint'
+import { HEADER_HINT_BOTTOM_RIGHT, HeaderHintsContext, useHeaderHint } from './HeaderHint'
 import { useWindowVimKeymap } from '../lib/window-vim-keymap'
-import { EXTENSION_MENU_KEYS, extensionMenuKey } from '../lib/vim-keymap'
 import { toggleHelpPanel, useHelpPanelStore } from '../lib/help-panel'
 import { useUrlEditorStore } from '../lib/url-editor'
 import { actionHint, type HintSettings } from '../lib/shortcut-hints'
@@ -109,12 +108,15 @@ function readThemeAttrs(): { theme?: string; themeVariant?: string } {
   }
 }
 
-// The auto-reload menu's rows: seconds, label, the row's own key.
+// The auto-reload menu's rows: seconds, label, the row's own key. The
+// seconds rows go 1, 2, 3, 4 in order — the row's number, not its seconds:
+// the owner wants them under the left hand, not a 0 at the keyboard's far
+// end — and the minute and Custom… keep their letters.
 const AUTO_RELOAD_CHOICES: ReadonlyArray<readonly [number, string, string]> = [
   [1, 'Every second', '1'],
-  [5, 'Every 5 seconds', '5'],
-  [10, 'Every 10 seconds', '0'],
-  [30, 'Every 30 seconds', '3'],
+  [5, 'Every 5 seconds', '2'],
+  [10, 'Every 10 seconds', '3'],
+  [30, 'Every 30 seconds', '4'],
   [60, 'Every minute', 'm'],
 ]
 
@@ -478,32 +480,43 @@ function ExtensionActions({
     return api?.onExtensionCommandAction?.((id: string) => commandActionRef.current(id))
   }, [])
 
-  // Vim's oe (App.tsx sends the event): a menu of the extensions with an
-  // action, pinned or not, from the puzzle button, with the keyboard on it.
-  // Picking one is clicking its icon; Manage Extensions is Settings', where
-  // pinning, options, disabling and removing are.
+  // Vim's oe (App.tsx sends the event), or a click on the puzzle button,
+  // either button: a menu of the extensions with an action, pinned or not,
+  // with the keyboard on it. An extension's key (or Enter) is a click on
+  // its icon; Shift with that key (or Shift+Enter) opens its own menu —
+  // pin, options, disable, remove. Manage Extensions is Settings'.
+  const extensionsMenuClosedAt = useRef(0)
   const openExtensionsMenuRef = useRef<() => Promise<void>>(async () => {})
   openExtensionsMenuRef.current = async () => {
     const r = manageRef.current?.getBoundingClientRect()
     if (!r) return
     const withAction = extensions.filter((ext) => ext.enabled && ext.hasAction)
-    const actions: DropdownAction[] = withAction.map((ext) => ({ id: `open:${ext.id}`, label: ext.name, iconName: 'Puzzle' }))
+    const actions: DropdownAction[] = withAction.map((ext) => ({ id: `open:${ext.id}`, shiftId: `menu:${ext.id}`, label: ext.name, iconName: 'Puzzle' }))
     actions.push({ id: 'manage', label: 'Manage Extensions', iconName: 'Settings', ...(actions.length > 0 ? { divider: 'before' as const } : {}) })
     const result = await openDropdownAsync({
       kind: 'menu',
       anchor: { x: r.left, y: r.top, width: r.width, height: r.height },
       ...readThemeAttrs(),
-      header: 'Extensions',
+      header: withAction.length > 0 ? 'Extensions — Shift+key: its menu' : 'Extensions',
       actions,
       keyboard: true,
     })
+    extensionsMenuClosedAt.current = Date.now()
     if (!result || result.type !== 'action') return
     if (result.actionId === 'manage') {
       onManageExtensions()
       return
     }
-    const ext = withAction.find((e) => `open:${e.id}` === result.actionId)
-    if (ext) handleClick(ext)
+    const ext = withAction.find((e) => result.actionId === `open:${e.id}` || result.actionId === `menu:${e.id}`)
+    if (!ext) return
+    if (result.actionId.startsWith('menu:')) await openExtensionMenu(ext, { anchor: buttonAnchor(ext.id), keyboard: true })
+    else handleClick(ext)
+  }
+  /** A click on the puzzle button. The press that closed the menu (it took
+   *  the popup's focus) isn't one to open it again. */
+  const toggleExtensionsMenu = (): void => {
+    if (Date.now() - extensionsMenuClosedAt.current < 250) return
+    openExtensionsMenuRef.current().catch((err: unknown) => log.warn('extensions menu failed', err))
   }
   useEffect(() => {
     const onOpen = (): void => {
@@ -522,8 +535,8 @@ function ExtensionActions({
   /** An extension's own menu — what a click on it does, its keyboard
    *  shortcuts, pin, options, disable, remove: at the pointer (a right
    *  click on its button), or hung off its button with the keyboard on it
-   *  (its key: o1e, o2e…), where h and l go to the pinned extension before
-   *  and after it. */
+   *  (Shift with its key in the extensions menu), where h and l go to the
+   *  pinned extension before and after it. */
   const openExtensionMenu = async (
     ext: ExtensionInfo,
     place: { position: { x: number; y: number } } | { anchor: { x: number; y: number; width: number; height: number }; keyboard: true },
@@ -611,26 +624,6 @@ function ExtensionActions({
 
   // The puzzle's key (oe, the extensions' menu), while the help is open.
   const manageHint = useHeaderHint('extensions-menu')
-  // Each pinned extension's menu has a key too: a digit inside the puzzle's
-  // (o1e the first, o2e the second… — lib/vim-keymap.ts), shown on its
-  // button while the help is open.
-  const keyHint = useHeaderKeyHint()
-  const mainKeymap = useWindowVimKeymap()?.main ?? null
-  const openExtensionMenuRef = useRef<(n: number) => void>(() => {})
-  openExtensionMenuRef.current = (n) => {
-    const ext = visible[n - 1]
-    if (!ext) return
-    openExtensionMenu(ext, { anchor: buttonAnchor(ext.id), keyboard: true })
-      .catch((err: unknown) => log.warn('extension menu failed', err))
-  }
-  useEffect(() => {
-    const onOpen = (e: Event): void => {
-      const n = (e as CustomEvent<number>).detail
-      if (typeof n === 'number') openExtensionMenuRef.current(n)
-    }
-    window.addEventListener('vimperium-open-extension-menu', onOpen)
-    return () => window.removeEventListener('vimperium-open-extension-menu', onOpen)
-  }, [])
 
   return (
     <div
@@ -638,19 +631,23 @@ function ExtensionActions({
       className="flex shrink-0 items-center gap-1 overflow-visible"
       style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
     >
-      {/* Leading "Manage extensions" button — opens Settings → Extensions.
-          Always shown (even with no pinned extensions) so it stays a
-          reliable entry point, mirroring Chrome's puzzle-piece menu. */}
+      {/* The puzzle button: the extensions' menu, on either mouse button.
+          Always shown, pinned extensions or not: the menu's last row is the
+          way into Settings → Extensions. */}
       <button
         ref={manageRef}
-        onClick={() => onManageExtensions()}
-        title="Manage extensions"
+        onClick={toggleExtensionsMenu}
+        onContextMenu={(e) => {
+          e.preventDefault()
+          toggleExtensionsMenu()
+        }}
+        title="Extensions"
         className="relative h-8 w-8 shrink-0 flex items-center justify-center rounded-md bg-secondary hover:bg-muted text-secondary-foreground transition-colors"
       >
         {manageHint}
         <Puzzle size={15} />
       </button>
-      {visible.map((ext, extIndex) => {
+      {visible.map((ext) => {
         const isOpen = openPopupId === ext.id
         const action = actionState.actions.find((a) => a.id === ext.id)
         // Per-tab override beats the action-global value beats the manifest
@@ -678,10 +675,7 @@ function ExtensionActions({
           iconSrc = `crx://extension-icon/${ext.id}/32/2?${params.toString()}`
         }
         return (
-          // A box round the button for its key's badge: the button clips
-          // what's drawn past its own edge.
           <span key={ext.id} className="relative flex shrink-0">
-          {keyHint(mainKeymap && extIndex < EXTENSION_MENU_KEYS ? extensionMenuKey(mainKeymap, extIndex + 1) : undefined)}
           <button
             ref={(el) => {
               if (el) buttonRefs.current.set(ext.id, el)
@@ -1748,7 +1742,10 @@ export function Toolbar({ windowWorkspaceId, sidebarVisible, pageFullscreen, vim
           ref={urlBarRef}
           // The address editor lines up with it (UrlEditor.tsx).
           data-url-bar=""
-          className="field relative flex-[5] min-w-0 flex items-center h-8 rounded-lg"
+          // z-1: its edge's glow (ModeEdge) spills over the neighbours on both
+          // sides; without it the buttons after it in the bar paint over the
+          // glow's right half.
+          className="field relative z-[1] flex-[5] min-w-0 flex items-center h-8 rounded-lg"
           style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
         >
           {urlHint}

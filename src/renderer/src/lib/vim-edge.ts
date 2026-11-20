@@ -45,6 +45,11 @@ function seconds(value: unknown, range: { min: number; max: number; default: num
 export const normalizeVimEdgeSpeed = (value: unknown): number => seconds(value, VIM_EDGE_SPEED)
 export const normalizeVimEdgeRest = (value: unknown): number => seconds(value, VIM_EDGE_REST)
 
+/** The glow's size, in percent of the designed one (.mode-edge's --halo):
+ *  0 is the ring alone. Main keeps the same range (settings-store.ts). */
+export const VIM_EDGE_GLOW = { min: 0, max: 200, step: 10, default: 100 } as const
+export const normalizeVimEdgeGlow = (value: unknown): number => seconds(value, VIM_EDGE_GLOW)
+
 export function isSidesEdge(edge: VimEdge): boolean {
   return edge.endsWith('-sides')
 }
@@ -82,14 +87,17 @@ export function vimEdgePace(edge: VimEdge, speed: number, rest: number): { speed
 let current: VimEdge = DEFAULT_VIM_EDGE
 let everywhere = DEFAULT_VIM_EDGE_EVERYWHERE
 let timing: { speed: number; rest: number } = { speed: VIM_EDGE_SPEED.default, rest: VIM_EDGE_REST.default }
+let glow: number = VIM_EDGE_GLOW.default
 const listeners = new Set<() => void>()
 
-export function applyVimEdge(edge: VimEdge, onEveryField: boolean, speed?: number, rest?: number): void {
+export function applyVimEdge(edge: VimEdge, onEveryField: boolean, speed?: number, rest?: number, glowSize?: number): void {
   const nextSpeed = normalizeVimEdgeSpeed(speed)
   const nextRest = normalizeVimEdgeRest(rest)
-  if (edge === current && onEveryField === everywhere && nextSpeed === timing.speed && nextRest === timing.rest) return
+  const nextGlow = normalizeVimEdgeGlow(glowSize)
+  if (edge === current && onEveryField === everywhere && nextSpeed === timing.speed && nextRest === timing.rest && nextGlow === glow) return
   current = edge
   everywhere = onEveryField
+  glow = nextGlow
   if (nextSpeed !== timing.speed || nextRest !== timing.rest) timing = { speed: nextSpeed, rest: nextRest }
   listeners.forEach((listener) => listener())
 }
@@ -114,6 +122,10 @@ export function useVimEdge(): VimEdge {
 
 export function useVimEdgeEverywhere(): boolean {
   return useSyncExternalStore(subscribe, () => everywhere)
+}
+
+export function useVimEdgeGlow(): number {
+  return useSyncExternalStore(subscribe, () => glow)
 }
 
 export function useVimEdgeTiming(): { speed: number; rest: number } {

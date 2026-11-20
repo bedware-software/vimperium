@@ -633,18 +633,24 @@ kbd.vim-mode[data-indicator="dot"]::before {
 }
 @keyframes mode-edge-slide { to { translate: -50% 0; } }
 @keyframes mode-edge-breathe {
-  0%, 100% { opacity: calc(var(--glow) * 0.4); }
-  50% { opacity: var(--glow); }
+  0%, 100% { opacity: calc(var(--glow-on) * 0.4); }
+  50% { opacity: var(--glow-on); }
 }
 @keyframes mode-edge-glint {
   0% { translate: -100% 0; }
   55%, 100% { translate: 420% 0; }
 }
 
+/* --halo: the glow's size, 1 as designed (Settings → Appearance, set by
+ * ModeEdge): its blur and how far out it starts scale with it, the layer's
+ * --pad grows past 1 so a bigger glow isn't cut at the layer's edge, and
+ * below a third it fades out too — at 0 there is the ring alone. */
 .mode-edge {
   --speed: 10s;
   --glow: 0.55;
-  --pad: 24px;
+  --halo: 1;
+  --glow-on: calc(var(--glow) * clamp(0, var(--halo) * 3, 1));
+  --pad: calc(24px * max(1, var(--halo)));
   position: absolute;
   inset: 0;
   pointer-events: none;
@@ -675,10 +681,11 @@ kbd.vim-mode[data-indicator="dot"]::before {
   container-type: size;
 }
 .mode-edge > span > i + i {
-  inset: calc(var(--pad) - 4px);
-  border-radius: calc(var(--r, 8px) + 4px);
-  filter: blur(9px);
-  opacity: var(--glow);
+  --out: calc(1.5px + 2.5px * var(--halo));
+  inset: calc(var(--pad) - var(--out));
+  border-radius: calc(var(--r, 8px) + var(--out));
+  filter: blur(calc(9px * var(--halo)));
+  opacity: var(--glow-on);
 }
 /* The mover: for the turning looks a square as wide as the box's diagonal,
  * centred, so it covers the box however it's turned — a conic gradient

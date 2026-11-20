@@ -13,7 +13,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { SEQUENCE_JOIN, type VimKeymap } from '../../../shared/vim-keys'
 import { hintIndex } from './hint-labels'
-import { EXTENSION_MENU_KEYS, displayKeySequence, extensionMenuIndex, vimCommandLabel } from './vim-keymap'
+import { displayKeySequence, vimCommandLabel } from './vim-keymap'
 
 export interface WhichKeyEntry {
   /** What to type next, as caps read (the rest of the sequence). */
@@ -66,9 +66,6 @@ export function whichKeyEntries(keymap: VimKeymap, pending: string): WhichKeyEnt
   const groups = new Map<string, Array<{ rest: string[]; command: string }>>()
   for (const [seq, command] of keymap) {
     if (hintIndex(command) !== null) continue
-    // The pinned extensions' menus (o1e…o9e) are one entry, not nine.
-    const extension = extensionMenuIndex(command)
-    if (extension !== null && extension !== 1) continue
     const tokens = seq.split(SEQUENCE_JOIN)
     let typed = ''
     for (let k = 0; k < tokens.length - 1; k++) {
@@ -86,10 +83,6 @@ export function whichKeyEntries(keymap: VimKeymap, pending: string): WhichKeyEnt
   for (const [next, list] of groups) {
     if (list.length === 1) {
       const { rest, command } = list[0]
-      if (extensionMenuIndex(command) === 1) {
-        entries.push({ keys: `1–${EXTENSION_MENU_KEYS}${displayKeySequence(rest.slice(1).join(''))}`, label: "A pinned extension's menu" })
-        continue
-      }
       entries.push({ keys: displayKeySequence(rest.join('')), label: SHORT_LABELS[command] ?? vimCommandLabel(command) })
     } else {
       entries.push({ keys: `${displayKeySequence(next)}…`, label: `${list.length} more` })

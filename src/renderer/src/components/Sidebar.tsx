@@ -5,7 +5,9 @@ import { InlineRenameInput } from './InlineRenameInput'
 import { InputDialog } from './InputDialog'
 import { TabFavicon } from './TabFavicon'
 import { CommentChip } from './CommentChip'
-import { ChevronRight, ChevronDown, Plus, X } from 'lucide-react'
+import { ChevronRight, ChevronDown, Plus, RotateCw, Volume2, VolumeX, X } from 'lucide-react'
+import { autoReloadLabel, useAutoReloadStore } from '../lib/auto-reload'
+import { toggleTabMuted, useTabAudioStore } from '../lib/tab-audio'
 import { openDropdownAsync, type DropdownAction, type DropdownSpec } from './dropdown-protocol'
 import { useVimSidebar } from '../lib/vim-mode'
 import { actionHint, type HintSettings } from '../lib/shortcut-hints'
@@ -18,6 +20,54 @@ import { SplitGlyph } from './SplitPanes'
 import { isSplitShown, useSplitStore } from '../lib/split-view'
 
 const isMacOS = navigator.platform.toLowerCase().includes('mac')
+
+/** A row's marks: sound playing (a click mutes the tab; muted, the mark
+ *  stays, sound or not, to click again), and reloading on a timer (how
+ *  often). On a folded group's header they stand for the tabs inside
+ *  (`inGroup`) and only show. */
+function TabMarks({ audible, muted = false, onToggleMute, reloadSeconds, inGroup = false, className = '' }: {
+  audible: boolean
+  muted?: boolean
+  onToggleMute?: () => void
+  reloadSeconds: number | undefined
+  inGroup?: boolean
+  className?: string
+}) {
+  if (!audible && !muted && !reloadSeconds) return null
+  return (
+    <span className={`shrink-0 flex items-center gap-1 text-primary ${className}`}>
+      {onToggleMute && (audible || muted) ? (
+        <button
+          type="button"
+          // The row's own press starts a drag, its click shows the tab.
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation()
+            onToggleMute()
+          }}
+          className={`flex h-5 w-5 items-center justify-center rounded hover:bg-muted ${muted ? 'text-muted-foreground' : ''}`}
+          title={muted ? 'Muted — click to unmute' : 'Playing sound — click to mute'}
+          aria-label={muted ? 'Unmute tab' : 'Mute tab'}
+        >
+          {muted ? <VolumeX size={12} /> : <Volume2 size={12} />}
+        </button>
+      ) : audible && (
+        <span className="flex items-center" title={inGroup ? 'A tab in this group is playing sound' : 'Playing sound'} aria-label="Playing sound">
+          <Volume2 size={12} />
+        </span>
+      )}
+      {reloadSeconds ? (
+        <span
+          className="flex items-center gap-0.5 text-[10px] font-semibold leading-none"
+          title={`${inGroup ? 'A tab in this group reloads' : 'Reloads'} every ${autoReloadLabel(reloadSeconds)}`}
+        >
+          <RotateCw size={10} />
+          {autoReloadLabel(reloadSeconds)}
+        </span>
+      ) : null}
+    </span>
+  )
+}
 
 /** Format an Electron accelerator string for display in a tooltip / hint.
  *  Shown next to the bottom "New Tab" affordance. */
@@ -163,6 +213,9 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
   // Split view: its two tabs wear a glyph showing their pane; while it's on
   // screen the unfocused one is lit too, a step below the active tab.
   const split = useSplitStore((s) => s.split)
+  const audibleTabs = useTabAudioStore((s) => s.audible)
+  const mutedTabs = useTabAudioStore((s) => s.muted)
+  const autoReloads = useAutoReloadStore((s) => s.seconds)
   const splitOnScreen = isSplitShown(split, activeTabId)
 
   // Current "new tab" key, mirrored from main so the bottom-pinned affordance
@@ -1144,6 +1197,7 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
     const selected = selectedIds.has(tab.id)
     const active = tab.id === activeTabId
     const alternate = tab.id === alternateId
+    const marked = !!audibleTabs[tab.id] || !!mutedTabs[tab.id] || !!autoReloads[tab.id]
     const splitPane = split ? (tab.id === split.first ? 'first' : tab.id === split.second ? 'second' : null) : null
     const splitVisible = !active && splitPane !== null && splitOnScreen
     const showBefore = containerId === null
@@ -1204,9 +1258,18 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
           </span>
         )}
         {tab.comment && <CommentChip comment={tab.comment} />}
-        <span className={`min-w-title-stub flex-1 truncate text-xs ${alternate ? 'pr-5' : ''}`} title={tab.title}>
+        <span className={`min-w-title-stub flex-1 truncate text-xs ${alternate && !marked ? 'pr-5' : ''}`} title={tab.title}>
           {tab.title}
         </span>
+        {/* Clear of the right-edge slot (the # and the close X over it), so
+            the speaker stays clickable while the row is hovered. */}
+        <TabMarks
+          audible={!!audibleTabs[tab.id]}
+          muted={!!mutedTabs[tab.id]}
+          onToggleMute={() => toggleTabMuted(tab.id)}
+          reloadSeconds={autoReloads[tab.id]}
+          className="mr-6"
+        />
         {/* Right-edge slot: the hover-only close X, keeping the full 24×24
             click target so it stays easy to hit. Under it, on the tab you
             were on before (alternate-tab's, vim's alternate buffer): its
@@ -1362,6 +1425,18 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
             <span className="flex-1 min-w-0 truncate">{group.name}</span>
           )}
         </span>
+        {/* Folded, its rows don't show: the header says a tab inside plays
+            sound or reloads (the shortest interval, if several do). */}
+        {group.isCollapsed && (
+          <TabMarks
+            inGroup
+            audible={group.tabs.some((t) => audibleTabs[t.id])}
+            reloadSeconds={group.tabs.reduce<number | undefined>((least, t) => {
+              const s = autoReloads[t.id]
+              return s && (least === undefined || s < least) ? s : least
+            }, undefined)}
+          />
+        )}
         {/* Action overlay — absolute right, sits ON TOP of the pill on
             hover so the pill underneath isn't squeezed by reserved button
             space. Each button has a card-tone background so the icons

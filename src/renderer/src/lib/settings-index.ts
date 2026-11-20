@@ -54,6 +54,7 @@ const STATIC: SettingsIndexEntry[] = [
   // General
   { section: 'general', item: 'general:default-url', title: 'Default New Tab URL', keywords: 'new tab page home start blank' },
   { section: 'general', item: 'general:new-tab-focus', title: 'Focus on New Tab', keywords: 'site url bar address keyboard' },
+  { section: 'general', item: 'general:page-focus', title: 'A Page Focusing Its Own Field', keywords: 'autofocus steal focus keyboard insert command site search box' },
   { section: 'general', item: 'general:url-editor-edit', title: 'Address editor (E): the mode it opens in', keywords: 'url bar edit insert command mode E' },
   { section: 'general', item: 'general:search-engine', title: 'Default Search Engine', keywords: 'google yandex duckduckgo bing unduck' },
   { section: 'general', item: 'general:custom-engine', title: 'Custom search engine', keywords: 'url template %s', fallback: 'general:search-engine' },
@@ -75,6 +76,7 @@ const STATIC: SettingsIndexEntry[] = [
   { section: 'appearance', item: 'appearance:vim-edge-everywhere', title: 'Vim mode edge on every field', keywords: 'search find palette', fallback: 'appearance:theme' },
   { section: 'appearance', item: 'appearance:vim-edge-speed', title: 'Vim mode edge: lap', keywords: 'speed pace fast slow seconds comet light', fallback: 'appearance:theme' },
   { section: 'appearance', item: 'appearance:vim-edge-rest', title: 'Vim mode edge: rest at the sides', keywords: 'pause stop stay ends comet seconds', fallback: 'appearance:theme' },
+  { section: 'appearance', item: 'appearance:vim-edge-glow', title: 'Vim mode edge: glow', keywords: 'halo size intensity blur light comet', fallback: 'appearance:theme' },
   { section: 'appearance', item: 'appearance:motion', title: 'Motion', keywords: 'animation animations reduce reduced motion effects moving still glitch light system always never' },
   // Dark pages
   { section: 'darkPages', item: 'dark:mode', title: 'Dark pages', keywords: 'off on theme night mode' },

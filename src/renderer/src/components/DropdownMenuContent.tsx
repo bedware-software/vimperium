@@ -439,6 +439,14 @@ export function DropdownMenuContent({
           onEmit({ type: 'action', actionId: actions[index].id })
           return
         }
+        // After the keys themselves: a capital that is some action's own key wins.
+        for (const [index, key] of keys) {
+          const shiftId = actions[index].shiftId
+          if (!shiftId || !e.shiftKey || key.toUpperCase() !== pressed) continue
+          e.preventDefault()
+          onEmit({ type: 'action', actionId: shiftId })
+          return
+        }
       }
       // The moves go by position too.
       const move = pressed && MOVE_KEYS.has(pressed) ? pressed : e.key
@@ -481,7 +489,7 @@ export function DropdownMenuContent({
           onEmit({ type: 'new' })
         } else {
           const action = actions[keyFocus.index]
-          if (action && !action.disabled) onEmit({ type: 'action', actionId: action.id })
+          if (action && !action.disabled) onEmit({ type: 'action', actionId: e.shiftKey && action.shiftId ? action.shiftId : action.id })
         }
       }
     }

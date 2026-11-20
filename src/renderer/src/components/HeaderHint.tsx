@@ -39,14 +39,3 @@ export function useHeaderHint(command: string, shown = true, className = CORNER,
   const shownKey = displayKeySequence(key)
   return <RowHint mode="command" label={shownKey} pending={pending && key.startsWith(pending) ? pending : ''} className={className} />
 }
-
-/** The badge of a key that isn't one command's (a pinned extension's menu:
- *  o1e, o2e…), as typed, for a `relative` box round its button; null while
- *  the help is closed or there's no key. */
-export function useHeaderKeyHint(): (key: string | undefined) => React.ReactNode {
-  const { on, pending } = useContext(HeaderHintsContext)
-  return (key) => {
-    if (!on || !key) return null
-    return <RowHint mode="command" label={displayKeySequence(key)} pending={pending && key.startsWith(pending) ? pending : ''} className={CORNER} />
-  }
-}

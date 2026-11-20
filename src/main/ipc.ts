@@ -49,6 +49,7 @@ import {
   tabReload,
   tabSavePage,
   tabSetAutoReload,
+  tabSetMuted,
   tabStop,
   tabStopFindInPage,
   tabToggleDevTools,
@@ -539,6 +540,10 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('tab:auto-reload', (_e, tabId: string, seconds: number) => {
     tabSetAutoReload(tabId, typeof seconds === 'number' ? seconds : 0)
+  })
+
+  ipcMain.handle('tab:set-muted', (_e, tabId: string, muted: boolean) => {
+    tabSetMuted(tabId, muted === true)
   })
 
   ipcMain.handle('tab:stop', (_e, tabId: string) => {

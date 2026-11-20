@@ -6,13 +6,13 @@ import type { Bang } from '../../shared/bangs'
 import { openAddress, stepUrlNumber } from './lib/open-address'
 import { log } from './lib/log'
 import { focusAndSelectUrlBar } from './lib/focus-url-bar'
-import { useVimMode, dispatchSidebarCommand, dispatchPageCommand, type VimMode } from './lib/vim-mode'
+import { useVimMode, dispatchSidebarCommand, dispatchPageCommand, setIgnorePageFocus, type VimMode } from './lib/vim-mode'
 import { hintIndex, useHintKeymap } from './lib/hint-labels'
 import { WhichKeyStrip } from './components/WhichKey'
 import { NoticeStrip } from './components/Notice'
 import { showNotice } from './lib/notice'
 import { useSidebarCursorStore } from './lib/sidebar-cursor'
-import { parseVimKeymap, paletteKeymap, DEFAULT_VIM_KEYMAP, extensionMenuIndex, isPageCommand, isSidebarCommand, withExtensionMenuKeys, withRowGoKey, withRowUnselectKey } from './lib/vim-keymap'
+import { parseVimKeymap, paletteKeymap, DEFAULT_VIM_KEYMAP, isPageCommand, isSidebarCommand, withRowGoKey, withRowUnselectKey } from './lib/vim-keymap'
 import { Toolbar } from './components/Toolbar'
 import { Sidebar } from './components/Sidebar'
 import { WebviewPanel } from './components/WebviewPanel'
@@ -60,6 +60,9 @@ interface Settings {
   darkVariant: string
   density: Density
   newTabFocus: NewTabFocus
+  /** A field a page focuses by itself: 'ignore' (the default) keeps COMMAND,
+   *  'take' is INSERT in it. */
+  pageFocus?: 'ignore' | 'take'
   urlEditorClickMode?: UrlEditorMode
   urlEditorNewTabMode?: UrlEditorMode
   urlEditorEditMode?: UrlEditorMode
@@ -79,6 +82,7 @@ interface Settings {
   /** Its pace in seconds: a lap, and a resting comet's stay in each end. */
   vimEdgeSpeed?: number
   vimEdgeRest?: number
+  vimEdgeGlow?: number
   /** Whether the edge's light and the mark's glitch move, see lib/motion.ts;
    *  null = no choice made, the platform's default. */
   motion: MotionChoice | null
@@ -242,7 +246,7 @@ declare global {
       closeWindow: () => Promise<void>
       focusWindowRenderer: () => void
       /** Vim mode's mode and COMMAND keys, for this window's pages. */
-      vimSetState?: (state: { mode: 'command' | 'insert' | null; keymap: Array<[string, string]>; leaveInsert: number }) => void
+      vimSetState?: (state: { mode: 'command' | 'insert' | null; keymap: Array<[string, string]>; leaveInsert: number; ignorePageFocus: boolean }) => void
       /** A page's COMMAND key typed while the chrome has the keyboard. */
       vimRunInPage?: (tabId: string, command: string) => void
       /** Ctrl pressed (true) or let go (false) anywhere in this window. */
@@ -356,6 +360,7 @@ declare global {
       tabGoForward?: (tabId: string) => Promise<void>
       tabReload?: (tabId: string, ignoreCache?: boolean) => Promise<void>
       tabSetAutoReload?: (tabId: string, seconds: number) => Promise<void>
+      tabSetMuted?: (tabId: string, muted: boolean) => Promise<void>
       tabStop?: (tabId: string) => Promise<void>
       tabGetState?: (tabId: string) => Promise<{ isLoading: boolean; url: string; canGoBack: boolean; canGoForward: boolean } | null>
       tabExecuteJS?: (tabId: string, code: string) => Promise<unknown>
@@ -794,10 +799,11 @@ export default function App() {
       applyTheme(normalized.theme, normalized.lightVariant, normalized.darkVariant)
       applyDensity(normalized.density)
       applyVimIndicator(normalized.vimIndicator)
-      applyVimEdge(normalized.vimEdge, normalized.vimEdgeEverywhere === true, normalized.vimEdgeSpeed, normalized.vimEdgeRest)
+      applyVimEdge(normalized.vimEdge, normalized.vimEdgeEverywhere === true, normalized.vimEdgeSpeed, normalized.vimEdgeRest, normalized.vimEdgeGlow)
       applyMotion(normalized.motion)
       setDefaultNewTabUrl(normalized.defaultPageUrl)
       setNewTabFocusPref(normalized.newTabFocus)
+      setIgnorePageFocus(normalized.pageFocus !== 'take')
       applyUrlEditorModes(normalized)
       setSearchEngine(normalized.searchEngine)
       setBangsEnabled(normalized.bangsEnabled !== false)
@@ -985,12 +991,6 @@ export default function App() {
           if (target) s.setActiveTab(target)
           return
         }
-      }
-      // The nth pinned extension's own menu (o1e…o9e).
-      const extensionMenu = extensionMenuIndex(action)
-      if (extensionMenu !== null) {
-        window.dispatchEvent(new CustomEvent('vimperium-open-extension-menu', { detail: extensionMenu }))
-        return
       }
       switch (action) {
         case 'new-tab': {
@@ -1493,10 +1493,11 @@ export default function App() {
       applyTheme(s.theme, s.lightVariant, s.darkVariant)
       applyDensity(s.density)
       applyVimIndicator(s.vimIndicator)
-      applyVimEdge(s.vimEdge, s.vimEdgeEverywhere === true, s.vimEdgeSpeed, s.vimEdgeRest)
+      applyVimEdge(s.vimEdge, s.vimEdgeEverywhere === true, s.vimEdgeSpeed, s.vimEdgeRest, s.vimEdgeGlow)
       applyMotion(s.motion)
       setDefaultNewTabUrl(s.defaultPageUrl)
       setNewTabFocusPref(s.newTabFocus)
+      setIgnorePageFocus(s.pageFocus !== 'take')
       applyUrlEditorModes(s)
       setSearchEngine(s.searchEngine)
       setBangsEnabled(s.bangsEnabled !== false)
@@ -1615,10 +1616,11 @@ export default function App() {
     applyTheme(normalized.theme, normalized.lightVariant, normalized.darkVariant)
     applyDensity(normalized.density)
     applyVimIndicator(normalized.vimIndicator)
-    applyVimEdge(normalized.vimEdge, normalized.vimEdgeEverywhere === true, normalized.vimEdgeSpeed, normalized.vimEdgeRest)
+    applyVimEdge(normalized.vimEdge, normalized.vimEdgeEverywhere === true, normalized.vimEdgeSpeed, normalized.vimEdgeRest, normalized.vimEdgeGlow)
     applyMotion(normalized.motion)
     setDefaultNewTabUrl(normalized.defaultPageUrl)
     setNewTabFocusPref(normalized.newTabFocus)
+    setIgnorePageFocus(normalized.pageFocus !== 'take')
     applyUrlEditorModes(normalized)
     setSearchEngine(normalized.searchEngine)
     setBangsEnabled(normalized.bangsEnabled !== false)
@@ -1680,15 +1682,13 @@ export default function App() {
   // Labels on the rows the group page, the Bookshelf and the Sidebar show
   // in COMMAND (lib/hint-labels.ts), bound in the window's keymap — the one
   // pages run too.
-  // COMMAND's keys, with the pinned extensions' menus on theirs (o1e…o9e,
-  // made from the extensions menu's own — lib/vim-keymap.ts).
-  // Enter is the window's only while the Sidebar's cursor is off the row
+  // COMMAND's keys. Enter is the window's only while the Sidebar's cursor is off the row
   // that's shown: it shows the row it's on.
   const cursorAway = useSidebarCursorStore((s) => s.away)
   // Esc likewise, while rows are picked there: one press unpicks them.
   const rowsPicked = useSidebarCursorStore((s) => s.picked)
   const mainKeys = useMemo(() => {
-    let keys = withExtensionMenuKeys(vimKeymap.main)
+    let keys = vimKeymap.main
     if (cursorAway) keys = withRowGoKey(keys)
     if (rowsPicked) keys = withRowUnselectKey(keys)
     return keys
@@ -1881,7 +1881,7 @@ export default function App() {
         onClose={() => setSettingsOpen(false)}
         settings={settings}
         onSave={handleSaveSettings}
-        onAppearancePreview={(p) => { applyTheme(p.theme, p.lightVariant, p.darkVariant); applyDensity(p.density); applyVimIndicator(p.vimIndicator); applyVimEdge(p.vimEdge, p.vimEdgeEverywhere, p.vimEdgeSpeed, p.vimEdgeRest); applyMotion(p.motion) }}
+        onAppearancePreview={(p) => { applyTheme(p.theme, p.lightVariant, p.darkVariant); applyDensity(p.density); applyVimIndicator(p.vimIndicator); applyVimEdge(p.vimEdge, p.vimEdgeEverywhere, p.vimEdgeSpeed, p.vimEdgeRest, p.vimEdgeGlow); applyMotion(p.motion) }}
         tabRequest={settingsTabRequest}
         vimKeymap={vimReady ? vimKeymap : null}
       />

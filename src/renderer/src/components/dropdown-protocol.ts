@@ -77,6 +77,10 @@ export interface DropdownAction {
   // are the menu's own moves. Actions without one get the first free letter
   // of their label (DropdownMenuContent's menuKeys).
   key?: string
+  // In a menu opened from the keyboard, Shift with the action's key (or
+  // Shift+Enter on its row) picks this action id instead: a second thing to
+  // do with the same row (an extension's own menu, not its popup).
+  shiftId?: string
 }
 
 // Anchor rectangle in the *parent window's content-area* coordinates (CSS

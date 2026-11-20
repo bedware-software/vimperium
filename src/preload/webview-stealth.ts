@@ -737,6 +737,37 @@ function installVimPage(): void {
   let leaveInsertSeq: number | null = null
   // INSERT because a field took focus (leaving it is COMMAND again), not by i.
   let insertFromField = false
+  // Settings → General: a field the page focused by itself (ya.ru's search
+  // box as it loads) doesn't get the keys — COMMAND stays.
+  let ignorePageFocus = false
+  // When the user last did something a field's focus can be put down to: a
+  // press of the mouse here, or a key the page was let have (Enter, Tab,
+  // anything in INSERT, the input hints' keys).
+  let userActedAt = -Infinity
+  const USER_FOCUS_MS = 1000
+  // The field that had the keys when this window lost them: focus coming
+  // back to it is the window's return, not the page's doing.
+  let fieldAtBlur: Element | null = null
+  // A page that focuses its field again each time it's blurred would spin
+  // with us: after a few rounds in a moment it gets its way.
+  let refusedAt: number[] = []
+  const REFUSE_ROUNDS = 3
+  /** Whether `field` just taking focus is the page's own doing, to be
+   *  undone: blurs it and says so. */
+  const refusePageFocus = (field: Element): boolean => {
+    if (!ignorePageFocus) return false
+    const now = performance.now()
+    if (now - userActedAt < USER_FOCUS_MS) return false
+    if (field === fieldAtBlur) {
+      fieldAtBlur = null
+      return false
+    }
+    refusedAt = refusedAt.filter((t) => now - t < USER_FOCUS_MS)
+    if (refusedAt.length >= REFUSE_ROUNDS) return false
+    refusedAt.push(now)
+    if (field instanceof HTMLElement) field.blur()
+    return true
+  }
   let hints: InputHints | null = null
   // The last thing clicked: scrolling starts from its scrollable ancestor.
   let lastClicked: Element | null = null
@@ -778,8 +809,9 @@ function installVimPage(): void {
 
   let pushed = false
   const applyState = (raw: unknown): void => {
-    const state = raw as { mode?: Mode; keymap?: Array<[string, string]>; leaveInsert?: number } | null
+    const state = raw as { mode?: Mode; keymap?: Array<[string, string]>; leaveInsert?: number; ignorePageFocus?: boolean } | null
     keymap = new Map(Array.isArray(state?.keymap) ? state.keymap : [])
+    ignorePageFocus = state?.ignorePageFocus === true
     const previous = mode
     mode = state?.mode ?? null
     const seq = typeof state?.leaveInsert === 'number' ? state.leaveInsert : null
@@ -796,8 +828,9 @@ function installVimPage(): void {
       // Out of INSERT on purpose (Ctrl+[): the field lets go of the keys.
       leaveInsert()
     } else if (mode === 'command' && document.hasFocus() && keysBelongToElement(deepActiveElement())) {
-      // Arriving in COMMAND with a field focused (the click landed in one) is INSERT.
-      enterInsertForField()
+      // Arriving in COMMAND with a field focused (the click landed in one) is
+      // INSERT — unless the page put the focus there itself.
+      if (!refusePageFocus(deepActiveElement()!)) enterInsertForField()
     } else if (mode === 'insert' && previous !== 'insert') {
       insertFromField = keysBelongToElement(deepActiveElement())
     }
@@ -838,6 +871,8 @@ function installVimPage(): void {
     swallowedPresses.clear()
     sequencer.reset()
     passNextKey = false
+    const focused = deepActiveElement()
+    fieldAtBlur = keysBelongToElement(focused) ? focused : null
   })
   // So does the page going away mid-sequence (a navigation): no later
   // report would ever clear it.
@@ -861,6 +896,7 @@ function installVimPage(): void {
     if (!e.repeat) swallowedPresses.delete(e.code)
     const modified = e.metaKey || e.ctrlKey || e.altKey
     if (mode === 'insert') {
+      userActedAt = performance.now()
       if (e.key === 'Tab' && !modified) tabbedAt = performance.now()
       if (e.key !== 'Escape' || modified || e.shiftKey) return
       consume(e)
@@ -876,13 +912,16 @@ function installVimPage(): void {
       return
     }
     if (hints) {
+      userActedAt = performance.now()
       hints.onKey(e)
       // It takes every key while it's up.
       if (e.code) swallowedPresses.add(e.code)
       return
     }
     // A field has the keys (focus moved there without a focus event we saw).
-    if (keysBelongToElement(deepActiveElement())) {
+    // One the page focused itself loses them, and the key is COMMAND's.
+    const focusedField = deepActiveElement()
+    if (keysBelongToElement(focusedField) && !refusePageFocus(focusedField!)) {
       enterInsertForField()
       return
     }
@@ -903,11 +942,14 @@ function installVimPage(): void {
     // typing — the arrows, Enter, Tab, Esc, PageUp/Down, the F keys, a Ctrl
     // chord — still reach the page.
     if (!e.ctrlKey && isTypingToken(keyTokenFromEvent(e))) consume(e)
+    // The page gets this key: Enter on its button, Tab to its next field.
+    else userActedAt = performance.now()
   }, true)
 
   document.addEventListener('focusin', (e) => {
     const target = e.composedPath()[0]
-    if (mode === 'command' && !hints && target instanceof Element && keysBelongToElement(target)) enterInsertForField()
+    if (mode !== 'command' || hints || !(target instanceof Element) || !keysBelongToElement(target)) return
+    if (!refusePageFocus(target)) enterInsertForField()
   }, true)
   document.addEventListener('focusout', () => {
     if (mode !== 'insert' || !insertFromField) return
@@ -940,7 +982,10 @@ function installVimPage(): void {
     if (target instanceof Element) lastClicked = target
     // A click is the hand going elsewhere: a half-typed sequence goes.
     // Only a real one — pages dispatch their own.
-    if (e.isTrusted) sequencer.reset()
+    if (e.isTrusted) {
+      sequencer.reset()
+      userActedAt = performance.now()
+    }
   }, true)
 
   function runCommand(command: string): void {

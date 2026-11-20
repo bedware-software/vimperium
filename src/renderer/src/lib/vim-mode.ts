@@ -32,6 +32,17 @@ export type VimMode = 'command' | 'insert'
 // go to the site — or a field of it — instead of the Sidebar's keys.
 let walkingTabs = false
 
+// Settings → General, "A Page Focusing Its Own Field": true leaves COMMAND
+// as it is (the page's preload blurs the field). Goes to the pages with the
+// mode, so a change is pushed at once.
+let ignorePageFocus = true
+let repushPageState: (() => void) | null = null
+export function setIgnorePageFocus(ignore: boolean): void {
+  if (ignorePageFocus === ignore) return
+  ignorePageFocus = ignore
+  repushPageState?.()
+}
+
 export function keepsChromeKeyboard(): boolean {
   return walkingTabs
 }
@@ -669,8 +680,12 @@ export function useVimMode({ enabled, keymap, onCommand, focusPage, isActiveTab 
   const keymapEntriesRef = useRef<VimKeymapEntries>([])
   const leaveInsertRef = useRef(0)
   const pushState = useCallback(() => {
-    window.electronAPI.vimSetState?.({ mode: modeRef.current, keymap: keymapEntriesRef.current, leaveInsert: leaveInsertRef.current })
+    window.electronAPI.vimSetState?.({ mode: modeRef.current, keymap: keymapEntriesRef.current, leaveInsert: leaveInsertRef.current, ignorePageFocus })
   }, [])
+  useEffect(() => {
+    repushPageState = pushState
+    return () => { repushPageState = null }
+  }, [pushState])
 
   const onCommandRef = useRef(onCommand)
   onCommandRef.current = onCommand

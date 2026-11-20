@@ -86,6 +86,8 @@ export type TabEvent =
   // black ("cinema mode") until the page leaves fullscreen.
   | { type: 'enter-html-full-screen'; tabId: string }
   | { type: 'leave-html-full-screen'; tabId: string }
+  // The page started or stopped making sound (renderer lib/tab-audio.ts).
+  | { type: 'audio-state-changed'; tabId: string; audible: boolean }
   // The page took OS keyboard focus — by a click into it (byUser), or on
   // its own (a reload, a load finishing). Vim mode (renderer
   // lib/vim-mode.ts) tells the two apart.
@@ -689,6 +691,7 @@ function wireEvents(rec: TabRecord): void {
     })
   }
 
+  wc.on('audio-state-changed', (event) => emit({ type: 'audio-state-changed', tabId: rec.tabId, audible: event.audible }))
   wc.on('did-start-loading', () => emit({ type: 'did-start-loading', tabId: rec.tabId }))
   wc.on('did-stop-loading', () =>
     emit({ type: 'did-stop-loading', tabId: rec.tabId, url: wc.getURL() })
@@ -1617,6 +1620,12 @@ export function tabReload(tabId: string, ignoreCache: boolean): void {
   // Match the pre-focusOnNavigation:false behaviour: a user-triggered reload
   // moves keyboard focus back into the page. Always a window-focused action.
   focusTabPage(rec)
+}
+
+/** Who is muted is kept by the renderer (lib/tab-audio.ts). */
+export function tabSetMuted(tabId: string, muted: boolean): void {
+  const wc = tabs.get(tabId)?.view.webContents
+  if (wc && !wc.isDestroyed()) wc.setAudioMuted(muted)
 }
 
 const autoReloadTimers = new Map<string, NodeJS.Timeout>()
@@ -2692,19 +2701,21 @@ interface VimState {
   mode: 'command' | 'insert' | null
   keymap: Array<[string, string]>
   leaveInsert: number
+  /** Settings → General: a field a page focuses by itself gets no keys. */
+  ignorePageFocus: boolean
 }
 const vimStateByWindow = new Map<number, VimState>()
 
 function readVimState(raw: unknown): VimState | null {
   if (typeof raw !== 'object' || raw === null) return null
-  const r = raw as { mode?: unknown; keymap?: unknown; leaveInsert?: unknown }
+  const r = raw as { mode?: unknown; keymap?: unknown; leaveInsert?: unknown; ignorePageFocus?: unknown }
   const mode = r.mode === 'command' || r.mode === 'insert' ? r.mode : null
   const keymap = Array.isArray(r.keymap)
     ? r.keymap.filter((e): e is [string, string] =>
       Array.isArray(e) && e.length === 2 && typeof e[0] === 'string' && typeof e[1] === 'string')
     : []
   const leaveInsert = typeof r.leaveInsert === 'number' && Number.isFinite(r.leaveInsert) ? r.leaveInsert : 0
-  return { mode, keymap, leaveInsert }
+  return { mode, keymap, leaveInsert, ignorePageFocus: r.ignorePageFocus === true }
 }
 
 export function installTabPreloadListeners(): void {

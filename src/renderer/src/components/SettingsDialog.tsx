@@ -13,7 +13,7 @@ import { VimModeBadge } from './VimModeBadge'
 import { ModeEdge } from './ModeEdge'
 import { BrandMark } from './BrandMark'
 import { WorkspaceStatsCard } from './WorkspaceStats'
-import { VIM_EDGES, DEFAULT_VIM_EDGE, DEFAULT_VIM_EDGE_EVERYWHERE, VIM_EDGE_SPEED, VIM_EDGE_REST, isSidesEdge, normalizeVimEdge, normalizeVimEdgeSpeed, normalizeVimEdgeRest, type VimEdge } from '../lib/vim-edge'
+import { VIM_EDGES, DEFAULT_VIM_EDGE, DEFAULT_VIM_EDGE_EVERYWHERE, VIM_EDGE_SPEED, VIM_EDGE_REST, VIM_EDGE_GLOW, isSidesEdge, normalizeVimEdge, normalizeVimEdgeSpeed, normalizeVimEdgeRest, normalizeVimEdgeGlow, type VimEdge } from '../lib/vim-edge'
 import { MOTIONS, effectiveMotion, normalizeMotion, type MotionChoice } from '../lib/motion'
 import { useAppStore } from '../store/app-store'
 import { DEFAULT_VIM_KEYMAP, parseVimKeymap, settingsKeymap, settingsCommandLabel, settingsCommandsInOrder, type ParsedVimKeymap, type VimKeymap } from '../lib/vim-keymap'
@@ -53,6 +53,7 @@ interface Settings {
   darkVariant: string
   density: Density
   newTabFocus: 'site' | 'url'
+  pageFocus?: 'ignore' | 'take'
   urlEditorClickMode?: 'insert' | 'command'
   urlEditorNewTabMode?: 'insert' | 'command'
   urlEditorEditMode?: 'insert' | 'command'
@@ -65,6 +66,7 @@ interface Settings {
   vimEdgeEverywhere: boolean
   vimEdgeSpeed?: number
   vimEdgeRest?: number
+  vimEdgeGlow?: number
   /** Null = no choice made: the platform's default (lib/motion.ts). */
   motion: MotionChoice | null
   /** Null = the built-in default keymap. */
@@ -112,6 +114,7 @@ interface AppearancePreview {
   vimEdgeEverywhere: boolean
   vimEdgeSpeed: number
   vimEdgeRest: number
+  vimEdgeGlow: number
   motion: MotionChoice | null
 }
 
@@ -511,6 +514,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
   const [darkVariant, setDarkVariant] = useState<string>(DARK_VARIANTS[0].id)
   const [density, setDensity] = useState<Density>(DEFAULT_DENSITY)
   const [newTabFocus, setNewTabFocus] = useState<'site' | 'url'>('site')
+  const [pageFocus, setPageFocus] = useState<'ignore' | 'take'>('ignore')
   // The mode the address editor opens in, each way it opens.
   const [urlEditorClickMode, setUrlEditorClickMode] = useState<'insert' | 'command'>('insert')
   const [urlEditorNewTabMode, setUrlEditorNewTabMode] = useState<'insert' | 'command'>('insert')
@@ -521,6 +525,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
   const [vimEdgeEverywhere, setVimEdgeEverywhere] = useState(DEFAULT_VIM_EDGE_EVERYWHERE)
   const [vimEdgeSpeed, setVimEdgeSpeed] = useState<number>(VIM_EDGE_SPEED.default)
   const [vimEdgeRest, setVimEdgeRest] = useState<number>(VIM_EDGE_REST.default)
+  const [vimEdgeGlow, setVimEdgeGlow] = useState<number>(VIM_EDGE_GLOW.default)
   // Null till one is picked, here or before: saved as null, so the
   // platform's default stays the platform's.
   const [motion, setMotion] = useState<MotionChoice | null>(null)
@@ -639,6 +644,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
     vimEdgeEverywhere: DEFAULT_VIM_EDGE_EVERYWHERE,
     vimEdgeSpeed: VIM_EDGE_SPEED.default,
     vimEdgeRest: VIM_EDGE_REST.default,
+    vimEdgeGlow: VIM_EDGE_GLOW.default,
     motion: null,
   })
 
@@ -925,12 +931,14 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
       const edgeEverywhere = settings.vimEdgeEverywhere === true
       const edgeSpeed = normalizeVimEdgeSpeed(settings.vimEdgeSpeed)
       const edgeRest = normalizeVimEdgeRest(settings.vimEdgeRest)
+      const edgeGlow = normalizeVimEdgeGlow(settings.vimEdgeGlow)
       const savedMotion = normalizeMotion(settings.motion)
       setTheme(settings.theme)
       setLightVariant(lv)
       setDarkVariant(dv)
       setDensity(dens)
       setNewTabFocus(settings.newTabFocus === 'url' ? 'url' : 'site')
+      setPageFocus(settings.pageFocus === 'take' ? 'take' : 'ignore')
       setUrlEditorClickMode(settings.urlEditorClickMode === 'command' ? 'command' : 'insert')
       setUrlEditorNewTabMode(settings.urlEditorNewTabMode === 'command' ? 'command' : 'insert')
       setUrlEditorEditMode(settings.urlEditorEditMode === 'insert' ? 'insert' : 'command')
@@ -940,9 +948,10 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
       setVimEdgeEverywhere(edgeEverywhere)
       setVimEdgeSpeed(edgeSpeed)
       setVimEdgeRest(edgeRest)
+      setVimEdgeGlow(edgeGlow)
       setMotion(savedMotion)
       setVimKeymapText(settings.vimKeymap ?? DEFAULT_VIM_KEYMAP)
-      originalAppearanceRef.current = { theme: settings.theme, lightVariant: lv, darkVariant: dv, density: dens, vimIndicator: indicator, vimEdge: edge, vimEdgeEverywhere: edgeEverywhere, vimEdgeSpeed: edgeSpeed, vimEdgeRest: edgeRest, motion: savedMotion }
+      originalAppearanceRef.current = { theme: settings.theme, lightVariant: lv, darkVariant: dv, density: dens, vimIndicator: indicator, vimEdge: edge, vimEdgeEverywhere: edgeEverywhere, vimEdgeSpeed: edgeSpeed, vimEdgeRest: edgeRest, vimEdgeGlow: edgeGlow, motion: savedMotion }
       setDefaultUrl(settings.defaultPageUrl)
       setSearchEngine(settings.searchEngine || SEARCH_ENGINES.Google)
       setSearchSuggestions(settings.searchSuggestions !== false)
@@ -1375,6 +1384,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
       darkVariant,
       density,
       newTabFocus,
+      pageFocus,
       urlEditorClickMode,
       urlEditorNewTabMode,
       urlEditorEditMode,
@@ -1386,6 +1396,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
       vimEdgeEverywhere,
       vimEdgeSpeed,
       vimEdgeRest,
+      vimEdgeGlow,
       motion,
       // Left at the default it stays null, so later default bindings reach it.
       vimKeymap: vimKeymapText === DEFAULT_VIM_KEYMAP ? null : vimKeymapText,
@@ -1418,7 +1429,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
   }
 
   const previewAppearance = (next: Partial<AppearancePreview>): void => {
-    onAppearancePreview?.({ theme, lightVariant, darkVariant, density, vimIndicator, vimEdge, vimEdgeEverywhere, vimEdgeSpeed, vimEdgeRest, motion, ...next })
+    onAppearancePreview?.({ theme, lightVariant, darkVariant, density, vimIndicator, vimEdge, vimEdgeEverywhere, vimEdgeSpeed, vimEdgeRest, vimEdgeGlow, motion, ...next })
   }
 
   const handleWipeAllData = () => {
@@ -1936,12 +1947,14 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                   On every field that shows the mode too — Search Everything, the Command Palette,
                   Find, the address editor
                 </label>
-                {/* Its pace: a lap's seconds, and a resting comet's stay in each end. */}
+                {/* Its pace — a lap's seconds, a resting comet's stay in each
+                    end — and its glow's size. */}
                 <div className="mt-3 flex flex-col gap-2">
                   {([
-                    { item: 'appearance:vim-edge-speed', label: 'Lap', hint: 'How long the light takes to go round, the rests aside', range: VIM_EDGE_SPEED, value: vimEdgeSpeed, disabled: vimEdge === 'off', set: (v: number) => { setVimEdgeSpeed(v); previewAppearance({ vimEdgeSpeed: v }) } },
-                    { item: 'appearance:vim-edge-rest', label: 'Rest at the sides', hint: 'How long a comet resting at the sides stays in each end', range: VIM_EDGE_REST, value: vimEdgeRest, disabled: !isSidesEdge(vimEdge), set: (v: number) => { setVimEdgeRest(v); previewAppearance({ vimEdgeRest: v }) } },
-                  ]).map(({ item, label, hint, range, value, disabled, set }) => {
+                    { item: 'appearance:vim-edge-speed', label: 'Lap', unit: ' s', hint: 'How long the light takes to go round, the rests aside', range: VIM_EDGE_SPEED, value: vimEdgeSpeed, disabled: vimEdge === 'off', set: (v: number) => { setVimEdgeSpeed(v); previewAppearance({ vimEdgeSpeed: v }) } },
+                    { item: 'appearance:vim-edge-rest', label: 'Rest at the sides', unit: ' s', hint: 'How long a comet resting at the sides stays in each end', range: VIM_EDGE_REST, value: vimEdgeRest, disabled: !isSidesEdge(vimEdge), set: (v: number) => { setVimEdgeRest(v); previewAppearance({ vimEdgeRest: v }) } },
+                    { item: 'appearance:vim-edge-glow', label: 'Glow', unit: '%', hint: 'How big the glow round the edge is: 0 leaves the thin ring alone', range: VIM_EDGE_GLOW, value: vimEdgeGlow, disabled: vimEdge === 'off', set: (v: number) => { setVimEdgeGlow(v); previewAppearance({ vimEdgeGlow: v }) } },
+                  ]).map(({ item, label, unit, hint, range, value, disabled, set }) => {
                     const pct = (v: number): string => `${((v - range.min) / (range.max - range.min)) * 100}%`
                     return (
                       <label key={item} className={`flex items-center gap-3 ${disabled ? 'opacity-50' : ''}`} title={`${hint}. Double-click to reset.`}>
@@ -1960,7 +1973,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                           onChange={(e) => set(Number(e.target.value))}
                           onDoubleClick={() => set(range.default)}
                         />
-                        <span className="shrink-0 w-10 text-right text-xs tabular-nums text-foreground">{value} s</span>
+                        <span className="shrink-0 w-10 text-right text-xs tabular-nums text-foreground">{value}{unit}</span>
                       </label>
                     )
                   })}
@@ -2701,7 +2714,24 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                   ]}
                 />
                 <p className="text-[11px] text-muted-foreground mt-1">
-                  Where keyboard focus lands when a new tab is opened.
+                  Where the keyboard is when a new tab opens on the Default New Tab URL. A tab the keys open (nt, nn) always starts in the address bar; once you press Enter there, the page has the keyboard, in COMMAND.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">A Page Focusing Its Own Field</label>
+                <Segmented
+                  label="A Page Focusing Its Own Field"
+                  vimItem="general:page-focus"
+                  value={pageFocus}
+                  onChange={setPageFocus}
+                  options={[
+                    { value: 'ignore', label: 'Stay in COMMAND', title: "The page's field lets go: your keys stay Vim's until you click a field, pick one (gi) or press i." },
+                    { value: 'take', label: 'Type there (INSERT)', title: 'The field takes the keyboard, as in other browsers: what you type goes to the site.' },
+                  ]}
+                />
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Some sites put the cursor in a field of theirs without being asked — a search box as the page loads. This is what happens then. A field you click, Tab to or pick yourself is always INSERT.
                 </p>
               </div>
 

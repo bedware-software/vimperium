@@ -15,6 +15,9 @@ export interface Settings {
   /** Where keyboard focus lands when a new tab is created —
    *  'site' focuses the page (current behavior), 'url' focuses the URL bar. */
   newTabFocus: 'site' | 'url'
+  /** A field a page focuses by itself (a search box as the page loads):
+   *  'ignore' keeps COMMAND, 'take' is INSERT in it. */
+  pageFocus: 'ignore' | 'take'
   /** The mode the address editor opens in: on a click on the address bar,
    *  on a new tab (nt / nn), on Vim's e. */
   urlEditorClickMode: 'insert' | 'command'
@@ -47,6 +50,8 @@ export interface Settings {
    *  takes, and seconds a comet resting at the sides stays in each end. */
   vimEdgeSpeed: number
   vimEdgeRest: number
+  /** The edge's glow, percent of the designed size; 0 is none. */
+  vimEdgeGlow: number
   /** Whether the app's own decorations move — the edge's light, the mark's
    *  glitch (renderer lib/motion.ts): 'system' goes by the OS's Reduce
    *  motion, 'always' and 'never' don't. Null is no choice made: the
@@ -331,6 +336,7 @@ export const DEFAULT_SETTINGS: Settings = {
   darkVariant: 'dark-default',
   density: 'normal',
   newTabFocus: 'site',
+  pageFocus: 'ignore',
   urlEditorClickMode: 'insert',
   urlEditorNewTabMode: 'insert',
   urlEditorEditMode: 'command',
@@ -341,6 +347,7 @@ export const DEFAULT_SETTINGS: Settings = {
   vimEdgeEverywhere: false,
   vimEdgeSpeed: 10,
   vimEdgeRest: 3,
+  vimEdgeGlow: 100,
   motion: null,
   vimKeymap: null,
   defaultPageUrl: '',
@@ -682,6 +689,7 @@ export function loadSettings(): Settings {
     newTabFocus: KNOWN_NEW_TAB_FOCUS.has(saved?.newTabFocus as string)
       ? (saved!.newTabFocus as 'site' | 'url')
       : DEFAULT_SETTINGS.newTabFocus,
+    pageFocus: saved?.pageFocus === 'take' ? 'take' : 'ignore',
     urlEditorClickMode: urlEditorMode(saved?.urlEditorClickMode, 'urlEditorClickMode'),
     urlEditorNewTabMode: urlEditorMode(saved?.urlEditorNewTabMode, 'urlEditorNewTabMode'),
     urlEditorEditMode: urlEditorMode(saved?.urlEditorEditMode, 'urlEditorEditMode'),
@@ -697,6 +705,7 @@ export function loadSettings(): Settings {
     vimEdgeEverywhere: saved?.vimEdgeEverywhere === true,
     vimEdgeSpeed: edgeSeconds(saved?.vimEdgeSpeed, 4, 30, DEFAULT_SETTINGS.vimEdgeSpeed),
     vimEdgeRest: edgeSeconds(saved?.vimEdgeRest, 0, 10, DEFAULT_SETTINGS.vimEdgeRest),
+    vimEdgeGlow: edgeSeconds(saved?.vimEdgeGlow, 0, 200, DEFAULT_SETTINGS.vimEdgeGlow),
     motion: motionChoice(saved?.motion),
     vimKeymap: normalizeVimKeymap(saved?.vimKeymap),
     searchSuggestions: saved?.searchSuggestions !== false,
@@ -743,6 +752,7 @@ export function saveSettings(settings: Settings): void {
     newTabFocus: KNOWN_NEW_TAB_FOCUS.has(settings.newTabFocus)
       ? settings.newTabFocus
       : DEFAULT_SETTINGS.newTabFocus,
+    pageFocus: settings.pageFocus === 'take' ? 'take' : 'ignore',
     urlEditorClickMode: urlEditorMode(settings.urlEditorClickMode, 'urlEditorClickMode'),
     urlEditorNewTabMode: urlEditorMode(settings.urlEditorNewTabMode, 'urlEditorNewTabMode'),
     urlEditorEditMode: urlEditorMode(settings.urlEditorEditMode, 'urlEditorEditMode'),
@@ -759,6 +769,7 @@ export function saveSettings(settings: Settings): void {
     vimEdgeEverywhere: settings.vimEdgeEverywhere === true,
     vimEdgeSpeed: edgeSeconds(settings.vimEdgeSpeed, 4, 30, DEFAULT_SETTINGS.vimEdgeSpeed),
     vimEdgeRest: edgeSeconds(settings.vimEdgeRest, 0, 10, DEFAULT_SETTINGS.vimEdgeRest),
+    vimEdgeGlow: edgeSeconds(settings.vimEdgeGlow, 0, 200, DEFAULT_SETTINGS.vimEdgeGlow),
     motion: motionChoice(settings.motion),
     vimKeymap: normalizeVimKeymap(settings.vimKeymap),
     searchSuggestions: settings.searchSuggestions !== false,
