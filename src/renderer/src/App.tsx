@@ -716,7 +716,6 @@ export default function App() {
   // pure black (data-cinema) so it blends with the video's letterbox
   // bars; both are restored when the page leaves fullscreen.
   const [pageFullscreen, setPageFullscreen] = useState(false)
-  const bottomBarUrl = useAppStore((s) => s.getActiveTab()?.url)
   const fullscreenTabRef = useRef<string | null>(null)
   const sidebarBeforeFullscreenRef = useRef<boolean | null>(null)
 
@@ -1872,9 +1871,7 @@ export default function App() {
       </div>
       <BottomBar
         keymap={vimReady ? vimKeymap.main : null}
-        mode={vim.mode}
         pending={vimReady ? vim.pending : ''}
-        webPage={!!bottomBarUrl && bottomBarUrl !== 'about:blank' && !isInternalUrl(bottomBarUrl)}
         hidden={pageFullscreen}
       />
       <ExtensionInstallDialog

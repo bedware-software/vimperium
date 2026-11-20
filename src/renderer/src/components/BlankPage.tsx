@@ -2,7 +2,7 @@
 // panel in the middle of the page area — the app's mark, big, on its left;
 // its name, the version and the mode beside it; how much is open, here, in
 // this profile and everywhere (Settings → About's rows). Along the bottom,
-// where the window's bottom bar is on a site's page (BottomBar.tsx):
+// in a hint bar of its own (the window's, BottomBar.tsx, comes below it):
 // the key that shows every key. The mark wears Vim's mode — COMMAND's blue-violet, INSERT's
 // green-yellow — and tears once as the page comes up, once as the mode
 // changes, and again whenever the pointer comes onto it; still the rest of
