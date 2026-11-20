@@ -8,8 +8,7 @@ import { log } from './lib/log'
 import { focusAndSelectUrlBar } from './lib/focus-url-bar'
 import { useVimMode, dispatchSidebarCommand, dispatchPageCommand, setIgnorePageFocus, type VimMode } from './lib/vim-mode'
 import { hintIndex, useHintKeymap } from './lib/hint-labels'
-import { WhichKeyStrip } from './components/WhichKey'
-import { NoticeStrip } from './components/Notice'
+import { BottomBar } from './components/BottomBar'
 import { showNotice } from './lib/notice'
 import { useSidebarCursorStore } from './lib/sidebar-cursor'
 import { parseVimKeymap, paletteKeymap, DEFAULT_VIM_KEYMAP, isPageCommand, isSidebarCommand, withRowGoKey, withRowUnselectKey } from './lib/vim-keymap'
@@ -717,6 +716,7 @@ export default function App() {
   // pure black (data-cinema) so it blends with the video's letterbox
   // bars; both are restored when the page leaves fullscreen.
   const [pageFullscreen, setPageFullscreen] = useState(false)
+  const bottomBarUrl = useAppStore((s) => s.getActiveTab()?.url)
   const fullscreenTabRef = useRef<string | null>(null)
   const sidebarBeforeFullscreenRef = useRef<boolean | null>(null)
 
@@ -1870,6 +1870,13 @@ export default function App() {
             Bookshelf, the panel stays open behind it. */}
         <SidePanel suppressed={pageFullscreen} />
       </div>
+      <BottomBar
+        keymap={vimReady ? vimKeymap.main : null}
+        mode={vim.mode}
+        pending={vimReady ? vim.pending : ''}
+        webPage={!!bottomBarUrl && bottomBarUrl !== 'about:blank' && !isInternalUrl(bottomBarUrl)}
+        hidden={pageFullscreen}
+      />
       <ExtensionInstallDialog
         preview={installPrompt?.preview ?? null}
         installing={installPrompt?.installing ?? false}
@@ -1981,13 +1988,6 @@ export default function App() {
           onDone={() => setHttpAuthQueue((q) => q.slice(1))}
         />
       )}
-      {/* What can follow a prefix typed (o, d, n…): a strip along the
-          bottom of the page area, the Sidebar shown or not — its own hint
-          bar keeps to its own keys. */}
-      <WhichKeyStrip keymap={vimReady ? vimKeymap.main : null} pending={vim.pending} anchorRef={webviewColumnRef} />
-      {/* What just happened, where nothing on the page says so (a page put
-          on the Bookshelf): the same place, for a moment. */}
-      <NoticeStrip anchorRef={webviewColumnRef} hidden={vimReady && vim.pending !== ''} />
     </>
   )
 }

@@ -1,8 +1,7 @@
 // A notice: a line that says something just happened where nothing on the
 // page shows it (a page put on the Bookshelf from the keys) — up for a
-// moment in a strip along the bottom of the page area
-// (components/Notice.tsx), which-key's place and look. One at a time: the
-// next one takes the last one's place.
+// moment in the window's bottom bar (components/BottomBar.tsx), which-key's
+// place and look. One at a time: the next one takes the last one's place.
 
 import { create } from 'zustand'
 

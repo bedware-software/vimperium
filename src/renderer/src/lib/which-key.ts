@@ -1,9 +1,7 @@
 // Which-key: while a prefix is pending in COMMAND (o, d, n, t, g…), what
 // can follow it, each with what it does — "o → Workspace w · Tab t · …".
 // Built from the live keymap, the user's own keys included.
-// components/WhichKey.tsx shows it in a strip along the bottom of the page
-// area, styled as the Downloads page's hint bar — the Sidebar shown or not:
-// the Sidebar's own hint bar keeps to the Sidebar's keys. It goes when the
+// components/BottomBar.tsx shows it in the window's bottom bar. It goes when the
 // pending keys do — on the next key, Esc, a mode
 // change, a click or the keys going elsewhere, never on a timeout: a
 // pending prefix waits (shared/vim-keys.ts' KeySequencer), so the list is
