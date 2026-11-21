@@ -165,8 +165,11 @@ toggle-bookshelf    tb
 " them the pick; the arrows move the pick, <CR> presses it as a mouse
 " would and the box stays for the next. Latin letters find Cyrillic too
 " (zadachi finds задачи, and so does pflfxb, the same keys on the Russian
-" layout). Tab switches whether a control with only an icon is found by
-" its title, Ctrl+K empties the box, Esc or Ctrl+C closes it.
+" layout), and spaces needn't be typed: 1месяц finds 1 месяц. Tab
+" switches whether a control with only an icon is found by its title,
+" Ctrl+C empties the box, Esc closes it. Ctrl+K puts the box high in the
+" window and Ctrl+J low again; Ctrl+M makes it small — the box alone, no
+" keys under it — and Ctrl+M again brings them back.
 alternate-tab       <C-6>
 repeat              .
 close-window

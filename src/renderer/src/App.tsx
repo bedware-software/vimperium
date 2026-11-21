@@ -261,7 +261,7 @@ declare global {
       detachedWindowDragEnd: () => Promise<{ left: number; top: number } | null>
       detachedWindowPlace?: (popupId: string, left: number, top: number) => void
       detachedWindowFocus?: (popupId: string) => void
-      detachedWindowResize?: (popupId: string, height: number) => void
+      detachedWindowResize?: (popupId: string, height: number, width?: number) => void
       closeWorkspaceWindows: (workspaceIds: string[]) => Promise<void>
       quit: () => void
       getCertInfo: (url: string) => Promise<unknown>

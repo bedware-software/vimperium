@@ -63,6 +63,8 @@ interface Props {
    *  without reopening. `height` stays the opening size — changing that
    *  closes and reopens the window. */
   fitHeight?: number
+  /** Its live width, with `fitHeight` (which it needs). */
+  fitWidth?: number
   /** Bumped to give the keyboard back to a pinned popup that's open. */
   focusTick?: number
   /** A pinned popup dragged by its handle stays where it's dropped: its new
@@ -187,6 +189,7 @@ export function DetachedWindow({
   matchRunwaPalette = false,
   placement,
   fitHeight,
+  fitWidth,
   focusTick,
   onMoved,
   onClose,
@@ -471,8 +474,8 @@ export function DetachedWindow({
   useEffect(() => {
     const popupId = popupIdRef.current
     if (!popupId || !containerEl || fitHeight === undefined) return
-    window.electronAPI.detachedWindowResize?.(popupId, fitHeight)
-  }, [fitHeight, containerEl])
+    window.electronAPI.detachedWindowResize?.(popupId, fitHeight, fitWidth)
+  }, [fitHeight, fitWidth, containerEl])
 
   // A pinned popup follows its spot.
   const placementLeft = placement?.left

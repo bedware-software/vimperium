@@ -1,25 +1,37 @@
-// Go: a panel low in the middle of the window for picking a link or a
-// control by typing what it says. The matching and the highlights are the
-// page's (preload/go-page.ts), reached through main ('go:send', the
+// Go: a panel low (or high) in the middle of the window for picking a link
+// or a control by typing what it says. The matching and the highlights are
+// the page's (preload/go-page.ts), reached through main ('go:send', the
 // 'go-result' tab event). One mode only — the box always types.
 
 import { useEffect, useRef, useState } from 'react'
-import { Navigation } from 'lucide-react'
+import { Image, Navigation } from 'lucide-react'
 import { useAppStore } from '../store/app-store'
 import { DetachedWindow, type PopupPlacement } from './DetachedWindow'
 import { InputField } from './InputField'
-import { Hint, HintBar, LEAVE_INSERT_CAP } from './KeyHints'
+import { Hint, HintBar, KeyCap, LEAVE_INSERT_CAP } from './KeyHints'
+import { ModeEdge } from './ModeEdge'
 import { cyrillicReadings } from '../lib/translit'
 import { cn } from '../lib/utils'
-import { isCopyKey, isLeaveInsertKey } from '../lib/vim-mode'
+import { isCopyKey } from '../lib/vim-mode'
 import { displayKeySequence } from '../lib/vim-keymap'
+import { useVimEdge, type VimEdge } from '../lib/vim-edge'
 
 const WIDTH = 660
-// Header (h-9), the field's row (h-11), the hint bar (h-10), the border.
-const HEIGHT = 122
-// How far up the window its bottom edge sits, as a share of the height.
+// The field's row (h-11), the hint bar (h-10), the border.
+const HEIGHT = 86
+// Small: the field (h-8) and, all round it, room for its edge's glow —
+// the window cuts off what spills past it.
+const SMALL_WIDTH = 340
+const SMALL_HEIGHT = 56
+// How far from the window's bottom its bottom edge sits (low), or from the
+// top its top edge (high), as a share of the height.
 const LIFT = 0.16
 const ATTRS_KEY = 'go-by-title'
+const SPOT_KEY = 'go-spot'
+const SMALL_KEY = 'go-small'
+// The small box's edge: quick, all but no rest in the ends. Below Settings'
+// own range on purpose.
+const SMALL_PACE = { speed: 2.4, rest: 0.1 } as const
 // Where a drag left it, as an offset from its own spot: it follows the
 // window's size like the spot does.
 const OFFSET_KEY = 'go-offset'
@@ -49,6 +61,20 @@ function readAttrs(): boolean {
   }
 }
 
+function readFlag(key: string, on: string): boolean {
+  try {
+    return window.localStorage.getItem(key) === on
+  } catch {
+    return false
+  }
+}
+
+function writeFlag(key: string, value: string): void {
+  try {
+    window.localStorage.setItem(key, value)
+  } catch { /* not remembered */ }
+}
+
 function readOffset(): { dx: number; dy: number } {
   try {
     const v = JSON.parse(window.localStorage.getItem(OFFSET_KEY) ?? 'null') as { dx?: unknown; dy?: unknown } | null
@@ -63,48 +89,26 @@ function writeOffset(offset: { dx: number; dy: number }): void {
   } catch { /* not remembered */ }
 }
 
-// The header's whole look is GoHeader and HeaderLines: the owner is trying
-// variants, so nothing else knows how it's drawn (HEIGHT counts its h-9).
-
-/** A side's two lines, a ladder's steps: the lower one to the panel's
- *  edge, the one at mid-height half as far. */
-function HeaderLines({ side }: { side: 'left' | 'right' }) {
-  const fromWord = side === 'left' ? 'right-0' : 'left-0'
-  return (
-    <span aria-hidden="true" className="relative h-full flex-1">
-      <span className={cn('absolute top-1/2 h-px w-1/2 bg-primary/70', fromWord)} />
-      <span className="absolute inset-x-0 bottom-1.5 h-px bg-primary/70" />
-    </span>
-  )
-}
-
-/** Also the handle the panel is dragged by; a double click puts it back. */
-function GoHeader({ onReset }: { onReset: () => void }) {
-  return (
-    <div data-detached-drag-handle onDoubleClick={onReset} className="flex h-9 shrink-0 cursor-move items-center gap-3 px-3 select-none">
-      <HeaderLines side="left" />
-      <span className="text-xl font-semibold leading-none text-primary">Go</span>
-      <HeaderLines side="right" />
-    </div>
-  )
-}
-
 export function GoPanel({ open, focusTick, onClose, anchorRef }: {
   open: boolean
   /** Bumped by Go's key while the panel is up: the box takes the keyboard
    *  back (a click on the page had it). */
   focusTick: number
   onClose: () => void
-  /** The page area: how much of its bottom the panel covers is told to
-   *  the page, which keeps its pick clear of it. */
+  /** The page area: how much of its bottom or its top the panel covers is
+   *  told to the page, which keeps its pick clear of it. */
   anchorRef: React.RefObject<HTMLElement | null>
 }) {
   const [query, setQuery] = useState('')
   const [attrs, setAttrs] = useState(readAttrs)
   const [result, setResult] = useState<GoResult | null>(null)
   const [popupWindow, setPopupWindow] = useState<Window | null>(null)
-  const [box, setBox] = useState<{ placement: PopupPlacement; width: number; room: number } | null>(null)
+  const [box, setBox] = useState<{ placement: PopupPlacement; width: number; room: number; roomTop: number } | null>(null)
   const [offset, setOffset] = useState(readOffset)
+  const [high, setHigh] = useState(() => readFlag(SPOT_KEY, 'high'))
+  const [small, setSmall] = useState(() => readFlag(SMALL_KEY, 'on'))
+  const chosenEdge = useVimEdge()
+  const height = small ? SMALL_HEIGHT : HEIGHT
   // Bumped to have the popup's window take the keyboard (DetachedWindow).
   const [refocus, setRefocus] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -116,18 +120,28 @@ export function GoPanel({ open, focusTick, onClose, anchorRef }: {
   useEffect(() => {
     if (!open) return
     const measure = (): void => {
-      const width = Math.max(320, Math.min(WIDTH, window.innerWidth - 32))
+      const width = small ? Math.min(SMALL_WIDTH, window.innerWidth - 32) : Math.max(320, Math.min(WIDTH, window.innerWidth - 32))
       const clamp = (v: number, max: number): number => Math.max(0, Math.min(Math.max(0, max), v))
       const left = clamp(Math.round((window.innerWidth - width) / 2 + offset.dx), window.innerWidth - width)
-      const top = clamp(Math.round(window.innerHeight * (1 - LIFT) - HEIGHT + offset.dy), window.innerHeight - HEIGHT)
-      const pageBottom = anchorRef.current?.getBoundingClientRect().bottom ?? window.innerHeight
-      const next = { placement: { left, top }, width, room: Math.max(0, Math.round(pageBottom - top)) }
-      setBox((prev) => (prev && prev.width === next.width && prev.room === next.room && prev.placement.left === left && prev.placement.top === top ? prev : next))
+      const spot = high ? window.innerHeight * LIFT : window.innerHeight * (1 - LIFT) - height
+      const top = clamp(Math.round(spot + offset.dy), window.innerHeight - height)
+      const page = anchorRef.current?.getBoundingClientRect()
+      const pageTop = page?.top ?? 0
+      const pageBottom = page?.bottom ?? window.innerHeight
+      // It covers the page's top or its bottom, whichever half it's in.
+      const upper = top + height / 2 < (pageTop + pageBottom) / 2
+      const next = {
+        placement: { left, top },
+        width,
+        room: upper ? 0 : Math.max(0, Math.round(pageBottom - top)),
+        roomTop: upper ? Math.max(0, Math.round(top + height - pageTop)) : 0,
+      }
+      setBox((prev) => (prev && prev.width === next.width && prev.room === next.room && prev.roomTop === next.roomTop && prev.placement.left === left && prev.placement.top === top ? prev : next))
     }
     measure()
     window.addEventListener('resize', measure)
     return () => window.removeEventListener('resize', measure)
-  }, [open, anchorRef, offset])
+  }, [open, anchorRef, offset, high, small, height])
 
   useEffect(() => {
     if (!open || !popupWindow) return
@@ -140,11 +154,13 @@ export function GoPanel({ open, focusTick, onClose, anchorRef }: {
   const ask = (tabId: string, text: string, byTitle: boolean): void => {
     seqRef.current += 1
     // As typed, then its Cyrillic readings: the page matches any of them.
-    send(tabId, { op: 'query', seq: seqRef.current, texts: text ? [text, ...cyrillicReadings(text)] : [], attrs: byTitle, room: roomRef.current })
+    send(tabId, { op: 'query', seq: seqRef.current, texts: text ? [text, ...cyrillicReadings(text)] : [], attrs: byTitle, ...roomRef.current })
     askedTabRef.current = text ? tabId : null
   }
-  const roomRef = useRef(0)
-  roomRef.current = box?.room ?? 0
+  const room = box?.room ?? 0
+  const roomTop = box?.roomTop ?? 0
+  const roomRef = useRef({ room, roomTop })
+  roomRef.current = { room, roomTop }
   const askRef = useRef({ query, attrs })
   askRef.current = { query, attrs }
 
@@ -162,7 +178,7 @@ export function GoPanel({ open, focusTick, onClose, anchorRef }: {
     }
     const t = setTimeout(() => ask(activeTabId, query, attrs), 40)
     return () => clearTimeout(t)
-  }, [query, attrs, activeTabId, open])
+  }, [query, attrs, activeTabId, open, room, roomTop])
 
   useEffect(() => {
     if (!open) return
@@ -204,18 +220,42 @@ export function GoPanel({ open, focusTick, onClose, anchorRef }: {
     if (askedTabRef.current) send(askedTabRef.current, { op: 'move', dx, dy })
   }
 
+  const resetOffset = (): void => {
+    setOffset({ dx: 0, dy: 0 })
+    writeOffset({ dx: 0, dy: 0 })
+  }
+
+  // To its high spot or its low one — from wherever a drag left it.
+  const putAt = (up: boolean): void => {
+    setHigh(up)
+    writeFlag(SPOT_KEY, up ? 'high' : 'low')
+    resetOffset()
+  }
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
-    // Ctrl+C (Ctrl+[) closes, as it leaves any popup's box — unless it copies.
-    if (isLeaveInsertKey(e.nativeEvent) && !isCopyKey(e.nativeEvent, e.currentTarget)) {
+    // Ctrl+[, vim's other Esc; Esc itself is the switch's below.
+    if (e.ctrlKey && !e.metaKey && !e.altKey && e.code === 'BracketLeft') {
       e.preventDefault()
       onClose()
       return
     }
-    // By its place on the keyboard: the Russian layout's Ctrl+Л too.
-    if (e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey && e.code === 'KeyK') {
-      e.preventDefault()
-      setQuery('')
-      return
+    // By their place on the keyboard: the Russian layout's Ctrl+Л too.
+    if (e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+      switch (e.code) {
+        case 'KeyC':
+          // Off the Mac, with text selected, it copies.
+          if (isCopyKey(e.nativeEvent, e.currentTarget)) return
+          e.preventDefault()
+          setQuery('')
+          return
+        case 'KeyK': e.preventDefault(); putAt(true); return
+        case 'KeyJ': e.preventDefault(); putAt(false); return
+        case 'KeyM':
+          e.preventDefault()
+          writeFlag(SMALL_KEY, small ? 'off' : 'on')
+          setSmall(!small)
+          return
+      }
     }
     if (e.ctrlKey || e.metaKey || e.altKey) return
     switch (e.key) {
@@ -251,13 +291,34 @@ export function GoPanel({ open, focusTick, onClose, anchorRef }: {
 
   const counter = result && query ? (result.total > 0 ? `${result.index}/${result.total}` : 'Nothing') : ''
   const shift = isMac ? '⇧' : 'Shift'
+  const iconsTitle = 'Whether a control is found by its title too — an icon with no text (Tab)'
+  // The address bar's comet, whichever it is; a comet of its own otherwise.
+  const smallEdge: VimEdge = chosenEdge.startsWith('comet') ? chosenEdge : 'comet-sides'
+
+  const input = (
+    <input
+      ref={inputRef}
+      type="text"
+      value={query}
+      onChange={(e) => setQuery(e.target.value)}
+      onKeyDown={handleKeyDown}
+      placeholder={small ? 'Go' : 'A link or a button, by what it says'}
+      spellCheck={false}
+      className="flex-1 min-w-0 bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground"
+    />
+  )
+  const count = <span className="text-xs text-muted-foreground tabular-nums whitespace-nowrap select-none">{counter}</span>
 
   return (
     <DetachedWindow
       open={open}
       title="Go - Vimperium"
-      width={box.width}
+      // The opening size: a change of these would close and reopen the
+      // window, so small and back go through fitHeight / fitWidth.
+      width={WIDTH}
       height={HEIGHT}
+      fitHeight={height}
+      fitWidth={box.width}
       resizable={false}
       placement={box.placement}
       focusTick={focusTick + refocus}
@@ -269,51 +330,75 @@ export function GoPanel({ open, focusTick, onClose, anchorRef }: {
       onClose={onClose}
       onWindowChange={setPopupWindow}
     >
-      <div className="h-full bg-popover text-popover-foreground border border-border overflow-hidden flex flex-col">
-        <GoHeader onReset={() => { setOffset({ dx: 0, dy: 0 }); writeOffset({ dx: 0, dy: 0 }) }} />
-        <div className="flex h-11 items-center gap-1.5 px-2">
-          <InputField inputRef={inputRef} mode={null} className="flex-1 h-8 rounded-lg">
-            <Navigation size={14} className="shrink-0 text-muted-foreground" />
-            <input
-              ref={inputRef}
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="A link or a button, by what it says"
-              spellCheck={false}
-              className="flex-1 min-w-0 bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground"
-            />
-            {result && result.total > 0 && query && (
-              <span className="max-w-[16rem] shrink-0 truncate text-xs text-muted-foreground select-none" title={result.href || result.label}>
-                {result.byAttr ? 'title: ' : ''}{result.label}
-              </span>
-            )}
-            <span className="text-xs text-muted-foreground tabular-nums whitespace-nowrap select-none">{counter}</span>
-          </InputField>
-          <button
-            type="button"
-            // The box keeps the keyboard.
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={toggleAttrs}
-            title="Whether a control is found by its title too — an icon with no text (Tab)"
-            className={cn(
-              'h-8 shrink-0 rounded-lg border px-2 text-[11px] font-medium whitespace-nowrap select-none',
-              attrs ? 'border-primary/50 bg-primary/15 text-primary' : 'border-border text-muted-foreground',
-            )}
+      {small ? (
+        // Dragged by the margin round the field; a double click puts it back.
+        <div data-detached-drag-handle onDoubleClick={resetOffset} className="h-full bg-popover text-popover-foreground border border-border flex items-center px-3 cursor-move">
+          <div
+            data-detached-no-drag
+            onDoubleClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => {
+              if (e.target === inputRef.current) return
+              e.preventDefault()
+              inputRef.current?.focus()
+            }}
+            className="field relative flex h-8 min-w-0 flex-1 items-center gap-2 rounded-lg pl-3 pr-2.5 cursor-text"
           >
-            Icons: {attrs ? 'on' : 'off'}
-          </button>
+            <Navigation size={14} className="shrink-0 text-muted-foreground" />
+            {input}
+            {count}
+            <button
+              type="button"
+              onClick={toggleAttrs}
+              title={iconsTitle}
+              className={cn('shrink-0', attrs ? 'text-primary' : 'text-muted-foreground/50')}
+            >
+              <Image size={14} />
+            </button>
+            <ModeEdge mode="command" edge={smallEdge} pace={SMALL_PACE} />
+          </div>
         </div>
-        <HintBar>
-          <Hint label="Pick" keys={['←', '↑', '↓', '→']} />
-          <Hint label="Go" keys={['Enter']} />
-          <Hint label="New tab" keys={[shift, 'Enter']} />
-          <Hint label={attrs ? 'Icons off' : 'Icons on'} keys={['Tab']} />
-          <Hint label="Clear" keys={[displayKeySequence('<C-k>')]} />
-          <Hint label="Close" keys={['Esc', LEAVE_INSERT_CAP]} />
-        </HintBar>
-      </div>
+      ) : (
+        <div className="h-full bg-popover text-popover-foreground border border-border overflow-hidden flex flex-col">
+          <div className="flex h-11 items-center gap-1.5 px-2">
+            <InputField inputRef={inputRef} mode={null} className="flex-1 h-8 rounded-lg">
+              <Navigation size={14} className="shrink-0 text-muted-foreground" />
+              {input}
+              {result && result.total > 0 && query && (
+                <span className="max-w-[16rem] shrink-0 truncate text-xs text-muted-foreground select-none" title={result.href || result.label}>
+                  {result.byAttr ? 'title: ' : ''}{result.label}
+                </span>
+              )}
+              {count}
+            </InputField>
+            <button
+              type="button"
+              // The box keeps the keyboard.
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={toggleAttrs}
+              title={iconsTitle}
+              className={cn(
+                'flex h-8 shrink-0 items-center gap-1.5 rounded-lg border px-2 text-[11px] font-medium whitespace-nowrap select-none',
+                attrs ? 'border-primary/50 bg-primary/15 text-primary' : 'border-border text-muted-foreground',
+              )}
+            >
+              Icons: {attrs ? 'on' : 'off'}
+              <KeyCap>Tab</KeyCap>
+            </button>
+          </div>
+          {/* Also the handle the panel is dragged by; a double click puts it back. */}
+          <div data-detached-drag-handle onDoubleClick={resetOffset} className="cursor-move select-none">
+            <HintBar>
+              <Hint label="Pick" keys={['←↑↓→']} />
+              <Hint label="Go" keys={['Enter']} />
+              <Hint label="New tab" keys={[shift, 'Enter']} />
+              <Hint label="Clear" keys={[LEAVE_INSERT_CAP]} />
+              <Hint label="Move" keys={[displayKeySequence('<C-k>'), displayKeySequence('<C-j>')]} />
+              <Hint label="Small" keys={[displayKeySequence('<C-m>')]} />
+              <Hint label="Close" keys={['Esc']} />
+            </HintBar>
+          </div>
+        </div>
+      )}
     </DetachedWindow>
   )
 }

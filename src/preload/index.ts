@@ -57,7 +57,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   detachedWindowPlace: (popupId: string, left: number, top: number): void => { ipcRenderer.send('detached-window:place', popupId, { left, top }) },
   detachedWindowFocus: (popupId: string): void => { ipcRenderer.send('detached-window:focus', popupId) },
   // A pinned popup's height following its content, while it's open.
-  detachedWindowResize: (popupId: string, height: number): void => { ipcRenderer.send('detached-window:resize', popupId, height) },
+  detachedWindowResize: (popupId: string, height: number, width?: number): void => { ipcRenderer.send('detached-window:resize', popupId, height, width) },
   closeWorkspaceWindows: (workspaceIds: string[]): Promise<void> => ipcRenderer.invoke('workspace:close-windows', workspaceIds),
 
   // Logging — fire-and-forget (no await needed)

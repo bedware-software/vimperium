@@ -953,24 +953,27 @@ export function registerIpcHandlers(): void {
   // Hand the keyboard back to a popup that's already open (Find in Page
   // asked for again while the page has the keys).
   // A pinned popup's content grew or shrank (the address editor's keys
-  // strip wrapping onto a second row): the window takes the new height, its
-  // spot and width kept. The spot remembers it, so the parent's moves and
-  // resizes re-apply it rather than the opening height.
-  ipcMain.on('detached-window:resize', (_e, popupId: unknown, height: unknown) => {
+  // strip wrapping onto a second row; Go made small): the window takes the
+  // new height — and width, when given — its spot kept. The spot remembers
+  // them, so the parent's moves and resizes re-apply them rather than the
+  // opening size.
+  ipcMain.on('detached-window:resize', (_e, popupId: unknown, height: unknown, width: unknown) => {
     const popup = typeof popupId === 'string' ? pinnablePopups.get(popupId) : undefined
     if (!popup || popup.isDestroyed()) return
     if (typeof height !== 'number' || !Number.isFinite(height)) return
     const h = Math.round(Math.min(Math.max(height, 40), 4000))
+    const w = typeof width === 'number' && Number.isFinite(width) ? Math.round(Math.min(Math.max(width, 40), 4000)) : undefined
     const spot = pinnedSpots.get(popup)
     const parent = popup.getParentWindow()
     if (spot && parent && !parent.isDestroyed()) {
-      if (spot.height === h) return
+      if (spot.height === h && (w === undefined || spot.width === w)) return
       spot.height = h
+      if (w !== undefined) spot.width = w
       pinPopup(popup, parent, spot.left, spot.top)
       return
     }
     const b = popup.getBounds()
-    if (b.height !== h) popup.setBounds({ ...b, height: h })
+    if (b.height !== h || (w !== undefined && b.width !== w)) popup.setBounds({ ...b, height: h, width: w ?? b.width })
   })
 
   ipcMain.on('detached-window:focus', (_e, popupId: unknown) => {

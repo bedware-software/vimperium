@@ -22,6 +22,8 @@ const MAX_BOXES = 400
 // How much of the page's bottom the panel covers, until it says (a query's
 // `room`): a pick under it isn't in view.
 let panelRoom = 130
+// The same at the page's top, while the panel is up there.
+let panelRoomTop = 0
 const REFRESH_MS = 300
 
 interface Match {
@@ -33,6 +35,9 @@ interface Match {
 }
 
 const norm = (text: string): string => text.toLowerCase().replace(/ё/g, 'е').replace(/\s+/g, ' ').trim()
+// Matching ignores spaces on both sides: "1месяц" finds "1 месяц", typed
+// with the space or without.
+const squeeze = (normed: string): string => normed.replace(/ /g, '')
 
 function collect(root: Document | ShadowRoot, out: HTMLElement[]): void {
   for (const el of root.querySelectorAll<HTMLElement>(`${SEMANTIC}, ${GENERIC}`)) out.push(el)
@@ -74,7 +79,7 @@ function isShown(el: HTMLElement): boolean {
 }
 
 function findMatches(texts: string[], attrs: boolean): Match[] {
-  const wanted = texts.map(norm).filter(Boolean)
+  const wanted = texts.map((t) => squeeze(norm(t))).filter(Boolean)
   if (wanted.length === 0) return []
   const candidates: HTMLElement[] = []
   collect(document, candidates)
@@ -84,10 +89,11 @@ function findMatches(texts: string[], attrs: boolean): Match[] {
     const text = norm(visibleText(el))
     if (!el.matches(SEMANTIC) && text.length > GENERIC_MAX_TEXT) continue
     let match: Match | null = null
-    if (text && wanted.some((w) => text.includes(w))) match = { el, label: text, byAttr: false }
+    const squeezed = squeeze(text)
+    if (text && wanted.some((w) => squeezed.includes(w))) match = { el, label: text, byAttr: false }
     else if (attrs) {
       const said = attrTexts(el).find((t) => {
-        const n = norm(t)
+        const n = squeeze(norm(t))
         return wanted.some((w) => n.includes(w))
       })
       if (said) match = { el, label: said.replace(/\s+/g, ' ').trim(), byAttr: true }
@@ -108,12 +114,12 @@ function findMatches(texts: string[], attrs: boolean): Match[] {
 
 function inView(el: Element): boolean {
   const r = el.getBoundingClientRect()
-  return r.bottom > 0 && r.top < innerHeight - panelRoom && r.right > 0 && r.left < innerWidth
+  return r.bottom > panelRoomTop && r.top < innerHeight - panelRoom && r.right > 0 && r.left < innerWidth
 }
 
 function reveal(el: Element): void {
   const r = el.getBoundingClientRect()
-  if (r.top >= 0 && r.bottom <= innerHeight - panelRoom && r.left >= 0 && r.right <= innerWidth) return
+  if (r.top >= panelRoomTop && r.bottom <= innerHeight - panelRoom && r.left >= 0 && r.right <= innerWidth) return
   el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' })
 }
 
@@ -306,13 +312,14 @@ export function installGoPage(click: (el: HTMLElement) => void): void {
   }
 
   ipcRenderer.on('vimperium-go', (_e, raw: unknown) => {
-    const msg = raw as { op?: unknown; seq?: unknown; texts?: unknown; attrs?: unknown; room?: unknown; dx?: unknown; dy?: unknown; newTab?: unknown } | null
+    const msg = raw as { op?: unknown; seq?: unknown; texts?: unknown; attrs?: unknown; room?: unknown; roomTop?: unknown; dx?: unknown; dy?: unknown; newTab?: unknown } | null
     switch (msg?.op) {
       case 'query':
         seq = typeof msg.seq === 'number' ? msg.seq : 0
         texts = Array.isArray(msg.texts) ? msg.texts.filter((t): t is string => typeof t === 'string') : []
         attrs = msg.attrs !== false
         if (typeof msg.room === 'number' && Number.isFinite(msg.room)) panelRoom = Math.max(0, Math.min(innerHeight / 2, msg.room))
+        if (typeof msg.roomTop === 'number' && Number.isFinite(msg.roomTop)) panelRoomTop = Math.max(0, Math.min(innerHeight / 2, msg.roomTop))
         if (texts.length === 0) {
           close()
           report()

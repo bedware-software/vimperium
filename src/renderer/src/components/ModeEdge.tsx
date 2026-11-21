@@ -10,6 +10,9 @@ interface Props {
   /** The address bar's, shown by default; any other field's only while
    *  Settings asks for it on every field. */
   addressBar?: boolean
+  /** Its own pace in seconds, when not Settings' (lib/vim-edge.ts's
+   *  vimEdgePace); a constant object, or the pace is made anew each render. */
+  pace?: { speed: number; rest: number }
 }
 
 /** Vim's mode as a light moving round the edge of the field it's put in —
@@ -17,7 +20,7 @@ interface Props {
  *  Appearance says (.mode-edge in globals.css). The field must be
  *  positioned and must not clip what spills past it. A layer per mode, both
  *  running; the mode's layer shows, the change crossfading. */
-export function ModeEdge({ mode, edge, addressBar = false }: Props) {
+export function ModeEdge({ mode, edge, addressBar = false, pace: ownPace }: Props) {
   const chosen = useVimEdge()
   const everywhere = useVimEdgeEverywhere()
   const timing = useVimEdgeTiming()
@@ -25,9 +28,9 @@ export function ModeEdge({ mode, edge, addressBar = false }: Props) {
   // The pace, from Settings: the period, and a resting comet's timing.
   const glow = useVimEdgeGlow()
   const pace = useMemo(() => {
-    const { speed, ease } = vimEdgePace(look, timing.speed, timing.rest)
+    const { speed, ease } = vimEdgePace(look, (ownPace ?? timing).speed, (ownPace ?? timing).rest)
     return { '--speed': speed, '--halo': glow / 100, ...(ease ? { '--pass-ease': ease } : {}) } as CSSProperties
-  }, [look, timing, glow])
+  }, [look, timing, glow, ownPace])
   const shown = mode !== null && look !== 'off' && (addressBar || everywhere || edge !== undefined)
   const ref = useRef<HTMLSpanElement>(null)
 
