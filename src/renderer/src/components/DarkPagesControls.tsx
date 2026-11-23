@@ -86,6 +86,7 @@ export function ComfortSliders({ compact = false, disabled = false, vimItems = f
               min={min}
               max={max}
               value={value}
+              mark={rest}
               disabled={disabled}
               onChange={(v) => darkPagesActions.set({ [key]: v })}
               onDoubleClick={() => darkPagesActions.set({ [key]: rest })}

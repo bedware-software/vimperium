@@ -1925,6 +1925,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                           max={range.max}
                           step={range.step}
                           value={value}
+                          mark={range.default}
                           disabled={disabled}
                           onChange={set}
                           onDoubleClick={() => set(range.default)}

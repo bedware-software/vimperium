@@ -933,7 +933,7 @@ function DownloadRow({
           )}
         </div>
         {live && (
-          <Progress label="Downloaded" value={percent} className="mt-1.5 w-full" />
+          <Progress label="Downloaded" value={percent} paused={entry.state === 'paused'} className="mt-1.5 w-full" />
         )}
       </div>
 
