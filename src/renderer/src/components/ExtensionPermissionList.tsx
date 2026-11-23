@@ -47,7 +47,7 @@ function PermissionGroup({ title, items }: { title: string; items: string[] }) {
       <SectionTitle level={2} title={`${title} · ${items.length}`} className="mb-1" />
       <div className="flex flex-wrap gap-1">
         {items.map((p) => (
-          <Badge key={p} plain className="max-w-full whitespace-normal break-all select-text">
+          <Badge key={p} plain wrap className="max-w-full select-text">
             {p}
           </Badge>
         ))}

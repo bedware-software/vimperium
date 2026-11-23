@@ -28,11 +28,11 @@ import { useHintLabels, useHintTargets, useReservedHintKeys } from '../lib/hint-
 import { usePageKeys } from '../lib/vim-mode'
 import type { VimMode } from '../lib/vim-mode'
 import { keyTokenFromEvent } from '../lib/vim-keymap'
-import { ColumnsSwitch, PageSegmented, usePageColumns } from './ColumnsSwitch'
+import { ColumnsSwitch, usePageColumns } from './ColumnsSwitch'
 import { EntityIcon, LIST_PAGE_ROOT, LIST_ROW_SCROLL, ListPageHeader, PageScopeSwitch, listBoxClass, listColumnCount } from './ListPage'
 import { GroupPill } from './GroupPill'
 import { RowCap } from './KeyHints'
-import { Button, Kbd } from '@bedware/ui'
+import { Button, Kbd, Segmented } from '@bedware/ui'
 
 export interface PlacePageProps {
   page: 'move' | 'open-link'
@@ -570,7 +570,7 @@ export function PlacePage({ page, tabId, windowWorkspaceId, vimMode, vimPending,
         {/* The kind of place, as Search Everything's kinds: the one shown
             says how many there are, and how many the filter leaves. */}
         {kinds.length > 0 && (
-          <PageSegmented
+          <Segmented size="sm" tabbable={false}
             label="Where to"
             className="shrink-0"
             value={shownKind}

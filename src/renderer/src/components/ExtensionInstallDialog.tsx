@@ -102,10 +102,11 @@ export function ExtensionInstallDialog({ preview, installing, error, onConfirm, 
           ) : (
             <p className="text-xs text-muted-foreground">Needs no special permissions.</p>
           )}
-          <LinkButton className="mt-3"
+          <LinkButton
+            className="mt-3"
+            icon={showAll ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
             onClick={() => setShowAll((v) => !v)}
           >
-            {showAll ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
             {showAll ? 'Hide permission list' : 'Show all permissions'}
           </LinkButton>
           {error && (

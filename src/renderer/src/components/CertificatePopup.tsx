@@ -157,9 +157,9 @@ export function CertificatePopup({ open, url, security, onClose }: Props) {
                   <LinkButton
                     aria-expanded={showDetails}
                     onClick={() => setShowDetails(!showDetails)}
-                    className="mt-2 flex items-center gap-1"
+                    className="mt-2"
+                    icon={showDetails ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                   >
-                    {showDetails ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                     Details
                   </LinkButton>
 

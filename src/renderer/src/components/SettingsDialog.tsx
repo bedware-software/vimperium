@@ -1856,7 +1856,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                   options={VIM_INDICATORS.map((v) => ({
                     value: v.id,
                     title: v.label,
-                    description: v.hint,
+                    hint: v.hint,
                     preview: (
                       <span className="flex gap-1.5">
                         <VimModeBadge mode="command" indicator={v.id} />
@@ -1882,7 +1882,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                   options={VIM_EDGES.map((v) => ({
                     value: v.id,
                     title: v.label,
-                    description: v.hint,
+                    hint: v.hint,
                     preview: (
                       <span className="flex flex-col gap-3 pt-1">
                         {(['command', 'insert'] as const).map((mode) => (
@@ -2742,9 +2742,9 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                   }}
                   className="mt-2"
                   title="Save Settings and open the Bangs page (vimperium://bangs)"
+                  icon={<ExternalLink size={12} />}
                 >
                   Manage bangs…
-                  <ExternalLink size={12} className="ml-1 inline align-[-2px]" />
                 </LinkButton>
               </div>
 
@@ -3222,8 +3222,8 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                                 aria-expanded={expanded}
                                 onClick={() => toggleExtensionDetails(ext.id)}
                                 className="mt-1"
+                                icon={expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                               >
-                                {expanded ? <ChevronDown size={12} className="mr-1 inline align-[-2px]" /> : <ChevronRight size={12} className="mr-1 inline align-[-2px]" />}
                                 {permissionCount} permission{permissionCount === 1 ? '' : 's'}
                                 {commands.length > 0 &&
                                   ` · ${commands.length} keyboard shortcut${commands.length === 1 ? '' : 's'}`}
@@ -3256,6 +3256,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                                               </span>
                                               <div className="flex shrink-0 items-center gap-1">
                                                 <HotkeyButton
+                                                  size="sm"
                                                   data-vim-cell="record"
                                                   keys={c.shortcut ? acceleratorKeys(c.shortcut) : []}
                                                   recording={recording}
@@ -3392,7 +3393,6 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                     Reset to Defaults
                   </Button>
                 </div>
-                {/* overflow-auto: the package's textarea hides overflow, made for one that grows. */}
                 <Textarea
                   mono
                   autoGrow={false}
@@ -3404,7 +3404,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                   autoCorrect="off"
                   wrap="off"
                   rows={24}
-                  className="w-full overflow-auto"
+                  className="w-full"
                 />
                 {vimKeymapErrors.length > 0 && (
                   <div className="mt-2 px-3 py-2 rounded-md border border-destructive/40 bg-destructive/10 text-xs text-destructive space-y-0.5">

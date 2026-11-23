@@ -154,22 +154,21 @@ export function ExportWorkspaceDialog({ open, workspaces, profileName, onConfirm
                   onMouseDown={() => keys.setCursor(index)}
                   onClick={() => toggleExpand(w.id)}
                 >
-                  {/* The span keeps the click from the row (it folds); Checkbox's
-                      own onClick can't be replaced. */}
-                  <span className="flex shrink-0" onClick={(e) => e.stopPropagation()}>
-                    <Checkbox
-                      aria-label={`Select ${w.name}`}
-                      checked={isSelected}
-                      onChange={() => toggleSelect(w.id)}
-                      // A button: useChecklistKeys leaves it its Enter, which
-                      // would tick; Enter goes ahead from anywhere in the list.
-                      onKeyDown={(e) => {
-                        if (e.key !== 'Enter' || e.metaKey || e.altKey || e.ctrlKey) return
-                        e.preventDefault()
-                        handleExport()
-                      }}
-                    />
-                  </span>
+                  <Checkbox
+                    aria-label={`Select ${w.name}`}
+                    checked={isSelected}
+                    // The row's own click folds it.
+                    onClick={(e) => e.stopPropagation()}
+                    className="shrink-0"
+                    onChange={() => toggleSelect(w.id)}
+                    // A button: useChecklistKeys leaves it its Enter, which
+                    // would tick; Enter goes ahead from anywhere in the list.
+                    onKeyDown={(e) => {
+                      if (e.key !== 'Enter' || e.metaKey || e.altKey || e.ctrlKey) return
+                      e.preventDefault()
+                      handleExport()
+                    }}
+                  />
                   <ChevronRight
                     size={14}
                     className={`text-muted-foreground shrink-0 transition-transform ${

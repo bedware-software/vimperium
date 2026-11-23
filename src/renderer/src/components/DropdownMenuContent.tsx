@@ -1,4 +1,4 @@
-import { Menu, MenuHeader, MenuItem, MenuSeparator, IconButton } from '@bedware/ui'
+import { Menu, MenuHeader, MenuItem, MenuSeparator, IconButton, Kbd } from '@bedware/ui'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   DndContext,
@@ -75,16 +75,7 @@ function SortableRow({
     transition,
   }
 
-  // With actions MenuItem is a div, not a button: no Enter/Space of its own.
-  // From the keyboard, Enter is the menu's own handler's (the row the keys
-  // are on), so only Space is taken here then.
   const hasActions = editable || deletable
-  const onRowKeyDown = (e: React.KeyboardEvent<HTMLElement>): void => {
-    if (e.target !== e.currentTarget) return
-    if (e.key !== ' ' && (e.key !== 'Enter' || keyboard)) return
-    e.preventDefault()
-    onEmit({ type: 'select', id: item.id })
-  }
 
   return (
     <MenuItem
@@ -96,17 +87,13 @@ function SortableRow({
       role="menuitem"
       tabIndex={0}
       {...(focused ? { 'data-key-focus': '' } : {})}
-      {...(hasActions ? { onKeyDown: onRowKeyDown } : {})}
       className={[isDragging && 'opacity-60', sortable && 'cursor-grab active:cursor-grabbing'].filter(Boolean).join(' ') || undefined}
       onClick={() => onEmit({ type: 'select', id: item.id })}
       icon={<Icon size={12} />}
       current={selected}
       selected={focused}
-      keys={[
-        ...(focused && editable ? [ROW_KEYS.rename] : []),
-        ...(focused && deletable ? [ROW_KEYS.delete] : []),
-        ...(keyboard && digit ? [digit] : []),
-      ]}
+      keys={keyboard && digit ? [digit] : []}
+      actionsShown="active"
       actions={hasActions ? (
         <>
           {editable && (
@@ -123,6 +110,7 @@ function SortableRow({
               <Pencil size={11} />
             </IconButton>
           )}
+          {focused && editable && <Kbd>{ROW_KEYS.rename}</Kbd>}
           {deletable && (
             <IconButton size={20} danger
               data-row-action
@@ -136,6 +124,7 @@ function SortableRow({
               <Trash2 size={11} />
             </IconButton>
           )}
+          {focused && deletable && <Kbd>{ROW_KEYS.delete}</Kbd>}
         </>
       ) : undefined}
     >

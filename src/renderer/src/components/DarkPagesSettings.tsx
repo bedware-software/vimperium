@@ -10,7 +10,7 @@ import { darkPagesActions, useDarkPages } from '../lib/dark-pages'
 import { actionHint, type HintSettings } from '../lib/shortcut-hints'
 import { ComfortSliders, DarkPagePreview, DarkPagesModeSwitch, acceleratorCaps } from './DarkPagesControls'
 import { darkPagesGloballyOn, normalizeSiteKey, type DarkPagesRule, type DarkPagesStyle } from '../../../shared/dark-pages'
-import { Badge, Button, ChoiceCards, Kbd, Panel, PanelRow, InputField as TextField, IconButton } from '@bedware/ui'
+import { Badge, Button, ChoiceCards, Kbd, Panel, PanelRow, InputField as TextField, IconButton, Segmented } from '@bedware/ui'
 
 const STYLES: { id: DarkPagesStyle; title: string; icon: typeof Sparkles; body: string }[] = [
   {
@@ -28,30 +28,25 @@ const STYLES: { id: DarkPagesStyle; title: string; icon: typeof Sparkles; body: 
 ]
 
 /** A site's rule. Its two choices are its row's first two buttons for Vim's
- *  form keys (h / l between them, Enter picks): each wears data-vim-cell,
- *  which the package's Segmented can't put on its options — so it's drawn here. */
+ *  form keys (h / l between them, Enter picks): each wears data-vim-cell. */
 function RulePicker({ rule, onPick, site }: { rule: DarkPagesRule; onPick: (rule: DarkPagesRule) => void; site: string }) {
   return (
-    <div className="flex h-7 items-center rounded-md bg-secondary p-0.5" role="radiogroup" aria-label={`Rule for ${site}`}>
-      {(['dark', 'light'] as const).map((r) => (
-        <button
-          key={r}
-          type="button"
-          role="radio"
-          data-vim-cell={r}
-          aria-checked={rule === r}
-          onClick={() => onPick(r)}
-          title={r === 'dark' ? `${site} is always dark` : `${site} is never darkened`}
-          className={cn(
-            'flex h-6 items-center gap-1 rounded px-2 text-[11px] font-medium transition-colors',
-            rule === r ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
-          )}
-        >
-          {r === 'dark' ? <Moon size={11} fill={rule === r ? 'currentColor' : 'none'} /> : null}
-          {r === 'dark' ? 'Always dark' : 'Never dark'}
-        </button>
-      ))}
-    </div>
+    <Segmented
+      size="sm"
+      label={`Rule for ${site}`}
+      value={rule}
+      onChange={onPick}
+      options={[
+        {
+          value: 'dark',
+          label: 'Always dark',
+          icon: <Moon size={11} fill={rule === 'dark' ? 'currentColor' : 'none'} />,
+          title: `${site} is always dark`,
+          attrs: { 'data-vim-cell': 'dark' },
+        },
+        { value: 'light', label: 'Never dark', title: `${site} is never darkened`, attrs: { 'data-vim-cell': 'light' } },
+      ]}
+    />
   )
 }
 
@@ -125,13 +120,8 @@ export function DarkPagesSettings({ hintSettings }: { hintSettings: HintSettings
           onChange={(style) => darkPagesActions.set({ style })}
           options={STYLES.map(({ id, title, icon: Icon, body }) => ({
             value: id,
-            title: (
-              <span className="flex items-center gap-1.5">
-                <Icon size={13} className="shrink-0 text-muted-foreground" />
-                {title}
-                {id === 'smart' && <Badge tone="accent">Recommended</Badge>}
-              </span>
-            ),
+            icon: <Icon size={13} />,
+            title: id === 'smart' ? <span className="flex items-center gap-1.5">{title}<Badge tone="accent">Recommended</Badge></span> : title,
             description: body,
           }))}
         />

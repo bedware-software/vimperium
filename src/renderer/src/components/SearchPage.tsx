@@ -30,7 +30,7 @@ import { internalPageOf } from '../lib/internal-pages'
 import { useSearchFields } from '../lib/search-fields'
 import { SEARCH_FIELD_OPTIONS, type SearchFieldKind } from '../../../shared/search-fields'
 import { useHintLabels, useHintTargets, useReservedHintKeys } from '../lib/hint-labels'
-import { ColumnsSwitch, PageSegmented, usePageColumns, type Columns } from './ColumnsSwitch'
+import { ColumnsSwitch, usePageColumns, type Columns } from './ColumnsSwitch'
 import { EntityIcon, LIST_PAGE_ROOT, LIST_ROW_SCROLL, ListPageHeader, PageScopeSwitch, listBoxClass, listColumnCount } from './ListPage'
 import { usePageKeys } from '../lib/vim-mode'
 import { keyTokenFromEvent } from '../lib/vim-keymap'
@@ -43,7 +43,7 @@ import { RowCap } from './KeyHints'
 import { openDropdownAsync, type DropdownAction } from './dropdown-protocol'
 import { InputDialog } from './InputDialog'
 import { ConfirmDialog } from './ConfirmDialog'
-import { Kbd } from '@bedware/ui'
+import { Kbd, Segmented } from '@bedware/ui'
 
 export interface SearchPageProps {
   /** The page's own tab: picking a result closes it. */
@@ -670,7 +670,7 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
           </>
         )}
       >
-          <PageSegmented
+          <Segmented size="sm" tabbable={false}
             label="What to search"
             className="shrink-0"
             value={filter}
