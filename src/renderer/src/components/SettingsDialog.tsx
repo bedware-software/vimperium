@@ -3712,6 +3712,12 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                       {appVersion ? `v${appVersion}` : '…'}
                     </div>
                   </div>
+                  <div className="flex items-center justify-between gap-4 px-4 py-3">
+                    <div className="text-sm font-medium text-foreground">bedware UI</div>
+                    <div className="text-sm text-muted-foreground tabular-nums">
+                      v{__BEDWARE_UI_VERSION__}
+                    </div>
+                  </div>
                   {appPaths &&
                     (
                       [

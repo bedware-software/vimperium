@@ -2,6 +2,12 @@ import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { resolve } from 'path'
+import { readFileSync } from 'fs'
+
+// The package doesn't export its package.json, so the renderer can't import it.
+const bedwareUiVersion: string = JSON.parse(
+  readFileSync(resolve(__dirname, 'node_modules/@bedware/ui/package.json'), 'utf8')
+).version
 
 export default defineConfig({
   main: {
@@ -25,6 +31,9 @@ export default defineConfig({
   },
   renderer: {
     root: resolve(__dirname, 'src/renderer'),
+    define: {
+      __BEDWARE_UI_VERSION__: JSON.stringify(bedwareUiVersion)
+    },
     build: {
       outDir: resolve(__dirname, 'out/renderer'),
       rollupOptions: {
