@@ -1,4 +1,4 @@
-import { Badge, Button, ChoiceCards, GroupTitle, Hint, HintBar, HotkeyButton, LinkButton, ListRow, Nav, NavItem, Panel, PanelRow, Segmented, Switch, Textarea, InputField as TextField, IconButton } from '@bedware/ui'
+import { Badge, Button, ChoiceCards, GroupTitle, Hint, HintBar, HotkeyButton, LinkButton, ListRow, Nav, NavItem, Panel, PanelRow, Segmented, Switch, Textarea, InputField as TextField, IconButton, Slider } from '@bedware/ui'
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { X, RotateCcw, Sun, Moon, Monitor, AlertTriangle, Trash2, Download, Bell, CheckCircle2, Loader2, Puzzle, ExternalLink, Plus, Globe, Pin, PinOff, SlidersHorizontal, Palette, Keyboard, Info, Compass, ShieldCheck, Cloud, FolderOpen, RefreshCw, Wifi, Building2, KeyRound, Search, FileUp, Pencil, Copy, Check, Eye, EyeOff, ChevronDown, ChevronRight, UserRound, FingerprintPattern } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -1914,22 +1914,19 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                     { item: 'appearance:vim-edge-rest', label: 'Rest at the sides', unit: ' s', hint: 'How long a comet resting at the sides stays in each end', range: VIM_EDGE_REST, value: vimEdgeRest, disabled: !isSidesEdge(vimEdge), set: (v: number) => { setVimEdgeRest(v); previewAppearance({ vimEdgeRest: v }) } },
                     { item: 'appearance:vim-edge-glow', label: 'Glow', unit: '%', hint: 'How big the glow round the edge is: 0 leaves the thin ring alone', range: VIM_EDGE_GLOW, value: vimEdgeGlow, disabled: vimEdge === 'off', set: (v: number) => { setVimEdgeGlow(v); previewAppearance({ vimEdgeGlow: v }) } },
                   ]).map(({ item, label, unit, hint, range, value, disabled, set }) => {
-                    const pct = (v: number): string => `${((v - range.min) / (range.max - range.min)) * 100}%`
                     return (
                       <label key={item} className={`flex items-center gap-3 ${disabled ? 'opacity-50' : ''}`} title={`${hint}. Double-click to reset.`}>
                         <span className="shrink-0 w-28 text-xs text-muted-foreground">{label}</span>
-                        <input
+                        <Slider
                           data-vim-item={item}
-                          type="range"
-                          className="slider min-w-0 flex-1"
+                          label={label}
+                          boxClassName="min-w-0 flex-1"
                           min={range.min}
                           max={range.max}
                           step={range.step}
                           value={value}
                           disabled={disabled}
-                          aria-label={label}
-                          style={{ '--fill': pct(value), '--rest': pct(range.default) } as React.CSSProperties}
-                          onChange={(e) => set(Number(e.target.value))}
+                          onChange={set}
                           onDoubleClick={() => set(range.default)}
                         />
                         <span className="shrink-0 w-10 text-right text-xs tabular-nums text-foreground">{value}{unit}</span>

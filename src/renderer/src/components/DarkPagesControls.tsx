@@ -9,7 +9,7 @@ import { RotateCcw } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { darkPagesActions, useDarkPages } from '../lib/dark-pages'
 import { DARK_PAGES_LIMITS, type DarkPagesMode } from '../../../shared/dark-pages'
-import { Button, Segmented, Switch } from '@bedware/ui'
+import { Button, Segmented, Switch, Slider } from '@bedware/ui'
 
 const isMac = typeof navigator !== 'undefined' && navigator.platform.includes('Mac')
 
@@ -76,22 +76,18 @@ export function ComfortSliders({ compact = false, disabled = false, vimItems = f
       {SLIDERS.map(({ key, label, hint }) => {
         const { min, max, default: rest } = DARK_PAGES_LIMITS[key]
         const value = config[key]
-        const pct = (v: number): string => `${((v - min) / (max - min)) * 100}%`
         return (
           <label key={key} className="flex items-center gap-3" title={`${hint}. Double-click to reset.`}>
             <span className={cn('shrink-0 text-muted-foreground', compact ? 'w-[68px] text-[11px]' : 'w-24 text-xs')}>{label}</span>
-            <input
+            <Slider
               data-vim-item={vimItems ? `dark:${key}` : undefined}
-              type="range"
-              className="slider min-w-0 flex-1"
+              label={label}
+              boxClassName="min-w-0 flex-1"
               min={min}
               max={max}
-              step={1}
               value={value}
               disabled={disabled}
-              aria-label={label}
-              style={{ '--fill': pct(value), '--rest': pct(rest) } as React.CSSProperties}
-              onChange={(e) => darkPagesActions.set({ [key]: Number(e.target.value) })}
+              onChange={(v) => darkPagesActions.set({ [key]: v })}
               onDoubleClick={() => darkPagesActions.set({ [key]: rest })}
             />
             <span className={cn('shrink-0 text-right tabular-nums text-foreground', compact ? 'w-9 text-[11px]' : 'w-10 text-xs')}>

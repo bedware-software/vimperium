@@ -28,7 +28,7 @@ import { log } from '../lib/log'
 import { focusAddressFilter, useAddressFilter, type AddressFilterKeyEvent } from '../lib/address-filter'
 import { openDropdownAsync, type DropdownAction } from './dropdown-protocol'
 import { KeysHelp, KeysHelpButton } from './KeyHints'
-import { Badge, Button, GroupTitle, Hint, HintBar, IconButton, Kbd, Segmented } from '@bedware/ui'
+import { Badge, Button, GroupTitle, Hint, HintBar, IconButton, Kbd, Segmented, Progress } from '@bedware/ui'
 
 type SortKey = 'date' | 'size' | 'name'
 type SortDir = 'asc' | 'desc'
@@ -933,12 +933,7 @@ function DownloadRow({
           )}
         </div>
         {live && (
-          <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-secondary">
-            <div
-              className={`h-full transition-[width] ${entry.state === 'paused' ? 'bg-muted-foreground' : 'bg-primary'}`}
-              style={{ width: `${percent}%` }}
-            />
-          </div>
+          <Progress label="Downloaded" value={percent} className="mt-1.5 w-full" />
         )}
       </div>
 

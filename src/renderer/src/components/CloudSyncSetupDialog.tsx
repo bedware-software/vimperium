@@ -1,4 +1,4 @@
-import { Button, LinkButton } from '@bedware/ui'
+import { Button, LinkButton, Progress } from '@bedware/ui'
 import { useEffect, useRef, useState } from 'react'
 import { Cloud, FolderOpen } from 'lucide-react'
 import { DetachedWindow } from './DetachedWindow'
@@ -138,12 +138,7 @@ export function CloudSyncSetupDialog({ open, prompt, onClose }: Props) {
           {busy ? (
             <div className="py-2">
               <p className="text-xs text-foreground mb-2">Setting up sync…</p>
-              <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden">
-                <div
-                  className={`h-full bg-primary transition-all duration-300 ${pct === null ? 'animate-pulse' : ''}`}
-                  style={{ width: pct === null ? '15%' : `${pct}%` }}
-                />
-              </div>
+              <Progress label="Setting up sync" value={pct ?? undefined} className="w-full" />
               <p className="text-[11px] text-muted-foreground mt-2">
                 {progress
                   ? `Syncing ${progress.done} of ${progress.total}…`

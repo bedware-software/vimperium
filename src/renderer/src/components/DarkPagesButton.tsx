@@ -20,7 +20,7 @@ import { darkPagesApplies, darkPagesGloballyOn } from '../../../shared/dark-page
 import { Button, GroupTitle, Hint, HintBar, IconButton, LinkButton } from '@bedware/ui'
 
 const WIDTH = 356
-const HEIGHT = 264
+const HEIGHT = 270
 // A click on the moon right after the popover lost the focus to it is the
 // click that closed it, not one to open it again.
 const REOPEN_GUARD_MS = 250
