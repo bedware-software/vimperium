@@ -154,7 +154,7 @@ function dropPageDragRegions(wc: Electron.WebContents): void {
 // belt-and-suspenders backdrop behind the edge-to-edge video.
 const TAB_BG_TRANSPARENT = '#00000000'
 const TAB_BG_FULLSCREEN = '#000000'
-const DEFAULT_WINDOW_BG = '#161616'
+const DEFAULT_WINDOW_BG = '#000000'
 const PAGE_FULLSCREEN_TOOLBAR_HEIGHT = 48
 const PAGE_FULLSCREEN_WINDOWS_OVERSCAN = 8
 

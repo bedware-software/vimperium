@@ -1010,8 +1010,8 @@ function BangEditor({
             }`}
           >
             <span
-              className={`h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
-                draft.enabled ? 'translate-x-5' : 'translate-x-0'
+              className={`h-5 w-5 rounded-full shadow-sm transition-transform ${
+                draft.enabled ? 'translate-x-5 bg-primary-foreground' : 'translate-x-0 bg-white'
               }`}
             />
           </button>
@@ -1090,7 +1090,7 @@ function BangEditor({
             ))}.</>}
           </span>
           {shadowed.length > 0 && (
-            <span className="mt-1 block text-[11px] text-amber-500">
+            <span className="mt-1 block text-[11px] text-warning">
               {shadowed.map((l) => `!${l}`).join(', ')} {shadowed.length === 1 ? 'is a bang' : 'are bangs'} already: the bang wins over the label.
             </span>
           )}

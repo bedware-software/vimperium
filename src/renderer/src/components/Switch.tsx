@@ -45,8 +45,9 @@ export function Switch({ checked, onChange, label, title, disabled = false, size
     >
       <span
         className={cn(
-          'rounded-full bg-white shadow-sm transition-transform duration-200',
+          'rounded-full shadow-sm transition-transform duration-200',
           md ? 'h-5 w-5' : 'h-4 w-4',
+          checked ? 'bg-primary-foreground' : 'bg-white',
           checked ? (md ? 'translate-x-5' : 'translate-x-4') : 'translate-x-0',
         )}
       />

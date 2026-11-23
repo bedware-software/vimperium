@@ -2381,7 +2381,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                               aria-label={`Copy username ${entry.username}`}
                               title="Copy username"
                             >
-                              {copied('username') ? <Check size={12} className="text-green-500" /> : <UserRound size={12} />}
+                              {copied('username') ? <Check size={12} className="text-success" /> : <UserRound size={12} />}
                             </button>
                             <button
                               type="button"
@@ -2392,7 +2392,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                               aria-label={`Copy password for ${entry.username}`}
                               title="Copy password"
                             >
-                              {busy ? <Loader2 size={12} className="animate-spin" /> : copied('password') ? <Check size={12} className="text-green-500" /> : <KeyRound size={12} />}
+                              {busy ? <Loader2 size={12} className="animate-spin" /> : copied('password') ? <Check size={12} className="text-success" /> : <KeyRound size={12} />}
                             </button>
                             <button
                               type="button"
@@ -2432,7 +2432,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                                     onClick={() => copyPasswordEntryField(entry, 'username')}
                                     className="h-7 px-2 shrink-0 flex items-center gap-1.5 rounded-md text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
                                   >
-                                    {copied('username') ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
+                                    {copied('username') ? <Check size={12} className="text-success" /> : <Copy size={12} />}
                                     {copied('username') ? 'Copied' : 'Copy'}
                                   </button>
                                 </div>
@@ -2471,7 +2471,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                                     disabled={busy}
                                     className="h-7 px-2 shrink-0 flex items-center gap-1.5 rounded-md text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
                                   >
-                                    {copied('password') ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
+                                    {copied('password') ? <Check size={12} className="text-success" /> : <Copy size={12} />}
                                     {copied('password') ? 'Copied' : 'Copy'}
                                   </button>
                                 </div>
@@ -3144,7 +3144,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                   with no password prompt — like Edge in the Local Intranet zone. Separate entries with
                   commas, spaces, or new lines; wildcards like <span className="font-mono">*.corp.example.com</span> are allowed.
                   {' '}
-                  <span className="text-amber-500">
+                  <span className="text-warning">
                     Only add hosts you trust — your Windows credentials are sent to them automatically.
                   </span>
                   {' '}This uses the account this PC is logged in as. If that isn&apos;t your corporate account, leave

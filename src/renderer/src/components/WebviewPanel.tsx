@@ -69,17 +69,10 @@ type TabEvent =
   | { type: 'dom-ready'; tabId: string; url: string }
   | { type: 'did-finish-load'; tabId: string; url: string }
 
-function resolveTheme(): 'dark' | 'light' {
-  const attr = document.documentElement.getAttribute('data-theme')
-  if (attr === 'dark') return 'dark'
-  if (attr === 'light') return 'light'
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-}
-
 function buildScrollbarCss(): string {
-  const isDark = resolveTheme() === 'dark'
-  const card = isDark ? 'oklch(0.17 0 0)' : 'oklch(0.955 0 0)'
-  const border = isDark ? 'oklch(0.30 0 0)' : 'oklch(0.88 0 0)'
+  const theme = getComputedStyle(document.documentElement)
+  const card = theme.getPropertyValue('--color-card').trim()
+  const border = theme.getPropertyValue('--color-border').trim()
   return `html { scrollbar-width: thin; scrollbar-color: ${border} ${card}; }`
 }
 

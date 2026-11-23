@@ -921,7 +921,7 @@ function AppMenu({ sidebarVisible, onToggleSidebar, onOpenSettings, onOpenAbout,
       >
         <Menu size={16} />
         {devBuild && (
-          <span className="absolute left-[1px] bottom-[1px] px-[2px] rounded-[2px] bg-amber-400 text-black text-[7px] leading-[9px] font-bold tracking-[0.04em] pointer-events-none select-none" aria-hidden="true">
+          <span className="absolute left-[1px] bottom-[1px] px-[2px] rounded-[2px] bg-warning text-warning-foreground text-[7px] leading-[9px] font-bold tracking-[0.04em] pointer-events-none select-none" aria-hidden="true">
             DEV
           </span>
         )}
@@ -939,7 +939,7 @@ function AppMenu({ sidebarVisible, onToggleSidebar, onOpenSettings, onOpenAbout,
       ) : updateAvailable ? (
         <span
           className={`absolute -top-0.5 -right-0.5 w-[14px] h-[14px] rounded-full flex items-center justify-center pointer-events-none ${
-            updateReady ? 'bg-green-500 text-white' : 'bg-primary text-primary-foreground'
+            updateReady ? 'bg-success text-success-foreground' : 'bg-primary text-primary-foreground'
           }`}
           aria-label={updateReady ? 'Update ready to install' : 'New version available'}
         >
@@ -1671,7 +1671,7 @@ export function Toolbar({ windowWorkspaceId, sidebarVisible, pageFullscreen, vim
               </span>
             ) : downloadsDone ? (
               <span
-                className="absolute -top-0.5 -right-0.5 w-[14px] h-[14px] rounded-full bg-green-500 text-white flex items-center justify-center pointer-events-none"
+                className="absolute -top-0.5 -right-0.5 w-[14px] h-[14px] rounded-full bg-success text-success-foreground flex items-center justify-center pointer-events-none"
                 aria-label="Downloads complete"
               >
                 <Check size={9} strokeWidth={3.5} />
@@ -1753,7 +1753,7 @@ export function Toolbar({ windowWorkspaceId, sidebarVisible, pageFullscreen, vim
             <button
               className={
                 security === 'warning'
-                  ? 'ml-1.5 h-6 px-2 flex items-center gap-1 rounded-md bg-red-600 text-white cursor-pointer group relative hover:bg-red-700'
+                  ? 'ml-1.5 h-6 px-2 flex items-center gap-1 rounded-md bg-destructive text-destructive-foreground cursor-pointer group relative hover:bg-destructive/90'
                   : 'ml-1.5 h-6 w-6 flex items-center justify-center rounded-md bg-secondary cursor-pointer group relative'
               }
               onClick={() => setCertPopupOpen((v) => !v)}

@@ -3149,14 +3149,16 @@ export function createWorkspaceWindow(profileId: string, workspaceId: string, wo
     title: `${workspaceName} — ${APP_NAME}`,
     // Without this the window base paints white, which shows through as a
     // jarring frame around a fullscreen video (the tab WebContentsView is
-    // transparent and may not cover the rect to the pixel). A dark base —
-    // matching the title-bar overlay — blends with the video's letterbox
-    // and the cinema-mode chrome instead.
-    backgroundColor: '#161616',
+    // transparent and may not cover the rect to the pixel). The dark theme's
+    // background blends with the video's letterbox and the cinema-mode
+    // chrome instead. The overlay's colours are the design system's dark
+    // toolbar and foreground (@bedware/ui tailwind-theme.css) until the
+    // renderer sets the theme's own — update by hand when those change.
+    backgroundColor: '#000000',
     titleBarStyle: isMac ? 'hiddenInset' : 'hidden',
     ...(isMac
       ? { trafficLightPosition: { x: 14, y: 14 } }
-      : { autoHideMenuBar: true, titleBarOverlay: { color: '#161616', symbolColor: '#d7d7d7', height: 47 } }),
+      : { autoHideMenuBar: true, titleBarOverlay: { color: '#0e0d0c', symbolColor: '#f4f1e8', height: 47 } }),
     icon: windowIcon,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),

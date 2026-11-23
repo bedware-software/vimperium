@@ -82,7 +82,7 @@ export function PageScopeSwitch({ on, label, onToggle, title, className }: {
     >
       {label}
       <span className={cn('relative inline-flex h-3.5 w-6 shrink-0 items-center rounded-full px-0.5 transition-colors', on ? 'bg-primary' : 'bg-muted-foreground/30')}>
-        <span className={cn('h-2.5 w-2.5 rounded-full bg-white shadow-sm transition-transform', on ? 'translate-x-[10px]' : 'translate-x-0')} />
+        <span className={cn('h-2.5 w-2.5 rounded-full shadow-sm transition-transform', on ? 'translate-x-[10px] bg-primary-foreground' : 'translate-x-0 bg-white')} />
       </span>
       <span className="opacity-50">Tab</span>
     </button>

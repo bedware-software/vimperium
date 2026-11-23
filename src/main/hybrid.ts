@@ -413,12 +413,14 @@ function scanForAdvert(eidKey: Buffer, onState: (state: string) => void, signal:
 }
 
 // ── The window with the QR code ──
+// Its colours are the bedware design system's (bg, text, text-muted, error,
+// focus), copied by hand: the page has no stylesheet of the app's.
 
 const PHONE_PAGE = `<!doctype html>
 <html><head><meta charset="utf-8"><title>Use a passkey from your iPhone</title>
 <style>
-  :root { color-scheme: light dark; --fg: #1d1d1f; --muted: #6e6e73; --bg: #f5f5f7; --card: #fff; --error: #d70015; --accent: #0071e3; }
-  @media (prefers-color-scheme: dark) { :root { --fg: #f5f5f7; --muted: #a1a1a6; --bg: #1e1e1e; --card: #2c2c2e; --error: #ff6961; --accent: #0a84ff; } }
+  :root { color-scheme: light dark; --fg: #1d1b18; --muted: #5a564f; --bg: #f4f1e8; --card: #fff; --error: #c8372b; --accent: #000; }
+  @media (prefers-color-scheme: dark) { :root { --fg: #f4f1e8; --muted: #a8a49a; --bg: #000; --card: #22201d; --error: #ff6b5e; --accent: #ffde5d; } }
   * { box-sizing: border-box; }
   html, body { overflow: hidden; }
   body { margin: 0; padding: 22px 26px 20px; font: 13px/1.45 -apple-system, BlinkMacSystemFont, sans-serif; color: var(--fg); background: var(--bg); -webkit-user-select: none; cursor: default; }

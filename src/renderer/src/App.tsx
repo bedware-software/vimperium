@@ -567,7 +567,7 @@ function rgbStringToHex(rgb: string): string | null {
  * Resolve a CSS custom property (declared on :root via @theme or a
  * [data-theme*=""] override) to its final sRGB hex value by letting the
  * browser compute it on a hidden element. Needed because setTitleBarOverlay
- * expects "#rrggbb" strings, not the oklch() values used in CSS. Must be
+ * expects "#rrggbb" strings, whatever notation the CSS value is in. Must be
  * called AFTER the theme/variant data attributes have been written so the
  * computed value reflects the currently active variant.
  */
@@ -586,12 +586,11 @@ function resolveCssVarToHex(varName: string): string | null {
 function getOverlayColors(theme: ThemeChoice): { color: string; symbolColor: string; height: number } {
   const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
   // Match the title bar background to the active variant's toolbar color
-  // so the Windows min/max/close buttons blend in. Fall back to the legacy
-  // hardcoded values if CSS resolution fails (shouldn't happen in practice).
-  const toolbarHex = resolveCssVarToHex('--color-toolbar')
+  // so the Windows min/max/close buttons blend in. The fallbacks are the
+  // design system's toolbar and foreground (@bedware/ui tailwind-theme.css).
   return {
-    color: toolbarHex ?? (isDark ? '#161616' : '#f7f7f7'),
-    symbolColor: isDark ? '#d7d7d7' : '#303030',
+    color: resolveCssVarToHex('--color-toolbar') ?? (isDark ? '#0e0d0c' : '#faf8f2'),
+    symbolColor: resolveCssVarToHex('--color-foreground') ?? (isDark ? '#f4f1e8' : '#1d1b18'),
     height: 47,
   }
 }

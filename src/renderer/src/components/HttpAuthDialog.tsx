@@ -137,7 +137,7 @@ export function HttpAuthDialog({ request, onDone }: Props) {
 
         <div className="flex-1 px-5 flex flex-col gap-3 justify-center">
           {request.hadSavedCredential ? (
-            <p className="text-[11px] text-amber-500">
+            <p className="text-[11px] text-warning">
               Your saved sign-in for this site didn&apos;t work — update it below.
             </p>
           ) : null}

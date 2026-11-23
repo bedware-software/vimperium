@@ -94,9 +94,9 @@ export function CertificatePopup({ open, url, security, onClose }: Props) {
       <div className="h-full bg-popover text-popover-foreground border border-border rounded-lg overflow-hidden flex flex-col">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
           <div className="flex items-center gap-2">
-            {isSecure && <Lock size={16} className="text-green-500" />}
+            {isSecure && <Lock size={16} className="text-success" />}
             {isHttp && <Unlock size={16} className="text-muted-foreground" />}
-            {isWarning && <ShieldAlert size={16} className="text-red-500" />}
+            {isWarning && <ShieldAlert size={16} className="text-destructive" />}
             <span className="text-sm font-semibold text-foreground">
               {isSecure ? 'Connection is secure' : isWarning ? 'Certificate error' : 'Connection is not secure'}
             </span>
@@ -121,7 +121,7 @@ export function CertificatePopup({ open, url, security, onClose }: Props) {
               </p>
             )}
             {isWarning && (
-              <p className="text-xs text-red-400">
+              <p className="text-xs text-destructive">
                 The certificate for this site is not valid. An attacker could intercept your connection.
               </p>
             )}

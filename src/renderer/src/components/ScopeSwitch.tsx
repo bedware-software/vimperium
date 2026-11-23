@@ -30,8 +30,8 @@ export function ScopeSwitch({ on, label, onToggle, title, className = '' }: Prop
         }`}
       >
         <span
-          className={`h-2.5 w-2.5 rounded-full bg-white shadow-sm transition-transform ${
-            on ? 'translate-x-[10px]' : 'translate-x-0'
+          className={`h-2.5 w-2.5 rounded-full shadow-sm transition-transform ${
+            on ? 'translate-x-[10px] bg-primary-foreground' : 'translate-x-0 bg-white'
           }`}
         />
       </span>
