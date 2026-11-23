@@ -86,10 +86,11 @@ function formatAccel(accel: string): string {
 // Read the parent's theme attributes so the popup window picks up the same
 // theme. The popup is its own BrowserWindow → its CSS variables must be
 // re-applied per spec rather than inherited.
-function readThemeAttrs(): { theme?: string } {
+function readThemeAttrs(): { theme?: string; themeVariant?: string } {
   const root = document.documentElement
   return {
     theme: root.getAttribute('data-theme') ?? undefined,
+    themeVariant: root.getAttribute('data-theme-variant') ?? undefined,
   }
 }
 

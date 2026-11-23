@@ -120,6 +120,9 @@ function syncThemeToPopup(popupDoc: Document): void {
   const theme = document.documentElement.getAttribute('data-theme')
   if (theme) popupDoc.documentElement.setAttribute('data-theme', theme)
   else popupDoc.documentElement.removeAttribute('data-theme')
+  const variant = document.documentElement.getAttribute('data-theme-variant')
+  if (variant) popupDoc.documentElement.setAttribute('data-theme-variant', variant)
+  else popupDoc.documentElement.removeAttribute('data-theme-variant')
   // Whether the edge's light and the mark's glitch move there too.
   syncMotionTo(popupDoc)
 }
@@ -390,7 +393,7 @@ export function DetachedWindow({
     const themeObserver = new MutationObserver(() => syncThemeToPopup(popup.document))
     themeObserver.observe(document.documentElement, {
       attributes: true,
-      attributeFilter: ['data-theme', MOTION_ATTRIBUTE],
+      attributeFilter: ['data-theme', 'data-theme-variant', MOTION_ATTRIBUTE],
     })
 
     let closeOnBlurArmed = false

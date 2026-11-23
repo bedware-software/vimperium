@@ -28,6 +28,7 @@ export interface OmniboxPopupSpec {
   /** Lowercased words the user typed — bolded in the rows. */
   terms: string[]
   theme?: string
+  themeVariant?: string
   density?: string
 }
 

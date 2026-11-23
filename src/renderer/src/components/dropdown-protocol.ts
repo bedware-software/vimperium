@@ -112,6 +112,7 @@ export interface DropdownSpec {
   // Mirrored from the parent's <html> data attributes so the popup picks up
   // the user's theme. Falls back to defaults if absent.
   theme?: string
+  themeVariant?: string
 
   // Optional non-interactive caption shown at the top of the menu — useful
   // for context menus to clarify what the actions apply to (e.g. the tab's

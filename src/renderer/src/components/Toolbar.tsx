@@ -100,10 +100,11 @@ function useDropdownEvents(openerId: string, handler: (evt: DropdownEvent) => vo
 // Capture the parent renderer's current theme so the popup window can mirror
 // it on its own <html>. CSS variables live on the popup's document, not the
 // parent's, so they have to be re-applied per window.
-function readThemeAttrs(): { theme?: string } {
+function readThemeAttrs(): { theme?: string; themeVariant?: string } {
   const root = document.documentElement
   return {
     theme: root.getAttribute('data-theme') ?? undefined,
+    themeVariant: root.getAttribute('data-theme-variant') ?? undefined,
   }
 }
 

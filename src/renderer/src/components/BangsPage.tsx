@@ -142,10 +142,11 @@ function reclaimRendererFocus(): void {
   }
 }
 
-function readThemeAttrs(): { theme?: string } {
+function readThemeAttrs(): { theme?: string; themeVariant?: string } {
   const root = document.documentElement
   return {
     theme: root.getAttribute('data-theme') ?? undefined,
+    themeVariant: root.getAttribute('data-theme-variant') ?? undefined,
   }
 }
 

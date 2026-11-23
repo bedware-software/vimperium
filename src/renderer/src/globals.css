@@ -19,23 +19,62 @@
 }
 
 /* A text field — an input, or a box around one (InputField, the address
- * bar) — the way Claude's message box is drawn: a raised fill, no border
- * but a hairline edge, and a soft shadow. Hovering darkens the edge; with
- * the caret in it the shadow deepens too. No coloured focus ring. Corners
- * come from a rounded-* class beside it. Unlayered, and its focus rule is
- * more specific than the one above, which would drop the shadow. */
+ * bar) — as the bedware design system draws it (.bw-field in @bedware/ui,
+ * which replaces this class at the components step): the field's fill, a
+ * 1px frame, near-square corners whatever rounded-* class sits beside it,
+ * the bottom right one cut; with the caret in it the frame and a bar along
+ * the bottom take the focus colour. The frame is an inset shadow, so no
+ * field changes size. Unlayered, and its focus rule is more specific than
+ * the one above, which would drop the shadow.
+ * A box is drawn by its ::before: clipping the box itself would cut off
+ * what spills past it — the mode's light round its edge (.mode-edge). */
 .field {
-  background-color: var(--color-field);
+  --field-cut: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
+  --field-frame: var(--color-input);
   border-color: transparent;
-  box-shadow: var(--field-shadow), 0 0 0 0.5px var(--field-edge);
-  transition: box-shadow 200ms ease, background-color 200ms ease;
+  border-radius: 2px;
 }
 .field:hover {
-  box-shadow: var(--field-shadow), 0 0 0 0.5px var(--field-edge-strong);
+  --field-frame: var(--bw-border-hover);
 }
 .field:focus,
 .field:focus-within {
-  box-shadow: var(--field-shadow-strong), 0 0 0 0.5px var(--field-edge-strong);
+  --field-frame: var(--color-ring);
+}
+.field:is(input, textarea, select, button) {
+  background-color: var(--color-field);
+  box-shadow: inset 0 0 0 1px var(--field-frame);
+  clip-path: var(--field-cut);
+  transition: box-shadow 200ms ease, background-color 200ms ease;
+}
+.field:is(input, textarea, select, button):focus {
+  box-shadow: inset 0 0 0 1px var(--field-frame), inset 0 -2px 0 var(--field-frame);
+}
+.field:not(input, textarea, select, button) {
+  background-color: transparent;
+}
+.field:not(input, textarea, select, button)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background-color: var(--color-field);
+  box-shadow: inset 0 0 0 1px var(--field-frame);
+  clip-path: var(--field-cut);
+  pointer-events: none;
+  transition: box-shadow 200ms ease, background-color 200ms ease;
+}
+.field:not(input, textarea, select, button):focus-within::before {
+  box-shadow: inset 0 0 0 1px var(--field-frame), inset 0 -2px 0 var(--field-frame);
+}
+/* The ::before needs the box positioned and a stacking context of its own;
+ * in the base layer, so a position utility on the box still wins. */
+@layer base {
+  .field:not(input, textarea, select, button) {
+    position: relative;
+    isolation: isolate;
+  }
 }
 
 /* A form with Vim's keys (lib/vim-form.ts, Settings). Its cursor: a ring
@@ -69,14 +108,7 @@
   outline-offset: 1px;
 }
 
-/* Text fields (.field above): the fill is the package's --color-field; the
- * edge and the shadow are this app's own, until the package's InputField
- * replaces the class. The edge follows the theme's text colour. */
 :root {
-  --field-edge: color-mix(in oklab, var(--color-foreground) 15%, transparent);
-  --field-edge-strong: color-mix(in oklab, var(--color-foreground) 30%, transparent);
-  --field-shadow: 0 0.25rem 1.25rem oklch(0 0 0 / 0.2);
-  --field-shadow-strong: 0 0.25rem 1.25rem oklch(0 0 0 / 0.4);
   /* Vim's mode on a field's edge (.mode-edge below): three colours a mode,
    * all from the brand's tokens — COMMAND the plate's (yellow on dark, black
    * with a yellow edge on light), INSERT the link's (peach, dark orange).
@@ -89,24 +121,12 @@
   --vim-edge-insert-3: color-mix(in oklab, var(--bw-link) 70%, var(--bw-error));
 }
 
-[data-theme="light"] {
-  --field-shadow: 0 0.25rem 1.25rem oklch(0 0 0 / 0.035);
-  --field-shadow-strong: 0 0.25rem 1.25rem oklch(0 0 0 / 0.075);
-}
-
-@media (prefers-color-scheme: light) {
-  [data-theme="system"] {
-    --field-shadow: 0 0.25rem 1.25rem oklch(0 0 0 / 0.035);
-    --field-shadow-strong: 0 0.25rem 1.25rem oklch(0 0 0 / 0.075);
-  }
-}
-
 
 /* ── Cinema mode ──
  * Set on the Toolbar root while the active tab's page is in HTML
  * fullscreen (video playback). The bar deliberately stays visible — its
  * surfaces drop to pure black so it blends into the video's letterbox
- * bars, regardless of the active theme. Scoped variable
+ * bars, regardless of the active theme and its brightness. Scoped variable
  * override: every themed utility inside the bar re-resolves to these. */
 [data-cinema] {
   --color-background: oklch(0.10 0 0);
@@ -123,10 +143,6 @@
   --color-input: oklch(0.18 0 0);
   --color-toolbar: oklch(0 0 0);
   --color-field: oklch(0.18 0 0);
-  --field-edge: oklch(0.9 0 0 / 0.1);
-  --field-edge-strong: oklch(0.9 0 0 / 0.2);
-  --field-shadow: 0 0 0 transparent;
-  --field-shadow-strong: 0 0 0 transparent;
 }
 
 /* ── Page fullscreen (video) ──

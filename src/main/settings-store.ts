@@ -6,6 +6,10 @@ import { PERMISSION_KINDS, type PermissionKind, type PermissionPolicy } from './
 
 export interface Settings {
   theme: 'light' | 'dark' | 'system'
+  /** Selected variant within the Light family ('light-default' | 'light-soft'). */
+  lightVariant: string
+  /** Selected variant within the Dark family ('dark-default' | 'dark-soft'). */
+  darkVariant: string
   /** Layout density — 'compact' (tight, legacy) or 'normal' (extra row gaps). */
   density: 'compact' | 'normal'
   /** Where keyboard focus lands when a new tab is created —
@@ -120,6 +124,8 @@ export interface PasswordManagerSettings {
 
 export const MAX_BINDINGS_PER_ACTION = 2
 
+const KNOWN_LIGHT_VARIANTS = new Set(['light-default', 'light-soft'])
+const KNOWN_DARK_VARIANTS = new Set(['dark-default', 'dark-soft'])
 const KNOWN_DENSITIES = new Set(['compact', 'normal'])
 const KNOWN_VIM_INDICATORS = new Set(['rim-label', 'rim', 'label', 'tint', 'base', 'dot', 'plain'])
 const KNOWN_VIM_EDGES = new Set(['comet-rail', 'comet-rail-sides', 'comet', 'comet-sides', 'aurora', 'living', 'glint', 'ember', 'off'])
@@ -168,10 +174,6 @@ function withoutRetiredKeys<T extends object>(settings: T): T {
   const copy = { ...settings } as Record<string, unknown>
   // Superseded by vimMode: panel-only vim navigation.
   delete copy.vimNavigation
-  // Brightness steps of a theme (Deep, Soft, Bright): gone with the bedware
-  // design system, which has one dark theme and one light.
-  delete copy.lightVariant
-  delete copy.darkVariant
   // Hide the Sidebar (Vim mode's keys showed it, Esc twice pinned it):
   // retired with keymap v13, its Ctrl+H/J/K/L working with the Sidebar
   // hidden; hideSidebarInInsert is what's left of the idea.
@@ -331,6 +333,8 @@ function cloneDefaultKeybindings(): Record<string, string[]> {
 
 export const DEFAULT_SETTINGS: Settings = {
   theme: 'system',
+  lightVariant: 'light-default',
+  darkVariant: 'dark-default',
   density: 'normal',
   newTabFocus: 'site',
   pageFocus: 'ignore',
@@ -676,6 +680,12 @@ export function loadSettings(): Settings {
   return withVimKeymapVersion({
     ...DEFAULT_SETTINGS,
     ...withoutRetiredKeys(saved ?? DEFAULT_SETTINGS),
+    lightVariant: KNOWN_LIGHT_VARIANTS.has(saved?.lightVariant as string)
+      ? (saved!.lightVariant as string)
+      : DEFAULT_SETTINGS.lightVariant,
+    darkVariant: KNOWN_DARK_VARIANTS.has(saved?.darkVariant as string)
+      ? (saved!.darkVariant as string)
+      : DEFAULT_SETTINGS.darkVariant,
     density: KNOWN_DENSITIES.has(saved?.density as string)
       ? (saved!.density as 'compact' | 'normal')
       : DEFAULT_SETTINGS.density,
@@ -733,6 +743,12 @@ export function saveSettings(settings: Settings): void {
   const normalizedSettings: Settings = {
     ...DEFAULT_SETTINGS,
     ...withoutRetiredKeys(settings),
+    lightVariant: KNOWN_LIGHT_VARIANTS.has(settings.lightVariant)
+      ? settings.lightVariant
+      : DEFAULT_SETTINGS.lightVariant,
+    darkVariant: KNOWN_DARK_VARIANTS.has(settings.darkVariant)
+      ? settings.darkVariant
+      : DEFAULT_SETTINGS.darkVariant,
     density: KNOWN_DENSITIES.has(settings.density)
       ? settings.density
       : DEFAULT_SETTINGS.density,
