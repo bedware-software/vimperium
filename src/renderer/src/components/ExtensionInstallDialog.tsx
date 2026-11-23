@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import { AlertTriangle, ChevronDown, ChevronRight, Loader2, Puzzle } from 'lucide-react'
 import { DetachedWindow } from './DetachedWindow'
 import { ExtensionPermissionList } from './ExtensionPermissionList'
-import { Hint } from './KeyHints'
 import { describeExtensionPermissions } from '../lib/extension-permissions'
 import { useYesNoKeys } from '../lib/dialog-keys'
+import { Button, Hint } from '@bedware/ui'
 
 export interface ExtensionInstallPreview {
   id: string
@@ -126,24 +126,20 @@ export function ExtensionInstallDialog({ preview, installing, error, onConfirm, 
               <Hint label="No" keys={['n', 'Esc']} />
             </div>
           )}
-          <button
-            type="button"
+          <Button variant="ghost"
             onClick={onCancel}
             disabled={installing}
-            className="h-8 rounded-md px-3 text-xs font-medium text-muted-foreground hover:bg-accent disabled:opacity-50"
           >
             Cancel
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button variant="primary"
             ref={confirmRef}
             onClick={onConfirm}
             disabled={installing}
-            className="flex h-8 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-70"
           >
             {installing && <Loader2 size={12} className="animate-spin" />}
             {installing ? 'Installing…' : update ? 'Reinstall' : 'Add extension'}
-          </button>
+          </Button>
         </div>
       </div>
     </DetachedWindow>

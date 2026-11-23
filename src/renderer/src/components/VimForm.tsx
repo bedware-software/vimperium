@@ -4,10 +4,11 @@
 // the cursor, for the form's hint bar.
 
 import { useLayoutEffect, useRef, useState } from 'react'
-import { Hint, RowHint, vimKeyCaps } from './KeyHints'
+import { RowHint, vimKeyCaps } from './KeyHints'
 import { useVimFormSnapshot, type VimFormController } from '../lib/vim-form'
 import type { VimMode } from '../lib/vim-mode'
 import type { VimKeymap } from '../lib/vim-keymap'
+import { Hint } from '@bedware/ui'
 
 interface Spot {
   label: string

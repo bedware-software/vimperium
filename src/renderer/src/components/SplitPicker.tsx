@@ -10,7 +10,7 @@ import { DetachedWindow, type PopupPlacement } from './DetachedWindow'
 import { TabFavicon } from './TabFavicon'
 import { CommentChip } from './CommentChip'
 import { InputField } from './InputField'
-import { Hint, HintBar, LEAVE_INSERT_CAP, RowCap, vimKeyCaps } from './KeyHints'
+import { LEAVE_INSERT_CAP, RowCap, vimKeyCaps } from './KeyHints'
 import { hintIndex, usePopupHints } from '../lib/hint-labels'
 import { SplitGlyph } from './SplitPanes'
 import { fuzzyFilter } from '../lib/fuzzy'
@@ -18,6 +18,7 @@ import { isInternalUrl } from '../lib/internal-pages'
 import { closeSplit, fillSplit, workspaceTabs, type SplitView } from '../lib/split-view'
 import { usePopupVimMode } from '../lib/vim-mode'
 import type { VimKeymap } from '../lib/vim-keymap'
+import { Hint, HintBar } from '@bedware/ui'
 
 interface Props {
   split: SplitView
@@ -182,24 +183,23 @@ export function SplitPicker({ split, paneRef, vimKeymap, focusTick }: Props) {
     >
       <div className="h-full bg-popover text-popover-foreground border border-border rounded-lg overflow-hidden flex flex-col">
         <div className="px-4 py-2.5 border-b border-border shrink-0">
-          <InputField inputRef={inputRef} mode={vim.mode} pending={vim.pending} className="h-10">
-            <SplitGlyph direction={split.direction} pane="second" className="shrink-0 text-muted-foreground" />
-            <input
-              ref={inputRef}
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={onKeyDown}
-              onFocus={vim.onBoxFocus}
-              onBlur={vim.onBoxBlur}
-              placeholder={vim.mode === 'command' && vimKeyCaps(vimKeymap, 'insert-mode')[0]
-                ? `Tab for the ${split.direction === 'right' ? 'right' : 'bottom'} side… (${vimKeyCaps(vimKeymap, 'insert-mode')[0]} to type)`
-                : `Tab for the ${split.direction === 'right' ? 'right' : 'bottom'} side…`}
-              spellCheck={false}
-              className="flex-1 min-w-0 h-full bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground"
-            />
-            <Search size={14} className="shrink-0 text-muted-foreground/60" />
-          </InputField>
+          <InputField
+            mode={vim.mode} pending={vim.pending}
+            size="lg"
+            leading={<SplitGlyph direction={split.direction} pane="second" className="shrink-0 text-muted-foreground" />}
+            trailing={<Search size={14} className="shrink-0 text-muted-foreground/60" />}
+            ref={inputRef}
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={onKeyDown}
+            onFocus={vim.onBoxFocus}
+            onBlur={vim.onBoxBlur}
+            placeholder={vim.mode === 'command' && vimKeyCaps(vimKeymap, 'insert-mode')[0]
+              ? `Tab for the ${split.direction === 'right' ? 'right' : 'bottom'} side… (${vimKeyCaps(vimKeymap, 'insert-mode')[0]} to type)`
+              : `Tab for the ${split.direction === 'right' ? 'right' : 'bottom'} side…`}
+            spellCheck={false}
+          />
         </div>
         <div ref={listRef} className="flex-1 overflow-y-auto min-h-0 py-1">
           {rows.map((row, idx) => {

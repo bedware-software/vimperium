@@ -1,3 +1,4 @@
+import { Button } from '@bedware/ui'
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useAppStore, saveStateNow, findWorkspaceCandidates, buildBookmarkHTML } from '../store/app-store'
 import { log } from '../lib/log'
@@ -239,18 +240,18 @@ function Dropdown(props: DropdownTriggerProps) {
   return (
     <div ref={triggerRef} className="relative" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
       {hint}
-      <button
+      <Button variant="secondary"
         onMouseDown={() => { pressedOpenRef.current = open }}
         // A click with no press behind it (detail 0) came from the keys —
         // Enter on the focused button, a ; label — so the list comes up
         // keyboard-driven.
         onClick={(e) => handleToggle(e.detail === 0)}
-        className="shrink-0 flex items-center gap-1.5 h-8 px-2.5 rounded-md bg-secondary hover:bg-muted text-secondary-foreground text-xs font-medium transition-colors"
+        className="shrink-0"
       >
         <Icon size={13} className="text-muted-foreground" />
         <span className="max-w-[100px] truncate">{selected?.name || label}</span>
         <ChevronDown size={12} className={`text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />
-      </button>
+      </Button>
     </div>
   )
 }
@@ -660,7 +661,7 @@ function ExtensionActions({
           : undefined
         const dynamicTitle = tabState?.title ?? action?.title
         const dynamicText = tabState?.text ?? action?.text
-        const dynamicColor = tabState?.color ?? action?.color ?? '#666'
+        const dynamicColor = tabState?.color ?? action?.color ?? 'var(--bw-text-dim)'
         const iconModified = tabState?.iconModified ?? action?.iconModified
         // Use the library's crx:// route when we have a live action entry
         // for this extension — that way chrome.action.setIcon is reflected

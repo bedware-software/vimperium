@@ -2,11 +2,12 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Lock } from 'lucide-react'
 import { DetachedWindow } from './DetachedWindow'
 import { InputField } from './InputField'
-import { Hint, LEAVE_INSERT_CAP, vimKeyCaps } from './KeyHints'
+import { LEAVE_INSERT_CAP, vimKeyCaps } from './KeyHints'
 import { usePopupVimMode } from '../lib/vim-mode'
 import { paletteKeymap } from '../lib/vim-keymap'
 import { keymapOnly, useWindowVimKeymap } from '../lib/window-vim-keymap'
 import type { HttpAuthRequest } from '../App'
+import { Button, Hint } from '@bedware/ui'
 
 interface Props {
   request: HttpAuthRequest
@@ -146,31 +147,31 @@ export function HttpAuthDialog({ request, onDone }: Props) {
           ) : null}
           <label className="flex flex-col gap-1">
             <span className="text-[11px] font-medium text-muted-foreground">User name</span>
-            <InputField inputRef={userRef} mode={fieldMode('user')} pending={vim.pending} className="h-8 rounded-lg pl-2">
-              <input
-                ref={userRef}
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                autoComplete="username"
-                {...fieldProps('user')}
-                className="flex-1 min-w-0 h-full bg-transparent border-none outline-none text-sm text-foreground"
-              />
-            </InputField>
+            <InputField
+              mode={fieldMode('user')} pending={vim.pending}
+              size="sm"
+              boxClassName="pl-2"
+              ref={userRef}
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              autoComplete="username"
+              {...fieldProps('user')}
+            />
           </label>
           <label className="flex flex-col gap-1">
             <span className="text-[11px] font-medium text-muted-foreground">Password</span>
-            <InputField inputRef={passRef} mode={fieldMode('pass')} pending={vim.pending} className="h-8 rounded-lg pl-2">
-              <input
-                ref={passRef}
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-                {...fieldProps('pass')}
-                className="flex-1 min-w-0 h-full bg-transparent border-none outline-none text-sm text-foreground"
-              />
-            </InputField>
+            <InputField
+              mode={fieldMode('pass')} pending={vim.pending}
+              size="sm"
+              boxClassName="pl-2"
+              ref={passRef}
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              {...fieldProps('pass')}
+            />
           </label>
           {wantsDomain ? (
             <p className="text-[10px] text-muted-foreground/80">Use <span className="text-foreground">DOMAIN\username</span> (or username@domain) if your organization requires it.</p>
@@ -198,19 +199,16 @@ export function HttpAuthDialog({ request, onDone }: Props) {
             {vim.mode === 'insert' && <Hint label="Command mode" keys={[LEAVE_INSERT_CAP]} />}
             <Hint label="Cancel" keys={['Esc']} />
           </div>
-          <button
-            type="button"
+          <Button variant="ghost"
             onClick={cancel}
-            className="h-8 px-3 rounded-md text-xs font-medium text-muted-foreground hover:bg-accent"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button variant="primary"
             type="submit"
-            className="h-8 px-3 rounded-md text-xs font-medium bg-primary text-primary-foreground hover:opacity-90"
           >
             Sign in
-          </button>
+          </Button>
         </div>
       </form>
     </DetachedWindow>

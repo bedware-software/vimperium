@@ -1,13 +1,15 @@
 // Dark pages' controls, shared by the address bar's popover
 // (DarkPagesButton) and Settings → Dark pages (DarkPagesSettings): the
 // Off / On / With-theme switch, the comfort sliders and a small toggle.
+// The hex colours in DarkPagePreview are the sample page's own, as a site
+// would have them — not the app's, so not tokens.
 
 import type { ReactNode } from 'react'
 import { RotateCcw } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { darkPagesActions, useDarkPages } from '../lib/dark-pages'
-import { Switch } from './Switch'
 import { DARK_PAGES_LIMITS, type DarkPagesMode } from '../../../shared/dark-pages'
+import { Button, Segmented, Switch } from '@bedware/ui'
 
 const isMac = typeof navigator !== 'undefined' && navigator.platform.includes('Mac')
 
@@ -34,42 +36,22 @@ const MODES: { id: DarkPagesMode; label: string; short: string; hint: string }[]
   { id: 'theme', label: "With Vimperium's theme", short: 'Auto', hint: "Pages are dark while Vimperium's own theme is — Settings → Appearance; under System, as the OS switches." },
 ]
 
-/** Off / On / With Vimperium's theme, as a segmented control. `vimItem`:
- *  its id for Vim's form keys (Settings). */
+/** Off / On / With Vimperium's theme. `compact`: the short names, for the
+ *  popover. `vimItem`: its id for Vim's form keys (Settings). */
 export function DarkPagesModeSwitch({ compact = false, className, vimItem }: { compact?: boolean; className?: string; vimItem?: string }) {
   const { config } = useDarkPages()
   return (
-    <div
-      role="radiogroup"
-      aria-label="Dark pages"
+    <Segmented
+      label="Dark pages"
       data-vim-item={vimItem}
-      className={cn('flex w-fit items-center rounded-md bg-secondary p-0.5', compact ? 'h-7' : 'h-9', className)}
-    >
-      {MODES.map((m) => {
-        const active = config.mode === m.id
-        return (
-          <button
-            key={m.id}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            title={m.hint}
-            onClick={() => darkPagesActions.set({ mode: m.id })}
-            className={cn(
-              'flex items-center rounded font-medium transition-colors',
-              compact ? 'h-6 px-2 text-[11px]' : 'h-8 px-3 text-xs',
-              active ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
-            )}
-          >
-            {compact ? m.short : m.label}
-          </button>
-        )
-      })}
-    </div>
+      className={className}
+      value={config.mode}
+      options={MODES.map((m) => ({ value: m.id, label: compact ? m.short : m.label, title: m.hint }))}
+      onChange={(mode) => darkPagesActions.set({ mode })}
+    />
   )
 }
 
-/** A small on/off switch — Settings' own (components/Switch.tsx). */
 export function ToggleSwitch({ on, onToggle, title, label }: { on: boolean; onToggle: () => void; title?: string; label: string }) {
   return <Switch checked={on} onChange={() => onToggle()} title={title} label={label} />
 }
@@ -119,16 +101,15 @@ export function ComfortSliders({ compact = false, disabled = false, vimItems = f
       })}
       {!compact && (
         <div className="flex justify-end">
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            icon={<RotateCcw size={12} />}
             data-vim-item={vimItems ? 'dark:reset' : undefined}
             disabled={atRest || disabled}
             onClick={() => darkPagesActions.set({ brightness: 100, contrast: 100, warmth: 0 })}
-            className="flex h-7 items-center gap-1.5 rounded-md px-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
           >
-            <RotateCcw size={12} />
             Reset
-          </button>
+          </Button>
         </div>
       )}
     </div>

@@ -38,6 +38,7 @@ import { keyTokenFromEvent } from '../lib/vim-keymap'
 import { usePageKeys, type VimMode } from '../lib/vim-mode'
 import type { VimKeymap } from '../lib/vim-keymap'
 import { cn } from '../lib/utils'
+import { Kbd } from '@bedware/ui'
 
 interface Props {
   group: TabGroup
@@ -276,7 +277,7 @@ export function GroupPage({ group, vimMode, vimPending, hintsOn }: Props) {
                   <span className="min-w-0 truncate">{entry.site}</span>
                   <span className="tabular-nums opacity-50">{entry.count}</span>
                   {/* Its key, while the keys are COMMAND's. */}
-                  {vimMode === 'command' && <kbd className="font-mono text-[10px]">{i + 1}</kbd>}
+                  {vimMode === 'command' && <Kbd className="font-mono text-[10px]">{i + 1}</Kbd>}
                 </button>
               )
             })}

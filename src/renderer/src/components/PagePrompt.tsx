@@ -5,6 +5,7 @@
 // site asking mid-typing doesn't cut in; Esc in it, once clicked, dismisses.
 // Its buttons are the mouse's: no key reaches them until it's clicked.
 
+import { Button } from '@bedware/ui'
 import type { ReactNode } from 'react'
 import { Bell, Camera, Clipboard, MapPin, Mic, Music, ShieldAlert, X, type LucideIcon } from 'lucide-react'
 import { DetachedWindow } from './DetachedWindow'
@@ -107,20 +108,16 @@ export function PermissionPrompt({
         <DismissButton onClick={dismiss} />
       </div>
       <div className="flex justify-end gap-2">
-        <button
-          type="button"
+        <Button variant="ghost"
           onClick={() => onDecide('block', true)}
-          className="h-8 rounded-md px-3 text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
         >
           Block
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button variant="primary"
           onClick={() => onDecide('allow', true)}
-          className="h-8 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:opacity-90"
         >
           Allow
-        </button>
+        </Button>
       </div>
     </PagePrompt>
   )
@@ -161,13 +158,11 @@ export function OsBlockedPrompt({
         <DismissButton onClick={onDismiss} />
       </div>
       <div className="flex justify-end">
-        <button
-          type="button"
+        <Button variant="primary"
           onClick={() => onOpenSettings(primaryKind)}
-          className="h-8 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:opacity-90"
         >
           Open System Settings
-        </button>
+        </Button>
       </div>
     </PagePrompt>
   )

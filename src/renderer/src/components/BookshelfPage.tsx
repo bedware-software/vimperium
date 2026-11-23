@@ -28,7 +28,7 @@ import { InlineRenameInput } from './InlineRenameInput'
 import { openDropdownAsync, type DropdownAction } from './dropdown-protocol'
 import { MoveBookshelfDialog, type BookshelfMoveTarget } from './MoveBookshelfDialog'
 import { ConfirmDialog } from './ConfirmDialog'
-import { KeyCap, RowCap, vimKeyCaps } from './KeyHints'
+import { RowCap, vimKeyCaps } from './KeyHints'
 import { useHintLabels, useHintTargets } from '../lib/hint-labels'
 import { isEscapeKey, usePageKeys } from '../lib/vim-mode'
 import { focusAddressFilter, useAddressFilter, type AddressFilterKeyEvent } from '../lib/address-filter'
@@ -39,6 +39,7 @@ import { keyTokenFromEvent } from '../lib/vim-keymap'
 import { log } from '../lib/log'
 import type { VimKeymap } from '../lib/vim-keymap'
 import type { VimMode } from '../lib/vim-mode'
+import { Button, Kbd } from '@bedware/ui'
 
 export interface BookshelfPageProps {
   /** The profile this window belongs to: its shelf is the one shown. */
@@ -1252,27 +1253,27 @@ export function BookshelfPage({ profileId, vimKeymap, vimMode, vimPending, hints
             </span>
           )}
           <div className="ml-auto flex items-center gap-1">
-            <button
+            <Button
+              variant="ghost"
+              icon={<Plus size={14} />}
+              keys={addKey}
               onClick={addCurrentPage}
               disabled={!pageTab}
-              className="flex h-8 min-w-0 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
               title={pageTab
                 ? titleWithKey(`Add “${pageTab.title || pageTab.url}” to the Bookshelf`, addKey)
                 : 'No page to add: open one first'}
             >
-              <Plus size={14} />
               Add page
-              {addKey && <KeyCap>{addKey}</KeyCap>}
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="ghost"
+              icon={<FolderPlus size={14} />}
+              keys={groupKey}
               onClick={() => { void groupReadings([...selectedIds]) }}
-              className="flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
               title={titleWithKey(selectedIds.size > 0 ? `New group from ${selectedIds.size} selected` : 'New group', groupKey)}
             >
-              <FolderPlus size={14} />
               New group
-              {groupKey && <KeyCap>{groupKey}</KeyCap>}
-            </button>
+            </Button>
             <button
               aria-label="Close the Bookshelf"
               onClick={() => closePage('bookshelf')}
@@ -1298,7 +1299,7 @@ export function BookshelfPage({ profileId, vimKeymap, vimMode, vimPending, hints
               <BookOpen size={30} className="mb-3 opacity-50" />
               <p className="text-sm font-medium text-foreground">Nothing on the shelf yet</p>
               <p className="mt-1 max-w-sm text-xs">
-                {addKey ? <>Press <KeyCap>{addKey}</KeyCap> or </> : null}
+                {addKey ? <>Press <Kbd>{addKey}</Kbd> or </> : null}
                 “Add page” to keep the page you were on for later.
                 Ctrl/Shift-click readings, then “New group” to group them.
               </p>

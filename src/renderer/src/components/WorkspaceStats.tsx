@@ -8,6 +8,7 @@ import type { ReactNode } from 'react'
 import { Globe, Layout, User } from 'lucide-react'
 import { useAppStore } from '../store/app-store'
 import type { Workspace } from '../store/types'
+import { Panel, PanelRow } from '@bedware/ui'
 
 function tabCount(w: Workspace): number {
   return (w.tabs?.length ?? 0) + w.tabGroups.reduce((n, g) => n + g.tabs.length, 0)
@@ -32,6 +33,7 @@ function Scope({ icon, name, title, children }: { icon: ReactNode; name: string;
   )
 }
 
+const BareRows = ({ children }: { children: ReactNode }) => <div className="flex flex-col divide-y divide-border">{children}</div>
 const Dot = () => <span className="text-muted-foreground/70">·</span>
 const Divider = () => <span className="w-px h-4 shrink-0 bg-muted-foreground/40" />
 
@@ -54,20 +56,26 @@ function useStats() {
  *  blank tab's). */
 export function WorkspaceStatsCard({ bare = false }: { bare?: boolean } = {}) {
   const { profiles, profile, workspace, profileTabs, allTabs, allWorkspaces, allGroups } = useStats()
-  const row = (icon: ReactNode, label: string, name: string | null, counts: ReactNode) => (
+  const row = (icon: ReactNode, label: string, name: string | null, counts: ReactNode) => {
+    const cells = (
+      <>
+        <div className="flex min-w-0 items-center gap-2 text-sm font-medium text-foreground">
+          <span className="shrink-0 text-muted-foreground">{icon}</span>
+          <span className="shrink-0">{label}</span>
+          {name && <span className="truncate font-normal text-muted-foreground">{name}</span>}
+        </div>
+        <div className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-sm text-muted-foreground">{counts}</div>
+      </>
+    )
     // Bare, in a panel that may be narrow: the counts drop under the label
     // rather than run over it.
-    <div className={`flex items-center justify-between gap-x-4 gap-y-1 ${bare ? 'flex-wrap py-2' : 'px-4 py-3'}`}>
-      <div className="flex min-w-0 items-center gap-2 text-sm font-medium text-foreground">
-        <span className="shrink-0 text-muted-foreground">{icon}</span>
-        <span className="shrink-0">{label}</span>
-        {name && <span className="truncate font-normal text-muted-foreground">{name}</span>}
-      </div>
-      <div className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-sm text-muted-foreground">{counts}</div>
-    </div>
-  )
+    return bare
+      ? <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2">{cells}</div>
+      : <PanelRow>{cells}</PanelRow>
+  }
+  const Frame = bare ? BareRows : Panel
   return (
-    <div className={`flex flex-col divide-y divide-border ${bare ? '' : 'border border-input rounded-md bg-card overflow-hidden'}`}>
+    <Frame>
       {workspace && row(<Layout size={14} />, 'This workspace', workspace.name, (
         <><Count n={tabCount(workspace)} one="tab" /><Dot /><Count n={workspace.tabGroups.length} one="group" /></>
       ))}
@@ -82,7 +90,7 @@ export function WorkspaceStatsCard({ bare = false }: { bare?: boolean } = {}) {
           <Count n={allTabs} one="tab" />
         </>
       ))}
-    </div>
+    </Frame>
   )
 }
 

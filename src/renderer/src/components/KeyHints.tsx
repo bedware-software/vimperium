@@ -1,65 +1,12 @@
-// The key hint bar the Downloads page introduced, shared by every keyboard
-// surface — Downloads, Search Everything, the Command Palette, Find in Page,
-// the address editor, the pickers, the Sidebar and the Bookshelf: "Label
-// <key> <key>" items in the toolbar tone, each key its own cap, always along
-// the bottom. One rule everywhere (the owner's): the bar always shows, with
-// the main keys; where there are more, it ends in "Keys ?" and ? opens
-// KeysHelp — the bar itself never grows into the full list.
+// Vimperium's own side of the key hints: caps read off the Vim keymap, a
+// row's label cap, the table of all a surface's keys. The bar, a hint and a
+// cap themselves are @bedware/ui's HintBar, Hint and Kbd.
 
 import type { ReactNode } from 'react'
+import { Button, Hint, Kbd, RowKey } from '@bedware/ui'
 import { cn } from '../lib/utils'
 import { displayKeySequence, keysFor, type VimKeymap } from '../lib/vim-keymap'
 import type { WhichKeyEntry } from '../lib/which-key'
-
-export function Hint({ label, keys }: { label: ReactNode; keys: ReactNode[] }) {
-  if (keys.length === 0) return null
-  return (
-    <span className="flex items-center gap-1 whitespace-nowrap">
-      {label}
-      {keys.map((key, i) => <kbd key={i}>{key}</kbd>)}
-    </span>
-  )
-}
-
-/** One cap at the hint bar's size wherever it sits — in a search box, or
- *  on a button whose own text is bigger. `onField`: the cap sits on a text
- *  field, whose fill is the cap's own — it takes a lighter one so it reads
- *  as a cap, the way it does on the hint bar. */
-export function KeyCap({ children, onField = false, onPrimary = false }: {
-  children: ReactNode
-  onField?: boolean
-  /** On a primary (filled) button: a see-through cap in the button's own
-   *  text colour, readable in every theme. */
-  onPrimary?: boolean
-}) {
-  return (
-    <span className="inline-flex text-[11px] font-medium leading-none">
-      <kbd data-on-field={onField ? '' : undefined} data-on-primary={onPrimary ? '' : undefined}>{children}</kbd>
-    </span>
-  )
-}
-
-interface BarProps {
-  children: ReactNode
-  /** Narrow panels: hints wrap onto more rows instead of being cut off. */
-  wrap?: boolean
-  className?: string
-}
-
-/** The bar, for the bottom of whatever it's for: the line is on top. */
-export function HintBar({ children, wrap = false, className }: BarProps) {
-  return (
-    <div
-      className={cn(
-        'flex shrink-0 items-center justify-center gap-x-3 border-t border-border bg-toolbar px-4 text-[11px] font-medium text-muted-foreground',
-        wrap ? 'flex-wrap gap-y-1.5 py-2' : 'h-10 overflow-hidden whitespace-nowrap',
-        className,
-      )}
-    >
-      {children}
-    </div>
-  )
-}
 
 /** All of a surface's keys, as a table over it — what ? brings up wherever
  *  the hint bar (always shown) names only the main ones. Covers the nearest
@@ -126,16 +73,9 @@ export function KeysHelp({ rows, onClose, children, fixed = false, columns = 1 }
  *  key bringing KeysHelp up. */
 export function KeysHelpButton({ keyCap, onClick }: { keyCap: string | undefined; onClick: () => void }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded px-1.5 py-0.5 hover:bg-secondary hover:text-foreground"
-      title="All the keys"
-      tabIndex={-1}
-    >
+    <Button variant="ghost" onClick={onClick} title="All the keys" tabIndex={-1} keys={keyCap ? [keyCap] : undefined} className="shrink-0">
       Keys
-      {keyCap && <kbd>{keyCap}</kbd>}
-    </button>
+    </Button>
   )
 }
 
@@ -162,8 +102,7 @@ export function vimKeyCapsAll(map: VimKeymap | null, command: string): string[] 
 export const LEAVE_INSERT_CAP = displayKeySequence('<C-c>')
 
 /** A list row's key in Vim mode, as a keycap filling the row's left padding
- *  (positioned by the row, so its content never moves; a span, as the
- *  global kbd style's padding would widen it): in COMMAND its label — the
+ *  (positioned by the row, so its content never moves): in COMMAND its label — the
  *  part typed so far lit, rows it no longer fits faded. Nothing in INSERT,
  *  where typing goes in the box and no key picks a row. `always`: the cap
  *  stays, empty, while there's no label to show — for a column of them that
@@ -190,18 +129,9 @@ export function RowHint({ mode, label, pending, className, always = false, index
   const typed = !numbered && pending && label.startsWith(pending) ? pending.length : 0
   const faded = !numbered && !!label && !!pending && !typed
   return (
-    <span
-      aria-hidden="true"
-      className={cn(
-        'z-10 inline-flex items-center justify-center h-[18px] min-w-4 px-px rounded-md border border-border bg-popover text-foreground font-mono font-medium text-[10px] leading-none tabular-nums shadow-[0_0_2px_rgb(0_0_0/0.1)] select-none pointer-events-none transition-opacity',
-        // A number only counts the rows: quieter than a label to type.
-        numbered && 'font-normal text-muted-foreground',
-        faded && 'opacity-30',
-        className,
-      )}
-    >
+    <RowKey quiet={numbered} className={cn('z-10 transition-opacity', faded && 'opacity-30', className)}>
       <span className="text-primary">{label.slice(0, typed)}</span>{label.slice(typed)}
-    </span>
+    </RowKey>
   )
 }
 
@@ -237,7 +167,7 @@ export function WhichKeyHints({ pending, entries }: { pending: string; entries: 
   return (
     <>
       <span className="flex items-center gap-1 whitespace-nowrap text-foreground">
-        <kbd className="font-mono text-primary">{displayKeySequence(pending)}</kbd>
+        <Kbd className="text-primary">{displayKeySequence(pending)}</Kbd>
         <span aria-hidden="true">→</span>
       </span>
       {entries.map((entry) => (

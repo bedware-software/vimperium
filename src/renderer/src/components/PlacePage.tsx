@@ -28,10 +28,11 @@ import { useHintLabels, useHintTargets, useReservedHintKeys } from '../lib/hint-
 import { usePageKeys } from '../lib/vim-mode'
 import type { VimMode } from '../lib/vim-mode'
 import { keyTokenFromEvent } from '../lib/vim-keymap'
-import { ColumnsSwitch, usePageColumns } from './ColumnsSwitch'
+import { ColumnsSwitch, PageSegmented, usePageColumns } from './ColumnsSwitch'
 import { EntityIcon, LIST_PAGE_ROOT, LIST_ROW_SCROLL, ListPageHeader, PageScopeSwitch, listBoxClass, listColumnCount } from './ListPage'
 import { GroupPill } from './GroupPill'
 import { RowCap } from './KeyHints'
+import { Button, Kbd } from '@bedware/ui'
 
 export interface PlacePageProps {
   page: 'move' | 'open-link'
@@ -569,64 +570,60 @@ export function PlacePage({ page, tabId, windowWorkspaceId, vimMode, vimPending,
         {/* The kind of place, as Search Everything's kinds: the one shown
             says how many there are, and how many the filter leaves. */}
         {kinds.length > 0 && (
-          <div className="flex h-8 shrink-0 items-center rounded-md bg-secondary p-0.5" role="radiogroup" aria-label="Where to">
-            {kinds.map((k) => {
+          <PageSegmented
+            label="Where to"
+            className="shrink-0"
+            value={shownKind}
+            onChange={setKind}
+            options={kinds.map((k) => {
               const Icon = KIND_ICONS[k]
-              const active = shownKind === k
-              return (
-                <button
-                  key={k}
-                  type="button"
-                  role="radio"
-                  aria-checked={active}
-                  tabIndex={-1}
-                  onClick={() => setKind(k)}
-                  title={`${KIND_LABELS[k]} (${KIND_KEYS[k]} in COMMAND)`}
-                  className={`flex h-7 items-center gap-1.5 rounded px-2.5 text-xs font-medium transition-colors ${
-                    active ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  <Icon size={13} />
-                  {KIND_LABELS[k]}
-                  <span className="tabular-nums opacity-50">{active ? countLabel : kindCounts[k]}</span>
-                  {vimMode === 'command' && kinds.length > 1 && <kbd className="font-mono text-[10px]">{KIND_KEYS[k]}</kbd>}
-                </button>
-              )
+              return {
+                value: k,
+                icon: <Icon size={13} />,
+                title: `${KIND_LABELS[k]} (${KIND_KEYS[k]} in COMMAND)`,
+                label: (
+                  <>
+                    {KIND_LABELS[k]}
+                    <span className="tabular-nums opacity-50">{shownKind === k ? countLabel : kindCounts[k]}</span>
+                    {vimMode === 'command' && kinds.length > 1 && <Kbd on="button">{KIND_KEYS[k]}</Kbd>}
+                  </>
+                ),
+              }
             })}
-          </div>
+          />
         )}
         {/* What Enter does, and Shift+Enter: said in full. */}
         <div className="ml-auto flex shrink-0 items-center gap-3 px-2 text-xs text-muted-foreground">
           {shownKind === 'browser' ? (
             <span className="flex items-center gap-1" title={`The browser picked is remembered for ${passOnKeys}; Settings → General changes it`}>
               {failedBrowser ? `${failedBrowser.name} couldn't open it — open in another` : 'Open in that browser'}
-              <kbd className="flex items-center font-mono text-[10px]">{enterCap}</kbd>
+              <Kbd className="flex items-center font-mono text-[10px]">{enterCap}</Kbd>
             </span>
           ) : page === 'move' ? (
             <>
               <span className="flex items-center gap-1" title="Enter moves it and shows it in its new place">
-                Move and go there <kbd className="flex items-center font-mono text-[10px]">{enterCap}</kbd>
+                Move and go there <Kbd className="flex items-center font-mono text-[10px]">{enterCap}</Kbd>
               </span>
               <span className="flex items-center gap-1" title="Shift+Enter moves it and leaves you on the tab you were on">
-                Move and stay here <kbd className="flex items-center gap-0.5 font-mono text-[10px]">⇧{enterCap}</kbd>
+                Move and stay here <Kbd className="flex items-center gap-0.5 font-mono text-[10px]">⇧{enterCap}</Kbd>
               </span>
             </>
           ) : (
-            <span className="flex items-center gap-1">Open it there <kbd className="flex items-center font-mono text-[10px]">{enterCap}</kbd></span>
+            <span className="flex items-center gap-1">Open it there <Kbd className="flex items-center font-mono text-[10px]">{enterCap}</Kbd></span>
           )}
         </div>
         {page === 'open-link' && shownKind !== 'browser' && canPassOn && (
-          <button
-            type="button"
+          <Button
+            variant="ghost"
             tabIndex={-1}
+            icon={<Globe size={13} />}
+            keys={<span className="flex items-center gap-0.5">{isMac ? '⌘' : 'Ctrl+'}{enterCap}</span>}
             onClick={() => { void passOn() }}
             title={`Pass the link on to another browser (${passOnKeys})`}
-            className="flex h-7 shrink-0 items-center gap-1.5 rounded px-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+            className="shrink-0"
           >
-            <Globe size={13} />
             {otherBrowser ? `Open in ${otherBrowser.name}` : 'Other browser'}
-            <kbd className="flex items-center gap-0.5 font-mono text-[10px] opacity-70">{isMac ? '⌘' : 'Ctrl+'}{enterCap}</kbd>
-          </button>
+          </Button>
         )}
         {scopeShown && (
           <PageScopeSwitch

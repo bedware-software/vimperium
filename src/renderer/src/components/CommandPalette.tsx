@@ -1,14 +1,15 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback, type ReactNode } from 'react'
 import { Command } from 'lucide-react'
 import { DetachedWindow } from './DetachedWindow'
 import { InputField } from './InputField'
-import { Hint, HintBar, LEAVE_INSERT_CAP, RowCap, vimKeyCaps } from './KeyHints'
+import { LEAVE_INSERT_CAP, vimKeyCaps } from './KeyHints'
 import { hintIndex, usePopupHints } from '../lib/hint-labels'
 import { useAppStore } from '../store/app-store'
 import { actionHint, type HintSettings } from '../lib/shortcut-hints'
 import { usePopupVimMode } from '../lib/vim-mode'
 import type { VimKeymap } from '../lib/vim-keymap'
 import { isSplitShown, useSplitStore } from '../lib/split-view'
+import { CommandRow, Hint, HintBar } from '@bedware/ui'
 
 interface Props {
   open: boolean
@@ -18,7 +19,6 @@ interface Props {
    *  null while Vim mode is off. */
   vimKeymap: VimKeymap | null
 }
-
 
 const isMac = navigator.platform.toLowerCase().includes('mac')
 
@@ -160,20 +160,35 @@ function fuzzyScore(query: string, text: string): number {
   return qi === q.length ? score : 0
 }
 
-function formatKeybinding(binding: string): React.ReactNode {
-  const parts = binding
+function acceleratorCaps(binding: string): string[] {
+  return binding
     .replace(/CmdOrCtrl/g, isMac ? '⌘' : 'Ctrl')
     .replace(/Shift/g, isMac ? '⇧' : 'Shift')
     .replace(/Alt/g, isMac ? '⌥' : 'Alt')
     .split('+')
     .filter(Boolean)
-  return (
-    <span className="inline-flex items-center gap-0.5">
-      {parts.map((part, i) => (
-        <kbd key={i}>{part}</kbd>
-      ))}
-    </span>
-  )
+}
+
+/** What CommandRow's cap reads, by the rules of KeyHints' RowHint (which
+ *  can't be passed as `rowKey`: it draws a RowKey of its own, and CommandRow
+ *  wraps the slot in one). The fade is the text's alone — CommandRow has no
+ *  way to style its cap. */
+function rowCap(
+  mode: 'command' | 'insert' | null,
+  label: string | undefined,
+  pending: string | undefined,
+  index: number,
+): { rowKey: ReactNode; rowKeyQuiet: boolean } {
+  if (mode !== 'command' || !label) return { rowKey: index + 1, rowKeyQuiet: true }
+  const typed = pending && label.startsWith(pending) ? pending.length : 0
+  return {
+    rowKey: (
+      <span className={pending && !typed ? 'opacity-30' : undefined}>
+        <span className="text-primary">{label.slice(0, typed)}</span>{label.slice(typed)}
+      </span>
+    ),
+    rowKeyQuiet: false,
+  }
 }
 
 export function CommandPalette({ open, onOpenChange, onAction, vimKeymap }: Props) {
@@ -249,7 +264,6 @@ export function CommandPalette({ open, onOpenChange, onAction, vimKeymap }: Prop
       .map((x) => x.cmd)
   }, [query, availableCommands])
 
-  // Group by category
   const grouped = useMemo(() => {
     const groups: { category: string; items: CommandItem[] }[] = []
     const seen = new Set<string>()
@@ -271,7 +285,6 @@ export function CommandPalette({ open, onOpenChange, onAction, vimKeymap }: Prop
     setSelectedIndex(0)
   }, [query])
 
-  // Scroll selected into view
   useEffect(() => {
     const el = listRef.current?.querySelector('[data-selected="true"]')
     el?.scrollIntoView({ block: 'nearest' })
@@ -355,26 +368,25 @@ export function CommandPalette({ open, onOpenChange, onAction, vimKeymap }: Prop
           data-detached-drag-handle
           className="px-4 py-2.5 border-b border-border shrink-0"
         >
-          <InputField inputRef={inputRef} mode={vim.mode} pending={vim.pending} className="h-10">
-            <Command size={16} className="text-muted-foreground shrink-0" />
-            <input
-              data-detached-drag-handle
-              ref={inputRef}
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={handleKeyDown}
-              onFocus={vim.onBoxFocus}
-              onBlur={vim.onBoxBlur}
-              placeholder={vim.mode === 'command' && vimKeyCaps(vimKeymap, 'insert-mode')[0]
-                ? `Type a command... (${vimKeyCaps(vimKeymap, 'insert-mode')[0]} to type)`
-                : 'Type a command...'}
-              className="flex-1 min-w-0 h-full bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground"
-            />
-          </InputField>
+          <InputField
+            mode={vim.mode} pending={vim.pending}
+            size="lg"
+            leading={<Command size={16} className="text-muted-foreground shrink-0" />}
+            data-detached-drag-handle
+            ref={inputRef}
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onFocus={vim.onBoxFocus}
+            onBlur={vim.onBoxBlur}
+            placeholder={vim.mode === 'command' && vimKeyCaps(vimKeymap, 'insert-mode')[0]
+              ? `Type a command... (${vimKeyCaps(vimKeymap, 'insert-mode')[0]} to type)`
+              : 'Type a command...'}
+          />
         </div>
 
-        <div ref={listRef} className="flex-1 overflow-y-auto py-1">
+        <div ref={listRef} role="listbox" className="flex-1 overflow-y-auto py-1">
           {grouped.map((group) => (
             <div key={group.category}>
               <div className="px-4 py-1.5 text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
@@ -391,22 +403,16 @@ export function CommandPalette({ open, onOpenChange, onAction, vimKeymap }: Prop
                 // Vim mode the hint is the command's COMMAND-mode key.
                 const hint = actionHint(hintSettings, cmd.id, getDefaultBinding(cmd.id))
                 return (
-                  <div
+                  <CommandRow
                     key={cmd.id}
                     data-selected={isSelected}
-                    className={`relative flex items-center gap-2 pl-2 pr-4 py-1.5 cursor-pointer text-sm ${
-                      isSelected ? 'bg-accent text-accent-foreground' : 'text-foreground hover:bg-accent/50'
-                    }`}
+                    selected={isSelected}
+                    {...rowCap(vim.mode, hints.labels[idx], vim.pending, idx)}
+                    keys={hint ? (hint.kind === 'vim' ? [hint.keys] : acceleratorCaps(hint.accelerator)) : undefined}
                     onClick={() => handleSelect(cmd)}
                   >
-                    <RowCap mode={vim.mode} label={hints.labels[idx]} pending={vim.pending} index={idx} bleed="-my-1.5" />
-                    <span className="min-w-0 flex-1">{cmd.label}</span>
-                    {hint && (
-                      <span className="text-xs text-muted-foreground ml-4 shrink-0 flex items-center">
-                        {hint.kind === 'vim' ? <kbd className="font-mono">{hint.keys}</kbd> : formatKeybinding(hint.accelerator)}
-                      </span>
-                    )}
-                  </div>
+                    {cmd.label}
+                  </CommandRow>
                 )
               })}
             </div>
@@ -418,7 +424,6 @@ export function CommandPalette({ open, onOpenChange, onAction, vimKeymap }: Prop
           )}
         </div>
 
-        {/* The keys, along the bottom as everywhere. */}
         <div data-detached-drag-handle>
           {vim.mode && (
 <HintBar>

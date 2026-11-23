@@ -3,10 +3,11 @@ import { ChevronUp, ChevronDown, Search, X } from 'lucide-react'
 import { useAppStore } from '../store/app-store'
 import { DetachedWindow } from './DetachedWindow'
 import { InputField } from './InputField'
-import { Hint, HintBar, LEAVE_INSERT_CAP, vimKeyCaps, vimKeyCapsAll } from './KeyHints'
+import { LEAVE_INSERT_CAP, vimKeyCaps, vimKeyCapsAll } from './KeyHints'
 import { usePopupVimMode } from '../lib/vim-mode'
 import { usePagePlacement } from '../lib/page-placement'
 import type { VimKeymap } from '../lib/vim-keymap'
+import { Hint, HintBar } from '@bedware/ui'
 
 const WIDTH = 460
 const HEIGHT = 86
@@ -178,24 +179,28 @@ export function FindPopup({ open, focusTick, onClose, anchorRef, vimKeymap }: Pr
       <div className="h-full bg-popover text-popover-foreground border border-border overflow-hidden flex flex-col">
         <div className="flex h-11 items-center gap-1.5 px-2">
           {/* The count in the field, as browsers have it; the mode at its end. */}
-          <InputField inputRef={inputRef} mode={vim.mode} pending={vim.pending} className="flex-1 h-8 rounded-lg">
-            <Search size={14} className="shrink-0 text-muted-foreground" />
-            <input
-              ref={inputRef}
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={handleKeyDown}
-              onFocus={vim.onBoxFocus}
-              onBlur={vim.onBoxBlur}
-              placeholder="Find in page"
-              spellCheck={false}
-              className="flex-1 min-w-0 bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground"
-            />
-            <span className="text-xs text-muted-foreground tabular-nums whitespace-nowrap select-none">
+          <InputField
+            mode={vim.mode} pending={vim.pending}
+            size="sm"
+            boxClassName="flex-1"
+            leading={<Search size={14} className="shrink-0 text-muted-foreground" />}
+            trailing={(
+              <>
+                <span className="text-xs text-muted-foreground tabular-nums whitespace-nowrap select-none">
               {counter}
             </span>
-          </InputField>
+              </>
+            )}
+            ref={inputRef}
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onFocus={vim.onBoxFocus}
+            onBlur={vim.onBoxBlur}
+            placeholder="Find in page"
+            spellCheck={false}
+          />
           <button
             type="button"
             onClick={() => findNext(false)}

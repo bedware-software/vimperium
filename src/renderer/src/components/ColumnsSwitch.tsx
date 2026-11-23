@@ -1,7 +1,7 @@
 // One column or two, for the pages that list rows in the page area — a
 // group's page, Search Everything. Two columns are the wide layout: the
 // page's whole width, to show as many rows at once as fit. The switch is a
-// pair of buttons, or c in COMMAND — the page's own key, ahead of the
+// pair of choices, or c in COMMAND — the page's own key, ahead of the
 // keymap while no binding of the user's starts with it; no row's label
 // starts with it then (lib/hint-labels.ts). Each page remembers its own.
 //
@@ -9,13 +9,14 @@
 // takes as many columns as fit in place of two (`many`); one that's never
 // long (its profiles) stays in one column, its switch there but locked.
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Columns2, LayoutGrid, Rows3 } from 'lucide-react'
 import { SEQUENCE_JOIN, keyTokenFromEvent } from '../../../shared/vim-keys'
 import { useWindowVimKeymap } from '../lib/window-vim-keymap'
 import { useReservedHintKeys } from '../lib/hint-labels'
 import type { VimMode } from '../lib/vim-mode'
 import { cn } from '../lib/utils'
+import { Kbd, Segmented, type SegmentedProps } from '@bedware/ui'
 
 export type Columns = 1 | 2
 
@@ -69,7 +70,18 @@ export function usePageColumns(storageKey: string): {
   return { columns, setColumns, keyFree, onKey }
 }
 
-/** The buttons, the key's cap before them while the keys are COMMAND's. */
+/** A Segmented in a list page's header, its choices out of the Tab order:
+ *  the page's keys reach them, and Tab is the page's own. The package has no
+ *  prop for it, so the attribute is set on its buttons after each render. */
+export function PageSegmented<T extends string | boolean>(props: SegmentedProps<T>) {
+  const ref = useRef<HTMLSpanElement>(null)
+  useLayoutEffect(() => {
+    ref.current?.querySelectorAll('[role="radio"]').forEach((radio) => radio.setAttribute('tabindex', '-1'))
+  })
+  return <span ref={ref} className="contents"><Segmented {...props} /></span>
+}
+
+/** The switch, the key's cap before it while the keys are COMMAND's. */
 export function ColumnsSwitch({ columns, onChange, keyFree, vimMode, many = false, locked = false, className }: {
   columns: Columns
   onChange: (columns: Columns) => void
@@ -82,6 +94,7 @@ export function ColumnsSwitch({ columns, onChange, keyFree, vimMode, many = fals
   className?: string
 }) {
   const wide = many ? 'As many columns as fit' : 'Two columns'
+  const one = { value: '1', label: <Rows3 size={14} />, title: `One column${keyFree ? ` (${COLUMNS_KEY})` : ''}` }
   if (locked) {
     return (
       <div
@@ -89,43 +102,27 @@ export function ColumnsSwitch({ columns, onChange, keyFree, vimMode, many = fals
         title="Always one column here"
         aria-disabled="true"
       >
-        {vimMode === 'command' && keyFree && <kbd className="shrink-0 font-mono text-[11px]">{COLUMNS_KEY}</kbd>}
-        <div className="flex h-8 shrink-0 items-center rounded-md bg-secondary p-0.5">
-          <span className="flex h-7 w-8 items-center justify-center rounded text-muted-foreground">
-            <Rows3 size={14} />
-          </span>
-        </div>
+        {vimMode === 'command' && keyFree && <Kbd className="shrink-0">{COLUMNS_KEY}</Kbd>}
+        {/* pointer-events-none: the hover is the wrapper's, for its title and cursor. */}
+        <PageSegmented label="Layout" value="" options={[{ ...one, title: undefined }]} onChange={() => {}} className="pointer-events-none shrink-0" />
       </div>
     )
   }
   return (
     <div className={cn('flex shrink-0 items-center gap-2', className)}>
       {vimMode === 'command' && keyFree && (
-        <kbd className="shrink-0 font-mono text-[11px]" title={`One column / ${wide.toLowerCase()}`}>{COLUMNS_KEY}</kbd>
+        <Kbd className="shrink-0" title={`One column / ${wide.toLowerCase()}`}>{COLUMNS_KEY}</Kbd>
       )}
-      <div role="radiogroup" aria-label="Layout" className="flex h-8 shrink-0 items-center rounded-md bg-secondary p-0.5">
-        {([1, 2] as const).map((n) => {
-          const Icon = n === 1 ? Rows3 : many ? LayoutGrid : Columns2
-          const active = columns === n
-          return (
-            <button
-              key={n}
-              type="button"
-              role="radio"
-              aria-checked={active}
-              tabIndex={-1}
-              onClick={() => onChange(n)}
-              title={`${n === 1 ? 'One column' : wide}${keyFree ? ` (${COLUMNS_KEY})` : ''}`}
-              className={cn(
-                'flex h-7 w-8 items-center justify-center rounded transition-colors',
-                active ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
-              )}
-            >
-              <Icon size={14} />
-            </button>
-          )
-        })}
-      </div>
+      <PageSegmented
+        label="Layout"
+        value={String(columns)}
+        options={[
+          one,
+          { value: '2', label: many ? <LayoutGrid size={14} /> : <Columns2 size={14} />, title: `${wide}${keyFree ? ` (${COLUMNS_KEY})` : ''}` },
+        ]}
+        onChange={(n) => onChange(n === '2' ? 2 : 1)}
+        className="shrink-0"
+      />
     </div>
   )
 }

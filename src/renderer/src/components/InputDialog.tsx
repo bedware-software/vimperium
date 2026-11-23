@@ -8,10 +8,11 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { DetachedWindow } from './DetachedWindow'
 import { InputField } from './InputField'
-import { Hint, HintBar, LEAVE_INSERT_CAP, vimKeyCaps } from './KeyHints'
+import { LEAVE_INSERT_CAP, vimKeyCaps } from './KeyHints'
 import { usePopupVimMode } from '../lib/vim-mode'
 import { paletteKeymap } from '../lib/vim-keymap'
 import { keymapOnly, useWindowVimKeymap } from '../lib/window-vim-keymap'
+import { Button, Hint, HintBar } from '@bedware/ui'
 
 interface Props {
   open: boolean
@@ -100,46 +101,40 @@ export function InputDialog({ open, title, placeholder, defaultValue = '', confi
       <div className="h-full bg-popover text-popover-foreground flex flex-col">
         <div className="flex-1 min-h-0 p-4 flex flex-col">
           <h3 className="text-sm font-semibold text-foreground mb-3">{title}</h3>
-          <InputField inputRef={inputRef} mode={vim.mode} pending={vim.pending} className="h-9">
-            <input
-              ref={inputRef}
-              type="text"
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  handleSubmit()
-                } else if (e.key === 'Escape') {
-                  e.preventDefault()
-                  // Kept from the popup's own Esc (closing): one cancel a
-                  // press. In Vim mode Esc never gets here — the dialog's
-                  // Vim keys cancel it.
-                  e.stopPropagation()
-                  onCancel()
-                }
-              }}
-              onFocus={vim.onBoxFocus}
-              onBlur={vim.onBoxBlur}
-              placeholder={placeholder}
-              className="flex-1 min-w-0 h-full bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground"
-            />
-          </InputField>
+          <InputField
+            mode={vim.mode} pending={vim.pending}
+            ref={inputRef}
+            type="text"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                handleSubmit()
+              } else if (e.key === 'Escape') {
+                e.preventDefault()
+                // Kept from the popup's own Esc (closing): one cancel a
+                // press. In Vim mode Esc never gets here — the dialog's
+                // Vim keys cancel it.
+                e.stopPropagation()
+                onCancel()
+              }
+            }}
+            onFocus={vim.onBoxFocus}
+            onBlur={vim.onBoxBlur}
+            placeholder={placeholder}
+          />
           <div className="flex justify-end gap-2 mt-auto pt-3">
-            <button
-              type="button"
+            <Button variant="ghost"
               onClick={onCancel}
-              className="h-8 px-3 rounded-md text-xs font-medium text-muted-foreground hover:bg-accent"
             >
               Cancel
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button variant="primary"
               onClick={handleSubmit}
-              className="h-8 px-3 rounded-md text-xs font-medium bg-primary text-primary-foreground hover:opacity-90"
             >
               {confirmLabel}
-            </button>
+            </Button>
           </div>
         </div>
         <HintBar>

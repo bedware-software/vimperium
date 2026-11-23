@@ -8,13 +8,14 @@ import { Image, Navigation } from 'lucide-react'
 import { useAppStore } from '../store/app-store'
 import { DetachedWindow, type PopupPlacement } from './DetachedWindow'
 import { InputField } from './InputField'
-import { Hint, HintBar, KeyCap, LEAVE_INSERT_CAP } from './KeyHints'
+import { LEAVE_INSERT_CAP } from './KeyHints'
 import { ModeEdge } from './ModeEdge'
 import { cyrillicReadings } from '../lib/translit'
 import { cn } from '../lib/utils'
 import { isCopyKey } from '../lib/vim-mode'
 import { displayKeySequence } from '../lib/vim-keymap'
 import { useVimEdge, type VimEdge } from '../lib/vim-edge'
+import { Button, Hint, HintBar, InputField as Field } from '@bedware/ui'
 
 const WIDTH = 660
 // The field's row (h-11), the hint bar (h-10), the border.
@@ -295,18 +296,17 @@ export function GoPanel({ open, focusTick, onClose, anchorRef }: {
   // The address bar's comet, whichever it is; a comet of its own otherwise.
   const smallEdge: VimEdge = chosenEdge.startsWith('comet') ? chosenEdge : 'comet-sides'
 
-  const input = (
-    <input
-      ref={inputRef}
-      type="text"
-      value={query}
-      onChange={(e) => setQuery(e.target.value)}
-      onKeyDown={handleKeyDown}
-      placeholder={small ? 'Go' : 'A link or a button, by what it says'}
-      spellCheck={false}
-      className="flex-1 min-w-0 bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground"
-    />
-  )
+  const inputProps = {
+    ref: inputRef,
+    type: 'text',
+    value: query,
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value),
+    onKeyDown: handleKeyDown,
+    placeholder: small ? 'Go' : 'A link or a button, by what it says',
+    spellCheck: false,
+    size: 'sm',
+    leading: <Navigation size={14} />,
+  } as const
   const count = <span className="text-xs text-muted-foreground tabular-nums whitespace-nowrap select-none">{counter}</span>
 
   return (
@@ -333,57 +333,56 @@ export function GoPanel({ open, focusTick, onClose, anchorRef }: {
       {small ? (
         // Dragged by the margin round the field; a double click puts it back.
         <div data-detached-drag-handle onDoubleClick={resetOffset} className="h-full bg-popover text-popover-foreground border border-border flex items-center px-3 cursor-move">
-          <div
-            data-detached-no-drag
-            onDoubleClick={(e) => e.stopPropagation()}
-            onMouseDown={(e) => {
-              if (e.target === inputRef.current) return
-              e.preventDefault()
-              inputRef.current?.focus()
-            }}
-            className="field relative flex h-8 min-w-0 flex-1 items-center gap-2 rounded-lg pl-3 pr-2.5 cursor-text"
-          >
-            <Navigation size={14} className="shrink-0 text-muted-foreground" />
-            {input}
-            {count}
-            <button
-              type="button"
-              onClick={toggleAttrs}
-              title={iconsTitle}
-              className={cn('shrink-0', attrs ? 'text-primary' : 'text-muted-foreground/50')}
+          <div data-detached-no-drag onDoubleClick={(e) => e.stopPropagation()} className="min-w-0 flex-1">
+            <Field
+              {...inputProps}
+              trailing={(
+                <>
+                  {count}
+                  <button
+                    type="button"
+                    onClick={toggleAttrs}
+                    title={iconsTitle}
+                    className={cn('shrink-0', attrs ? 'text-primary' : 'text-muted-foreground/50')}
+                  >
+                    <Image size={14} />
+                  </button>
+                </>
+              )}
             >
-              <Image size={14} />
-            </button>
-            <ModeEdge mode="command" edge={smallEdge} pace={SMALL_PACE} />
+              <ModeEdge mode="command" edge={smallEdge} pace={SMALL_PACE} />
+            </Field>
           </div>
         </div>
       ) : (
         <div className="h-full bg-popover text-popover-foreground border border-border overflow-hidden flex flex-col">
           <div className="flex h-11 items-center gap-1.5 px-2">
-            <InputField inputRef={inputRef} mode={null} className="flex-1 h-8 rounded-lg">
-              <Navigation size={14} className="shrink-0 text-muted-foreground" />
-              {input}
-              {result && result.total > 0 && query && (
-                <span className="max-w-[16rem] shrink-0 truncate text-xs text-muted-foreground select-none" title={result.href || result.label}>
-                  {result.byAttr ? 'title: ' : ''}{result.label}
-                </span>
+            <InputField
+              {...inputProps}
+              mode={null}
+              boxClassName="flex-1"
+              trailing={(
+                <>
+                  {result && result.total > 0 && query && (
+                    <span className="max-w-[16rem] shrink-0 truncate text-xs select-none" title={result.href || result.label}>
+                      {result.byAttr ? 'title: ' : ''}{result.label}
+                    </span>
+                  )}
+                  {count}
+                </>
               )}
-              {count}
-            </InputField>
-            <button
-              type="button"
+            />
+            <Button
               // The box keeps the keyboard.
               onMouseDown={(e) => e.preventDefault()}
               onClick={toggleAttrs}
               title={iconsTitle}
-              className={cn(
-                'flex h-8 shrink-0 items-center gap-1.5 rounded-lg border px-2 text-[11px] font-medium whitespace-nowrap select-none',
-                attrs ? 'border-primary/50 bg-primary/15 text-primary' : 'border-border text-muted-foreground',
-              )}
+              aria-pressed={attrs}
+              keys="Tab"
+              className="shrink-0"
             >
               Icons: {attrs ? 'on' : 'off'}
-              <KeyCap>Tab</KeyCap>
-            </button>
+            </Button>
           </div>
           {/* Also the handle the panel is dragged by; a double click puts it back. */}
           <div data-detached-drag-handle onDoubleClick={resetOffset} className="cursor-move select-none">

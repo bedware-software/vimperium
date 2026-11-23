@@ -6,11 +6,13 @@
 @import "@bedware/ui/fonts.css";
 @import "@bedware/ui/tokens.css";
 @import "@bedware/ui/tailwind-theme.css";
+/* In the components layer, so a Tailwind utility on a bw-* element still wins. */
+@import "@bedware/ui/styles.css" layer(components);
 
 /* Suppress Chromium's default :focus-visible ring everywhere. The default
  * outline shows up most visibly on right-click context menus and
  * dropdown rows, and the controls that need focus shown show it their own
- * way (text fields: .field below). Off across the board keeps the chrome
+ * way (text fields: their frame). Off across the board keeps the chrome
  * visually consistent. */
 *:focus,
 *:focus-visible {
@@ -18,16 +20,13 @@
   box-shadow: none;
 }
 
-/* A text field — an input, or a box around one (InputField, the address
- * bar) — as the bedware design system draws it (.bw-field in @bedware/ui,
- * which replaces this class at the components step): the field's fill, a
- * 1px frame, near-square corners whatever rounded-* class sits beside it,
- * the bottom right one cut; with the caret in it the frame and a bar along
- * the bottom take the focus colour. The frame is an inset shadow, so no
- * field changes size. Unlayered, and its focus rule is more specific than
- * the one above, which would drop the shadow.
- * A box is drawn by its ::before: clipping the box itself would cut off
- * what spills past it — the mode's light round its edge (.mode-edge). */
+/* The field's look for what @bedware/ui's InputField can't be: the address
+ * bar's box (not an input), a textarea, the inline rename, Settings' edge
+ * previews. Same drawing as .bw-field--box: fill, 1px frame, bottom right
+ * corner cut, focus colour on the frame and a bar along the bottom. A box is
+ * drawn by its ::before: clipping the box itself would cut off the mode's
+ * light round its edge (.mode-edge). Unlayered, and its focus rule is more
+ * specific than the one above, which would drop the shadow. */
 .field {
   --field-cut: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
   --field-frame: var(--color-input);
@@ -375,87 +374,40 @@ html[data-page-fullscreen] body {
   min-width: calc-size(max-content, min(size, 3rem));
 }
 
-/* ── kbd key caps ── */
-kbd {
+/* Vim's mode, shown as a key cap (VimModeBadge): @bedware/ui's cap, a little
+ * bigger, one width for CMD / INS so a switch doesn't shift what's beside
+ * it, and the mode's colour shown as Settings → Appearance says
+ * (data-indicator, lib/vim-indicator.ts). */
+.bw-kbd.vim-mode {
   display: inline-flex;
-  align-items: center;
   justify-content: center;
-  min-width: 1.4em;
-  padding: 3px 6px;
   font-family: var(--font-sans);
-  font-size: 0.9em;
-  line-height: 1;
-  border: 1.5px solid var(--color-border);
-  border-radius: 6px;
-  background: var(--color-secondary);
-  box-shadow: none;
-}
-
-/* A cap sitting on a text field (Downloads' search box): the field's fill is
- * the cap's own, so it takes a lighter one to read as a cap, as it does on
- * the hint bar. The light themes' white caps already stand out — their
- * rules below win. */
-kbd[data-on-field] {
-  background: var(--color-muted);
-  border-color: var(--color-muted);
-}
-
-[data-theme="light"] kbd {
-  background: var(--color-popover);
-  border-color: var(--color-border);
-  box-shadow: none;
-}
-
-@media (prefers-color-scheme: light) {
-  [data-theme="system"] kbd {
-    background: var(--color-popover);
-    border-color: var(--color-border);
-    box-shadow: none;
-  }
-}
-
-/* A cap on a primary button (a dialog's Save): the dark themes' cap fill
- * under the button's dark text was unreadable, so it's a tint of that text
- * instead, the text itself showing through. After the theme rules, which it
- * overrides. */
-kbd[data-on-primary] {
-  color: inherit;
-  background: color-mix(in oklch, currentColor 14%, transparent);
-  border-color: color-mix(in oklch, currentColor 30%, transparent);
-}
-
-/* Vim's mode, shown as a key cap (VimModeBadge): the caps above, a little
- * bigger, one width for CMD / WEB / INS so a switch doesn't shift what's
- * beside it, and the mode's colour shown as Settings → Appearance says
- * (data-indicator, lib/vim-indicator.ts). After the theme rules, which it
- * overrides. */
-kbd.vim-mode {
   width: 42px;
   padding: 4px 0;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.04em;
 }
-kbd.vim-mode[data-mode="command"] { --vim-c: var(--color-vim-command); --vim-t: var(--color-vim-command-text); }
-kbd.vim-mode[data-mode="insert"] { --vim-c: var(--color-vim-insert); --vim-t: var(--color-vim-insert-text); }
-kbd.vim-mode[data-indicator="rim-label"] { border-color: var(--vim-c); color: var(--vim-t); }
-kbd.vim-mode[data-indicator="rim"] { border-color: var(--vim-c); }
-kbd.vim-mode[data-indicator="label"] { color: var(--vim-t); }
+.bw-kbd.vim-mode[data-mode="command"] { --vim-c: var(--color-vim-command); --vim-t: var(--color-vim-command-text); }
+.bw-kbd.vim-mode[data-mode="insert"] { --vim-c: var(--color-vim-insert); --vim-t: var(--color-vim-insert-text); }
+.bw-kbd.vim-mode[data-indicator="rim-label"] { border-color: var(--vim-c); color: var(--vim-t); }
+.bw-kbd.vim-mode[data-indicator="rim"] { border-color: var(--vim-c); }
+.bw-kbd.vim-mode[data-indicator="label"] { color: var(--vim-t); }
 /* The wash is an image over the cap's own fill, whichever the theme gives. */
-kbd.vim-mode[data-indicator="tint"] {
+.bw-kbd.vim-mode[data-indicator="tint"] {
   border-color: var(--vim-c);
   background-image: linear-gradient(color-mix(in oklab, var(--vim-c) 18%, transparent), color-mix(in oklab, var(--vim-c) 18%, transparent));
 }
 /* A thicker bottom edge, the padding giving back what it adds. */
-kbd.vim-mode[data-indicator="base"] {
+.bw-kbd.vim-mode[data-indicator="base"] {
   border-bottom: 3px solid var(--vim-c);
   padding-bottom: 2.5px;
 }
-kbd.vim-mode[data-indicator="dot"] {
+.bw-kbd.vim-mode[data-indicator="dot"] {
   width: 50px;
   gap: 4px;
 }
-kbd.vim-mode[data-indicator="dot"]::before {
+.bw-kbd.vim-mode[data-indicator="dot"]::before {
   content: '';
   width: 6px;
   height: 6px;

@@ -1,5 +1,6 @@
 import type { VimMode } from '../lib/vim-mode'
 import { useVimIndicator, type VimIndicator } from '../lib/vim-indicator'
+import { Kbd } from '@bedware/ui'
 
 interface Props {
   mode: VimMode
@@ -19,7 +20,7 @@ const MODE_STYLE: Record<VimMode, { label: string; title: string }> = {
 }
 
 /** Vim's mode as a key cap, the hint bars' kind: CMD or INS, in the
- *  mode's colour the way Settings → Appearance says (kbd.vim-mode in
+ *  mode's colour the way Settings → Appearance says (.vim-mode in
  *  globals.css). The keys typed so far of an unfinished sequence show as a
  *  cap to its left. */
 export function VimModeBadge({ mode, pending, size = 'sm', indicator }: Props) {
@@ -30,10 +31,10 @@ export function VimModeBadge({ mode, pending, size = 'sm', indicator }: Props) {
       className={`relative shrink-0 flex items-center select-none ${size === 'field' ? 'mr-2' : ''}`}
       style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
     >
-      <kbd className="vim-mode" data-mode={mode} data-indicator={indicator ?? chosen} title={style.title}>{style.label}</kbd>
+      <Kbd className="vim-mode" data-mode={mode} data-indicator={indicator ?? chosen} title={style.title}>{style.label}</Kbd>
       {pending && (
         <span className="absolute right-full mr-1.5 top-1/2 -translate-y-1/2 flex text-[11px] font-medium">
-          <kbd>{pending}</kbd>
+          <Kbd>{pending}</Kbd>
         </span>
       )}
     </span>

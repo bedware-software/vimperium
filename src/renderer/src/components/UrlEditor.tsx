@@ -28,12 +28,13 @@ import { useAppStore } from '../store/app-store'
 import { TabFavicon } from './TabFavicon'
 import { DetachedWindow, type PopupPlacement } from './DetachedWindow'
 import { InputField } from './InputField'
-import { Hint, HintBar, LEAVE_INSERT_CAP, vimKeyCaps } from './KeyHints'
+import { LEAVE_INSERT_CAP, vimKeyCaps } from './KeyHints'
 import { closeUrlEditor, useUrlEditorStore } from '../lib/url-editor'
 import { useAddressSuggestions, type Disposition } from '../lib/use-address-suggestions'
 import { blockByKey, blockKeyLabel, isBlockKey, removeBlock, replaceBlock, siteOnly, startBlock, upOneLevel, urlBlocks, type UrlBlock } from '../lib/url-blocks'
 import { isEscapeKey, usePopupVimMode } from '../lib/vim-mode'
 import { keyTokenFromEvent, type VimKeymap } from '../lib/vim-keymap'
+import { Hint, HintBar, Kbd } from '@bedware/ui'
 
 interface Props {
   /** The page area: the editor sits at the top of it. */
@@ -641,9 +642,9 @@ export function UrlEditor({ anchorRef, vimKeymap }: Props) {
             {target.title || 'Untitled'}
           </span>
           {intent === 'copy' && (
-            <kbd
-              className="shrink-0 font-mono text-[11px]"
-              data-on-field=""
+            <Kbd
+              className="shrink-0"
+              on="field"
               onMouseDown={(e) => {
                 e.preventDefault()
                 copyTitle()
@@ -651,7 +652,7 @@ export function UrlEditor({ anchorRef, vimKeymap }: Props) {
               }}
             >
               {TITLE_KEY}
-            </kbd>
+            </Kbd>
           )}
         </div>
 
@@ -660,41 +661,34 @@ export function UrlEditor({ anchorRef, vimKeymap }: Props) {
               in the field types at the end. */}
           <div>
             <InputField
-              inputRef={inputRef}
-              onPress={() => typeAt(valueRef.current.length)}
-              mode={vim.mode}
-              pending={vim.pending}
-              addressBar
-              className="h-12"
-            >
-              <input
-                ref={bindInput}
-                type="text"
-                value={value}
-                role="combobox"
-                aria-autocomplete="both"
-                aria-expanded={sugg.popupOpen}
-                // onInput, not onChange: see useAddressSuggestions.
-                onInput={sugg.handleInput}
-                onChange={() => {}}
-                onKeyDown={onKeyDown}
-                onFocus={() => {
-                  vim.onBoxFocus()
-                  window.electronAPI.omniboxPrewarm?.()
-                }}
-                onBlur={(e) => {
-                  lastSelRef.current = { start: e.currentTarget.selectionStart ?? 0, end: e.currentTarget.selectionEnd ?? 0 }
-                  vim.onBoxBlur()
-                }}
-                onScroll={syncScroll}
-                onSelect={syncScroll}
-                spellCheck={false}
-                autoComplete="off"
-                placeholder={placeholder}
-                style={{ fontSize: fontPx, paddingLeft: indent }}
-                className="url-editor-text flex-1 min-w-0 h-full bg-transparent border-none outline-none leading-none text-foreground placeholder:text-muted-foreground"
-              />
-            </InputField>
+              onPress={() => typeAt(valueRef.current.length)} mode={vim.mode} pending={vim.pending} addressBar
+              boxClassName="h-12"
+              ref={bindInput}
+              type="text"
+              value={value}
+              role="combobox"
+              aria-autocomplete="both"
+              aria-expanded={sugg.popupOpen}
+              // onInput, not onChange: see useAddressSuggestions.
+              onInput={sugg.handleInput}
+              onChange={() => {}}
+              onKeyDown={onKeyDown}
+              onFocus={() => {
+                vim.onBoxFocus()
+                window.electronAPI.omniboxPrewarm?.()
+              }}
+              onBlur={(e) => {
+                lastSelRef.current = { start: e.currentTarget.selectionStart ?? 0, end: e.currentTarget.selectionEnd ?? 0 }
+                vim.onBoxBlur()
+              }}
+              onScroll={syncScroll}
+              onSelect={syncScroll}
+              spellCheck={false}
+              autoComplete="off"
+              placeholder={placeholder}
+              style={{ fontSize: fontPx, paddingLeft: indent }}
+            className="url-editor-text leading-none"
+            />
           </div>
 
           {/* The blocks under the text, each with its quick-edit key — lit
@@ -716,9 +710,9 @@ export function UrlEditor({ anchorRef, vimKeymap }: Props) {
                     {block.label}
                   </span>
                   {block.key && (
-                  <kbd
-                    className={`mt-0.5 font-mono text-[11px] transition-opacity ${intent ? 'opacity-100' : 'opacity-45'}`}
-                    data-on-field={intent ? '' : undefined}
+                  <Kbd
+                    className={`mt-0.5 transition-opacity ${intent ? 'opacity-100' : 'opacity-45'}`}
+                    on={intent ? 'field' : undefined}
                     onMouseDown={(e) => {
                       // A click on a block's key changes that block.
                       e.preventDefault()
@@ -727,7 +721,7 @@ export function UrlEditor({ anchorRef, vimKeymap }: Props) {
                     }}
                   >
                     {block.key}
-                  </kbd>
+                  </Kbd>
                   )}
                 </div>
               ))}

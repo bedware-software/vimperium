@@ -29,7 +29,8 @@ import {
 import { log } from '../lib/log'
 import { focusAddressFilter, useAddressFilter, type AddressFilterKeyEvent } from '../lib/address-filter'
 import { openDropdownAsync, type DropdownAction } from './dropdown-protocol'
-import { Hint, HintBar, KeyCap, KeysHelp, KeysHelpButton } from './KeyHints'
+import { KeysHelp, KeysHelpButton } from './KeyHints'
+import { Badge, Button, Hint, HintBar, Kbd, Panel, PanelRow, Segmented, Switch, InputField as TextField } from '@bedware/ui'
 
 type SortKey = 'category' | 'trigger' | 'name'
 type SortDir = 'asc' | 'desc'
@@ -103,6 +104,8 @@ const KEY_HELP: Array<[BangsAction[], string]> = [
 ]
 
 const ENGINE_NAMES = Object.keys(SEARCH_ENGINES)
+// The engine switch's value for an address of the user's own: no engine's name.
+const CUSTOM_ENGINE = '\u0000custom'
 
 function loadSort(): SortState {
   try {
@@ -671,62 +674,41 @@ export function BangsPage() {
         {/* Where plain queries go; Add and Reset. */}
         <div className="mx-auto flex max-w-4xl flex-wrap items-center gap-x-3 gap-y-2 px-6 pb-3">
           <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            Search engine {keyOf('engine') && <KeyCap>{keyOf('engine')}</KeyCap>}
+            Search engine {keyOf('engine') && <Kbd>{keyOf('engine')}</Kbd>}
           </span>
-          <div className="flex h-9 items-center rounded-md bg-secondary p-0.5" role="radiogroup" aria-label="Search engine">
-            {ENGINE_NAMES.map((name) => {
-              const active = !customActive && currentEngine === name
-              return (
-                <button
-                  key={name}
-                  role="radio"
-                  aria-checked={active}
-                  onClick={() => setEngine(SEARCH_ENGINES[name])}
-                  className={`flex h-8 items-center rounded px-2.5 text-xs font-medium transition-colors ${
-                    active ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                  title={SEARCH_ENGINES[name]}
-                >
-                  {name}
-                </button>
-              )
-            })}
-            <button
-              role="radio"
-              aria-checked={customActive}
-              onClick={pickCustom}
-              className={`flex h-8 items-center rounded px-2.5 text-xs font-medium transition-colors ${
-                customActive ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-              }`}
-              title="Your own search address, %s standing for the query"
-            >
-              Custom
-            </button>
-          </div>
+          <Segmented
+            label="Search engine"
+            value={customActive ? CUSTOM_ENGINE : currentEngine ?? ''}
+            options={[
+              ...ENGINE_NAMES.map((name) => ({ value: name, label: name, title: SEARCH_ENGINES[name] })),
+              { value: CUSTOM_ENGINE, label: 'Custom', title: 'Your own search address, %s standing for the query' },
+            ]}
+            onChange={(name) => { if (name === CUSTOM_ENGINE) pickCustom(); else setEngine(SEARCH_ENGINES[name]) }}
+          />
           <div className="ml-auto flex items-center gap-1.5">
-            <button
+            <Button
+              variant="ghost"
+              icon={<Plus size={14} />}
+              keys={keyOf('add')}
               onClick={() => openEditor('add')}
-              className="flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
               title={titleWithKey('Add a bang', keyOf('add'))}
             >
-              <Plus size={14} />
               Add
-              {keyOf('add') && <KeyCap>{keyOf('add')}</KeyCap>}
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="ghost"
+              icon={<RotateCcw size={14} />}
+              keys={keyOf('reset')}
               onClick={reset}
-              className="flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
               title={`Put the default bangs back, dropping your changes (${keyOf('reset') ? `${keyOf('reset')} twice, or click twice` : 'click twice'})`}
             >
-              <RotateCcw size={14} />
               Reset
-              {keyOf('reset') && <KeyCap>{keyOf('reset')}</KeyCap>}
-            </button>
+            </Button>
           </div>
         </div>
         {customActive && (
           <div className="mx-auto max-w-4xl px-6 pb-3">
-            <input
+            <TextField
               ref={customRef}
               type="text"
               value={customDraft ?? search?.searchEngine ?? ''}
@@ -736,7 +718,7 @@ export function BangsPage() {
               onBlur={() => { if (customDraft !== null && !customProblem && customDraft.trim() !== search?.searchEngine) commitCustom() }}
               placeholder="https://example.com/search?q=%s"
               spellCheck={false}
-              className="h-9 w-full field rounded-xl px-3 font-mono text-sm text-foreground outline-none placeholder:text-muted-foreground"
+              mono
             />
             <p className={`mt-1 text-[11px] ${customDraft !== null && customProblem && customDraft.trim() ? 'text-destructive' : 'text-muted-foreground'}`}>
               {customDraft !== null && customProblem && customDraft.trim()
@@ -749,19 +731,17 @@ export function BangsPage() {
         {/* Whether !words fire; what the filter (the address bar) narrowed
             it to; the sort. */}
         <div className="mx-auto flex max-w-4xl items-center gap-3 px-6 pb-4">
-          <button
+          <Button
             role="switch"
             aria-checked={bangsOn}
+            icon={bangsOn ? <Power size={14} /> : <PowerOff size={14} />}
+            keys={keyOf('bangs')}
             onClick={toggleBangs}
-            className={`flex h-9 shrink-0 items-center gap-2 rounded-md px-2.5 text-xs font-medium transition-colors ${
-              bangsOn ? 'bg-primary/15 text-primary hover:bg-primary/20' : 'bg-secondary text-muted-foreground hover:text-foreground'
-            }`}
+            className="shrink-0"
             title={titleWithKey('Bangs on: !w vim goes straight to Wikipedia. Off: it goes to the search engine as typed', keyOf('bangs'))}
           >
-            {bangsOn ? <Power size={14} /> : <PowerOff size={14} />}
             {bangsOn ? 'Bangs on' : 'Bangs off'}
-            {keyOf('bangs') && <KeyCap>{keyOf('bangs')}</KeyCap>}
-          </button>
+          </Button>
           <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
             {query.trim()
               ? <>Filtered by “<span className="text-foreground">{query.trim()}</span>” · {visible.length} of {bangs.length}</>
@@ -769,32 +749,30 @@ export function BangsPage() {
           </span>
           <div className="flex items-center gap-2">
             <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              Sort by {keyOf('sort') && <KeyCap>{keyOf('sort')}</KeyCap>}
+              Sort by {keyOf('sort') && <Kbd>{keyOf('sort')}</Kbd>}
             </span>
-            <div className="flex h-9 items-center rounded-md bg-secondary p-0.5" role="radiogroup" aria-label="Sort bangs">
-              {SORT_KEYS.map((key) => {
+            <Segmented
+              label="Sort bangs"
+              value={sort.key}
+              options={SORT_KEYS.map((key) => {
                 const active = sort.key === key
-                return (
-                  <button
-                    key={key}
-                    role="radio"
-                    aria-checked={active}
-                    onClick={() => pickSort(key)}
-                    className={`flex h-8 items-center gap-1 rounded px-2.5 text-xs font-medium transition-colors ${
-                      active ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                    title={active
-                      ? titleWithKey('Reverse the order', keyOf('reverse'))
-                      : `Sort by ${SORT_LABELS[key].toLowerCase()}${keyOf('sort') ? ` (${keyOf('sort')} cycles)` : ''}`}
-                  >
-                    {SORT_LABELS[key]}
-                    {active && (sort.dir === 'desc'
-                      ? <ArrowDownWideNarrow size={13} />
-                      : <ArrowUpNarrowWide size={13} />)}
-                  </button>
-                )
+                return {
+                  value: key,
+                  label: (
+                    <>
+                      {SORT_LABELS[key]}
+                      {active && (sort.dir === 'desc'
+                        ? <ArrowDownWideNarrow size={13} />
+                        : <ArrowUpNarrowWide size={13} />)}
+                    </>
+                  ),
+                  title: active
+                    ? titleWithKey('Reverse the order', keyOf('reverse'))
+                    : `Sort by ${SORT_LABELS[key].toLowerCase()}${keyOf('sort') ? ` (${keyOf('sort')} cycles)` : ''}`,
+                }
               })}
-            </div>
+              onChange={pickSort}
+            />
           </div>
         </div>
       </div>
@@ -812,9 +790,9 @@ export function BangsPage() {
               <Zap size={30} className="mb-3 opacity-50" />
               <p className="text-sm font-medium text-foreground">No bangs</p>
               <p className="mt-1 text-xs">
-                {keyOf('add') ? <>Add one with <KeyCap>{keyOf('add')}</KeyCap></> : 'Add one'}
+                {keyOf('add') ? <>Add one with <Kbd>{keyOf('add')}</Kbd></> : 'Add one'}
                 {keyOf('reset')
-                  ? <>, or bring the defaults back with <KeyCap>{keyOf('reset')}</KeyCap> twice.</>
+                  ? <>, or bring the defaults back with <Kbd>{keyOf('reset')}</Kbd> twice.</>
                   : ', or bring the defaults back with Reset.'}
               </p>
             </div>
@@ -961,7 +939,6 @@ function BangEditor({
       submit()
     }
   }
-  const field = 'h-9 w-full field rounded-xl px-3 text-sm text-foreground outline-none placeholder:text-muted-foreground'
   const label = 'mb-1 block text-xs font-medium text-muted-foreground'
 
   return (
@@ -990,75 +967,55 @@ function BangEditor({
             <X size={13} />
           </button>
         </div>
-        <div className="mb-4 flex items-start justify-between gap-4 rounded-md bg-secondary/60 px-3 py-2.5">
-          <div className="min-w-0">
-            <div className="text-sm font-medium text-foreground">Turned on</div>
-            <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
-              {draft.enabled
-                ? `!${trigger} in the address bar opens this site's search.`
-                : `Kept in the list, but the address bar ignores !${trigger} — it goes to the search engine as typed.`}
-            </p>
-          </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={draft.enabled}
-            aria-label="Turned on"
-            onClick={() => setDraft({ ...draft, enabled: !draft.enabled })}
-            className={`relative mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-full px-0.5 transition-colors ${
-              draft.enabled ? 'bg-primary' : 'bg-muted-foreground/30'
-            }`}
+        <Panel className="mb-4">
+          <PanelRow
+            title="Turned on"
+            description={draft.enabled
+              ? `!${trigger} in the address bar opens this site's search.`
+              : `Kept in the list, but the address bar ignores !${trigger} — it goes to the search engine as typed.`}
           >
-            <span
-              className={`h-5 w-5 rounded-full shadow-sm transition-transform ${
-                draft.enabled ? 'translate-x-5 bg-primary-foreground' : 'translate-x-0 bg-white'
-              }`}
-            />
-          </button>
-        </div>
+            <Switch size="md" label="Turned on" checked={draft.enabled} onChange={(enabled) => setDraft({ ...draft, enabled })} />
+          </PanelRow>
+        </Panel>
         <div className="grid grid-cols-[140px_1fr] gap-3">
           <label className="block">
             <span className={label}>Trigger</span>
-            <div className="relative">
-              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 font-mono text-sm text-muted-foreground">!</span>
-              <input
-                ref={firstRef}
-                value={draft.trigger}
-                onChange={(e) => setDraft({ ...draft, trigger: e.target.value })}
-                placeholder="w"
-                spellCheck={false}
-                className={`${field} pl-6 font-mono`}
-              />
-            </div>
+            <TextField
+              ref={firstRef}
+              leading="!"
+              value={draft.trigger}
+              onChange={(e) => setDraft({ ...draft, trigger: e.target.value })}
+              placeholder="w"
+              spellCheck={false}
+              mono
+            />
           </label>
           <label className="block">
             <span className={label}>Name</span>
-            <input
+            <TextField
               value={draft.name}
               onChange={(e) => setDraft({ ...draft, name: e.target.value })}
               placeholder="Wikipedia"
-              className={field}
             />
           </label>
         </div>
         <label className="mt-3 block">
           <span className={label}>Address — %s is the query</span>
-          <input
+          <TextField
             value={draft.url}
             onChange={(e) => setDraft({ ...draft, url: e.target.value })}
             placeholder="https://en.wikipedia.org/wiki/Special:Search?search=%s"
             spellCheck={false}
-            className={`${field} font-mono`}
+            mono
           />
         </label>
         <label className="mt-3 block">
           <span className={label}>Category</span>
-          <input
+          <TextField
             value={draft.category}
             onChange={(e) => setDraft({ ...draft, category: e.target.value })}
             list="vimperium-bang-categories"
             placeholder="Other"
-            className={field}
           />
           <datalist id="vimperium-bang-categories">
             {categories.map((c) => <option key={c} value={c} />)}
@@ -1066,12 +1023,12 @@ function BangEditor({
         </label>
         <label className="mt-3 block">
           <span className={label}>Labels</span>
-          <input
+          <TextField
             value={labelsText}
             onChange={(e) => setLabelsText(e.target.value)}
             placeholder="it-search, shops"
             spellCheck={false}
-            className={`${field} font-mono`}
+            mono
           />
           <span className="mt-1 block text-[11px] text-muted-foreground">
             A label is a bang for every bang wearing it: <span className="font-mono">steam deck !{labels[0] ?? 'it-search'}</span> searches them all, in a group.
@@ -1107,18 +1064,8 @@ function BangEditor({
           )}
         </div>
         <div className="mt-4 flex items-center justify-end gap-2">
-          <button
-            onClick={onCancel}
-            className="flex h-8 items-center gap-1.5 rounded-md px-3 text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
-          >
-            Cancel <KeyCap>Esc</KeyCap>
-          </button>
-          <button
-            onClick={submit}
-            className="flex h-8 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground hover:opacity-90"
-          >
-            {state.mode === 'add' ? 'Add' : 'Save'} <KeyCap onPrimary>Enter</KeyCap>
-          </button>
+          <Button variant="ghost" keys="Esc" onClick={onCancel}>Cancel</Button>
+          <Button variant="primary" keys="Enter" onClick={submit}>{state.mode === 'add' ? 'Add' : 'Save'}</Button>
         </div>
       </div>
     </div>
@@ -1166,9 +1113,7 @@ function BangRow({
       <div className={`min-w-0 flex-1 ${bang.enabled ? '' : 'opacity-60'}`}>
         <div className="flex min-w-0 items-center gap-2">
           <span className="truncate text-sm font-medium text-foreground">{bang.name}</span>
-          {!bang.enabled && (
-            <span className="shrink-0 rounded bg-secondary px-1.5 py-px text-[10px] font-semibold text-muted-foreground">Off</span>
-          )}
+          {!bang.enabled && <Badge className="shrink-0">Off</Badge>}
           {showCategory && (
             <span className="shrink-0 text-[11px] text-muted-foreground">{bang.category}</span>
           )}

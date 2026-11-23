@@ -1,3 +1,4 @@
+import { Button } from '@bedware/ui'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronRight, Folder, Upload, Layers } from 'lucide-react'
 import type { Workspace } from '../store/types'
@@ -120,13 +121,13 @@ export function ExportWorkspaceDialog({ open, workspaces, profileName, onConfirm
             </div>
           </div>
           {workspaces.length > 0 && (
-            <button
+            <Button variant="ghost"
               data-detached-no-drag
               onClick={toggleAll}
-              className="h-7 px-2.5 rounded-md text-[11px] font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground shrink-0"
+              className="shrink-0"
             >
               {allSelected ? 'Deselect All' : 'Select All'}
-            </button>
+            </Button>
           )}
         </div>
 
@@ -240,20 +241,18 @@ export function ExportWorkspaceDialog({ open, workspaces, profileName, onConfirm
               : `${selected.size} selected · ${totals.groups} groups · ${totals.tabs} tabs`}
           </div>
           <div className="flex gap-2" data-detached-no-drag>
-            <button
+            <Button variant="ghost"
               onClick={onCancel}
-              className="h-8 px-3 rounded-md text-xs font-medium text-muted-foreground hover:bg-accent"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button variant="primary"
               ref={confirmRef}
               onClick={handleExport}
               disabled={noneSelected}
-              className="h-8 px-3 rounded-md text-xs font-medium bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Export {noneSelected ? '' : `(${selected.size})`}
-            </button>
+            </Button>
           </div>
         </div>
         <ChecklistHints vim={keys.vim} confirmLabel="Export" />

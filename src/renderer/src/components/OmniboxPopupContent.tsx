@@ -5,6 +5,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Globe, History, Search, X, Zap } from 'lucide-react'
+import { Kbd } from '@bedware/ui'
 import type { OmniboxPopupEvent, OmniboxPopupRow, OmniboxPopupSpec } from './omnibox-protocol'
 
 /** Bold every occurrence of the typed words, like Chrome's match
@@ -134,14 +135,9 @@ export function OmniboxPopupContent({
               )}
             </div>
             {row.bang && (
-              <span
-                className={`shrink-0 rounded border px-1.5 py-px font-mono text-[11px] leading-4 ${
-                  selected ? 'border-primary/40 text-primary' : 'border-border text-muted-foreground'
-                }`}
-                title={`Bang ${row.bang}: opens the site directly`}
-              >
+              <Kbd className="shrink-0" title={`Bang ${row.bang}: opens the site directly`}>
                 {row.bang}
-              </span>
+              </Kbd>
             )}
             {row.removable && (
               <button

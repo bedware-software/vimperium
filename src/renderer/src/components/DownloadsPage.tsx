@@ -27,7 +27,8 @@ import {
 import { log } from '../lib/log'
 import { focusAddressFilter, useAddressFilter, type AddressFilterKeyEvent } from '../lib/address-filter'
 import { openDropdownAsync, type DropdownAction } from './dropdown-protocol'
-import { Hint, HintBar, KeyCap, KeysHelp, KeysHelpButton } from './KeyHints'
+import { KeysHelp, KeysHelpButton } from './KeyHints'
+import { Badge, Button, Hint, HintBar, Kbd, Segmented } from '@bedware/ui'
 
 type SortKey = 'date' | 'size' | 'name'
 type SortDir = 'asc' | 'desc'
@@ -713,25 +714,25 @@ export function DownloadsPage() {
           <h1 className="text-lg font-semibold tracking-tight">Downloads</h1>
           {summary && <span className="text-xs text-muted-foreground tabular-nums">{summary}</span>}
           <div className="ml-auto flex items-center gap-1.5">
-            <button
+            <Button
+              variant="ghost"
+              icon={<FolderOpen size={14} />}
+              keys={keyOf('folder')}
               onClick={openFolder}
-              className="flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
               title={titleWithKey('Open the downloads folder', keyOf('folder'))}
             >
-              <FolderOpen size={14} />
               Open folder
-              {keyOf('folder') && <KeyCap>{keyOf('folder')}</KeyCap>}
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="ghost"
+              icon={<Trash2 size={14} />}
+              keys={keyOf('clear')}
               onClick={clearFinished}
               disabled={!hasFinished}
-              className="flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
               title={`${titleWithKey('Remove every finished download from the list', keyOf('clear'))}. Files stay on disk.`}
             >
-              <Trash2 size={14} />
               Clear all
-              {keyOf('clear') && <KeyCap>{keyOf('clear')}</KeyCap>}
-            </button>
+            </Button>
           </div>
         </div>
         <div className="mx-auto flex max-w-4xl items-center gap-3 px-6 pb-4">
@@ -743,32 +744,30 @@ export function DownloadsPage() {
           </span>
           <div className="flex items-center gap-2">
             <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              Sort by {keyOf('sort') && <KeyCap>{keyOf('sort')}</KeyCap>}
+              Sort by {keyOf('sort') && <Kbd>{keyOf('sort')}</Kbd>}
             </span>
-            <div className="flex h-9 items-center rounded-md bg-secondary p-0.5" role="radiogroup" aria-label="Sort downloads">
-              {SORT_KEYS.map((key) => {
+            <Segmented
+              label="Sort downloads"
+              value={sort.key}
+              options={SORT_KEYS.map((key) => {
                 const active = sort.key === key
-                return (
-                  <button
-                    key={key}
-                    role="radio"
-                    aria-checked={active}
-                    onClick={() => pickSort(key)}
-                    className={`flex h-8 items-center gap-1 rounded px-2.5 text-xs font-medium transition-colors ${
-                      active ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                    title={active
-                      ? titleWithKey('Reverse the order', keyOf('reverse'))
-                      : `Sort by ${SORT_LABELS[key].toLowerCase()}${keyOf('sort') ? ` (${keyOf('sort')} cycles)` : ''}`}
-                  >
-                    {SORT_LABELS[key]}
-                    {active && (sort.dir === 'desc'
-                      ? <ArrowDownWideNarrow size={13} />
-                      : <ArrowUpNarrowWide size={13} />)}
-                  </button>
-                )
+                return {
+                  value: key,
+                  label: (
+                    <>
+                      {SORT_LABELS[key]}
+                      {active && (sort.dir === 'desc'
+                        ? <ArrowDownWideNarrow size={13} />
+                        : <ArrowUpNarrowWide size={13} />)}
+                    </>
+                  ),
+                  title: active
+                    ? titleWithKey('Reverse the order', keyOf('reverse'))
+                    : `Sort by ${SORT_LABELS[key].toLowerCase()}${keyOf('sort') ? ` (${keyOf('sort')} cycles)` : ''}`,
+                }
               })}
-            </div>
+              onChange={pickSort}
+            />
           </div>
         </div>
       </div>
@@ -927,9 +926,7 @@ function DownloadRow({
           >
             {entry.filename}
           </button>
-          {failed && (
-            <span className="shrink-0 rounded bg-destructive/15 px-1.5 py-px text-[10px] font-semibold text-destructive">Failed</span>
-          )}
+          {failed && <Badge tone="error" className="shrink-0">Failed</Badge>}
         </div>
         <div className="mt-0.5 truncate text-[11px] text-muted-foreground" title={source} style={{ fontVariantNumeric: 'tabular-nums' }}>
           {hostOf(source)}

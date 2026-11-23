@@ -10,7 +10,6 @@ import { useEffect, useRef, useState } from 'react'
 import { log } from '../lib/log'
 import { Moon, Settings2 } from 'lucide-react'
 import { DetachedWindow, type PopupPlacement } from './DetachedWindow'
-import { Hint, HintBar } from './KeyHints'
 import { useHeaderHint } from './HeaderHint'
 import { ComfortSliders, DarkPagesModeSwitch, ToggleSwitch, acceleratorChord } from './DarkPagesControls'
 import { cn } from '../lib/utils'
@@ -18,9 +17,10 @@ import { darkPagesActions, pageLook, useDarkPages } from '../lib/dark-pages'
 import { isInternalUrl } from '../lib/internal-pages'
 import { actionHint, type HintSettings } from '../lib/shortcut-hints'
 import { darkPagesApplies, darkPagesGloballyOn } from '../../../shared/dark-pages'
+import { Button, Hint, HintBar } from '@bedware/ui'
 
 const WIDTH = 356
-const HEIGHT = 262
+const HEIGHT = 266
 // A click on the moon right after the popover lost the focus to it is the
 // click that closed it, not one to open it again.
 const REOPEN_GUARD_MS = 250
@@ -306,14 +306,9 @@ function DarkPagesPopover({ url, placement, byKeys, onClose, onOpenSettings }: {
             <Hint label="This site" keys={keyCap(hintSettings, 'dark-pages-site', 'Alt+Shift+A')} />
             <Hint label="Everywhere" keys={keyCap(hintSettings, 'dark-pages', 'Alt+Shift+D')} />
           </span>
-          <button
-            type="button"
-            onClick={onOpenSettings}
-            className="-mr-1.5 flex h-6 items-center gap-1 rounded-md px-1.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-          >
-            <Settings2 size={12} />
+          <Button variant="ghost" icon={<Settings2 size={12} />} onClick={onOpenSettings} className="-mr-3">
             Settings
-          </button>
+          </Button>
         </HintBar>
       </div>
     </DetachedWindow>

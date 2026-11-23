@@ -10,7 +10,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Search, CornerDownLeft } from 'lucide-react'
 import { DetachedWindow } from './DetachedWindow'
 import { InputField } from './InputField'
-import { Hint, HintBar, RowCap, vimKeyCaps } from './KeyHints'
+import { RowCap, vimKeyCaps } from './KeyHints'
 import { GroupPill } from './GroupPill'
 import { ScopeSwitch } from './ScopeSwitch'
 import { fuzzyFilter } from '../lib/fuzzy'
@@ -18,6 +18,7 @@ import { hintIndex, usePopupHints } from '../lib/hint-labels'
 import { usePopupVimMode } from '../lib/vim-mode'
 import { paletteKeymap } from '../lib/vim-keymap'
 import { useWindowVimKeymap } from '../lib/window-vim-keymap'
+import { Hint, HintBar } from '@bedware/ui'
 
 /** One crumb of a row's location path. `pill` marks the segment that names a
  *  tab group, which is rendered as a colored pill like the sidebar's group
@@ -360,21 +361,20 @@ export function PickerDialog({
           data-detached-drag-handle
           className="px-4 py-2.5 border-b border-border shrink-0"
         >
-          <InputField inputRef={inputRef} mode={vim.mode} pending={vim.pending} className="h-10">
-            <Search size={16} className="text-muted-foreground shrink-0" />
-            <input
-              data-detached-no-drag
-              ref={inputRef}
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={handleKeyDown}
-              onFocus={vim.onBoxFocus}
-              onBlur={vim.onBoxBlur}
-              placeholder={vim.mode === 'command' && typeKey ? `${placeholder} (${typeKey} to type)` : placeholder}
-              className="flex-1 min-w-0 h-full bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground"
-            />
-          </InputField>
+          <InputField
+            mode={vim.mode} pending={vim.pending}
+            size="lg"
+            leading={<Search size={16} className="text-muted-foreground shrink-0" />}
+            data-detached-no-drag
+            ref={inputRef}
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onFocus={vim.onBoxFocus}
+            onBlur={vim.onBoxBlur}
+            placeholder={vim.mode === 'command' && typeKey ? `${placeholder} (${typeKey} to type)` : placeholder}
+          />
         </div>
 
         {/* What's being acted on, with the scope switch at the row's end —

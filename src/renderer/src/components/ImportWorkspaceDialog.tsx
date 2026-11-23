@@ -2,9 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronRight, Folder, Import, Layers } from 'lucide-react'
 import type { WorkspaceCandidate } from '../store/types'
 import { DetachedWindow } from './DetachedWindow'
-import { Hint, HintBar, vimKeyCaps } from './KeyHints'
+import { vimKeyCaps } from './KeyHints'
 import { useChecklistKeys } from '../lib/dialog-keys'
 import { useWindowVimKeymap } from '../lib/window-vim-keymap'
+import { Button, Hint, HintBar } from '@bedware/ui'
 
 /** The keys of Import's and Export's lists (lib/dialog-keys.ts
  *  useChecklistKeys), along the bottom: Vim mode's when it's on. */
@@ -132,13 +133,13 @@ export function ImportWorkspaceDialog({ open, candidates, onConfirm, onCancel }:
             </div>
           </div>
           {candidates.length > 0 && (
-            <button
+            <Button variant="ghost"
               data-detached-no-drag
               onClick={toggleAll}
-              className="h-7 px-2.5 rounded-md text-[11px] font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground shrink-0"
+              className="shrink-0"
             >
               {allSelected ? 'Deselect All' : 'Select All'}
-            </button>
+            </Button>
           )}
         </div>
 
@@ -251,20 +252,18 @@ export function ImportWorkspaceDialog({ open, candidates, onConfirm, onCancel }:
               : `${selected.size} selected · ${totals.groups} groups · ${totals.tabs} tabs`}
           </div>
           <div className="flex gap-2" data-detached-no-drag>
-            <button
+            <Button variant="ghost"
               onClick={onCancel}
-              className="h-8 px-3 rounded-md text-xs font-medium text-muted-foreground hover:bg-accent"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button variant="primary"
               ref={confirmRef}
               onClick={handleImport}
               disabled={noneSelected}
-              className="h-8 px-3 rounded-md text-xs font-medium bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Import {noneSelected ? '' : `(${selected.size})`}
-            </button>
+            </Button>
           </div>
         </div>
         <ChecklistHints vim={keys.vim} confirmLabel="Import" />

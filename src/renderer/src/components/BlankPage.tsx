@@ -14,9 +14,10 @@
 import { useEffect, useState } from 'react'
 import { BrandMark } from './BrandMark'
 import { WorkspaceStatsCard } from './WorkspaceStats'
-import { Hint, HintBar, vimKeyCaps } from './KeyHints'
+import { vimKeyCaps } from './KeyHints'
 import { useWindowVimKeymap } from '../lib/window-vim-keymap'
 import type { VimMode } from '../lib/vim-mode'
+import { Hint, HintBar } from '@bedware/ui'
 
 export function BlankPage({ vimMode }: { vimMode: VimMode | null }) {
   const keymap = useWindowVimKeymap()?.main ?? null

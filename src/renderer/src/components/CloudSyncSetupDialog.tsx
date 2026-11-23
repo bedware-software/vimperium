@@ -1,3 +1,4 @@
+import { Button } from '@bedware/ui'
 import { useEffect, useRef, useState } from 'react'
 import { Cloud, FolderOpen } from 'lucide-react'
 import { DetachedWindow } from './DetachedWindow'
@@ -190,36 +191,32 @@ export function CloudSyncSetupDialog({ open, prompt, onClose }: Props) {
               Don&apos;t show again
             </button>
             <div className="flex items-center gap-2">
-              <button
+              <Button variant="ghost"
                 onClick={onClose}
-                className="h-8 px-3 rounded-md text-xs font-medium text-muted-foreground hover:bg-accent"
               >
                 Not now
-              </button>
+              </Button>
               {icloudAvailable ? (
                 <>
-                  <button
+                  <Button variant="secondary"
                     onClick={chooseFolder}
-                    className="h-8 px-3 rounded-md text-xs font-medium text-foreground hover:bg-accent"
                   >
                     Choose folder…
-                  </button>
-                  <button
+                  </Button>
+                  <Button variant="primary"
                     ref={primaryRef}
                     onClick={enableSuggested}
-                    className="h-8 px-3 rounded-md text-xs font-medium bg-primary text-primary-foreground hover:opacity-90"
                   >
                     Sync with iCloud
-                  </button>
+                  </Button>
                 </>
               ) : (
-                <button
+                <Button variant="primary"
                   ref={primaryRef}
                   onClick={chooseFolder}
-                  className="h-8 px-3 rounded-md text-xs font-medium bg-primary text-primary-foreground hover:opacity-90"
                 >
                   Choose folder…
-                </button>
+                </Button>
               )}
             </div>
           </div>

@@ -30,6 +30,7 @@ import { useReservedHintKeys } from '../lib/hint-labels'
 import { SEQUENCE_JOIN } from '../../../shared/vim-keys'
 import { LEAVE_INSERT_CAP } from './KeyHints'
 import { cn } from '../lib/utils'
+import { Kbd } from '@bedware/ui'
 
 export interface KeysPageProps {
   keymap: ParsedVimKeymap
@@ -262,7 +263,7 @@ export function KeysPage({ keymap, vimPending, vimMode = null }: KeysPageProps) 
               >
                 <span className="min-w-0 truncate text-foreground">{label}</span>
                 <span className="flex shrink-0 flex-wrap items-center justify-end gap-1">
-                  {keys.map((k) => <kbd key={k} className="font-mono">{displayKeySequence(k)}</kbd>)}
+                  {keys.map((k) => <Kbd key={k} className="font-mono">{displayKeySequence(k)}</Kbd>)}
                 </span>
               </div>
             )
@@ -298,7 +299,7 @@ export function KeysPage({ keymap, vimPending, vimMode = null }: KeysPageProps) 
               <button type="button" tabIndex={-1} onClick={openKeySettings} className="hover:text-foreground">
                 Settings → Keyboard Shortcuts edits them
               </button>
-              {vimMode === 'command' && <kbd className="ml-1.5 font-mono">{SETTINGS_KEY}</kbd>}
+              {vimMode === 'command' && <Kbd className="ml-1.5 font-mono">{SETTINGS_KEY}</Kbd>}
             </span>
           </div>
         </div>

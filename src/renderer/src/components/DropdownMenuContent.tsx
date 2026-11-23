@@ -1,3 +1,4 @@
+import { Kbd, Menu, MenuHeader, MenuItem, MenuSeparator } from '@bedware/ui'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   DndContext,
@@ -10,7 +11,7 @@ import {
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import {
-  User, Layout, Search, Settings, Download, Info, LogOut, Plus, Pencil, Trash2, Menu, Globe, Import,
+  User, Layout, Search, Settings, Download, Info, LogOut, Plus, Pencil, Trash2, Menu as MenuIcon, Globe, Import,
   Upload, X, FolderPlus, FolderMinus, FolderInput, Folder, CopyPlus, MessageSquare,
   MessageSquareOff, FilePlus, Pin, PinOff, EyeOff, Puzzle, PanelLeft, PanelLeftClose, Keyboard, Check,
   FolderOpen, Link, Pause, Play, RotateCw, ListX, Zap,
@@ -24,10 +25,10 @@ import type {
   IconName,
 } from './dropdown-protocol'
 
-// String-keyed icon registry. Spec sends icon NAMES (strings) over IPC; the
-// popup resolves them here. Keep in sync with IconName in dropdown-protocol.ts.
+// The spec crosses IPC, so it names icons by string. Keep in sync with
+// IconName in dropdown-protocol.ts.
 const ICONS: Record<IconName, typeof User> = {
-  User, Layout, Search, Settings, Download, Info, LogOut, Plus, Pencil, Trash2, Menu, Globe, Import,
+  User, Layout, Search, Settings, Download, Info, LogOut, Plus, Pencil, Trash2, Menu: MenuIcon, Globe, Import,
   Upload, X, FolderPlus, FolderMinus, FolderInput, Folder, CopyPlus, MessageSquare,
   MessageSquareOff, FilePlus, Pin, PinOff, EyeOff, Puzzle, PanelLeft, PanelLeftClose, Keyboard,
   FolderOpen, Link, Pause, Play, RotateCw, ListX, Zap,
@@ -75,6 +76,8 @@ function SortableRow({
     transition,
   }
 
+  // Local markup, not MenuItem: MenuItem is a single button, and this row
+  // holds the pick button plus rename and delete, and is the drag handle.
   return (
     <div
       ref={setNodeRef}
@@ -114,7 +117,7 @@ function SortableRow({
             <Pencil size={11} />
           </button>
         )}
-        {focused && editable && <kbd className="font-mono mr-1">{ROW_KEYS.rename}</kbd>}
+        {focused && editable && <Kbd className="mr-1">{ROW_KEYS.rename}</Kbd>}
         {deletable && (
           <button
             data-row-action
@@ -129,9 +132,9 @@ function SortableRow({
             <Trash2 size={11} />
           </button>
         )}
-        {focused && deletable && <kbd className="font-mono">{ROW_KEYS.delete}</kbd>}
+        {focused && deletable && <Kbd>{ROW_KEYS.delete}</Kbd>}
       </div>
-      {keyboard && digit && <kbd className="font-mono text-muted-foreground shrink-0">{digit}</kbd>}
+      {keyboard && digit && <Kbd className="shrink-0">{digit}</Kbd>}
     </div>
   )
 }
@@ -253,36 +256,25 @@ function ActionRow({
 }) {
   const Icon = resolveIcon(action.iconName)
   const disabled = !!action.disabled
+  // From the keyboard its one key is what matters (the regular shortcuts are
+  // off in Vim mode anyway), and its Shift key (shiftId) where the capital is
+  // another key.
+  const caps = menuKey
+    ? action.shiftId && menuKey.toUpperCase() !== menuKey ? [menuKey, menuKey.toUpperCase()] : [menuKey]
+    : action.shortcut
   return (
-    <button
+    <MenuItem
       {...(focused ? { 'data-key-focus': '' } : {})}
       onClick={() => { if (!disabled) onEmit({ type: 'action', actionId: action.id }) }}
       disabled={disabled}
       title={disabled ? action.disabledTitle : undefined}
-      className={`w-full flex items-center justify-between px-3 py-1.5 text-left ${
-        disabled
-          ? 'opacity-60 cursor-not-allowed text-muted-foreground'
-          : `hover:bg-accent ${focused ? 'bg-accent' : ''} ${action.destructive ? 'text-destructive' : ''}`
-      }`}
+      icon={<Icon size={14} />}
+      keys={caps}
+      selected={focused}
+      danger={!!action.destructive && !disabled}
     >
-      <span className="flex items-center gap-2">
-        <Icon size={14} className={action.destructive && !disabled ? '' : 'text-muted-foreground'} />
-        <span>{action.label}</span>
-      </span>
-      {menuKey ? (
-        // From the keyboard its one key is what matters (the regular
-        // shortcuts are off in Vim mode anyway).
-        <span className="ml-4 inline-flex items-center gap-1 text-muted-foreground">
-          <kbd className="font-mono">{menuKey}</kbd>
-          {/* Its Shift key too (shiftId), where the capital is another key. */}
-          {action.shiftId && menuKey.toUpperCase() !== menuKey && <kbd className="font-mono">{menuKey.toUpperCase()}</kbd>}
-        </span>
-      ) : action.shortcut && action.shortcut.length > 0 && (
-        <span className="inline-flex items-center gap-0.5 text-muted-foreground">
-          {action.shortcut.map((seg, i) => <kbd key={i}>{seg}</kbd>)}
-        </span>
-      )}
-    </button>
+      {action.label}
+    </MenuItem>
   )
 }
 
@@ -293,20 +285,15 @@ export function DropdownMenuContent({
 }: {
   spec: DropdownSpec
   onEmit: (evt: DropdownEventBody) => void
-  // Called when the menu's natural size is known so the host window can resize.
   onMeasured?: (size: { width: number; height: number }) => void
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
 
-  // Report the menu's natural rendered size to the host (the popup window
-  // uses this to resize itself snugly around the content). offsetWidth /
-  // scrollHeight give the layout box's full dimensions even when an ancestor
-  // is overflow-hidden — getBoundingClientRect alone proved unreliable on
-  // first paint when the window starts smaller than the menu and the body's
-  // overflow:hidden was clipping the rect to the visible area on some
-  // layouts. Re-measure on rAF so we catch any post-mount layout settling
-  // (font load, image decode), and on every ResizeObserver tick after that.
+  // The popup window sizes itself to this. offset/scroll sizes, not
+  // getBoundingClientRect: on first paint the window is smaller than the
+  // menu and the body's overflow:hidden clipped the rect. The rAF pass
+  // catches layout settling after mount (font load).
   useEffect(() => {
     const el = ref.current
     if (!el || !onMeasured) return
@@ -330,8 +317,6 @@ export function DropdownMenuContent({
     }
   }, [onMeasured, spec])
 
-  // Esc closes — the host window may also handle blur, but Esc inside the
-  // popup is the most common close path.
   useEffect(() => {
     const handler = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') onEmit({ type: 'cancel' })
@@ -558,18 +543,8 @@ export function DropdownMenuContent({
   }
 
   return (
-    <div
-      ref={ref}
-      className="min-w-[220px] max-w-[360px] bg-popover border border-border rounded-lg shadow-lg overflow-hidden text-xs"
-    >
-      {spec.header && (
-        <>
-          <div className="px-3 pt-1.5 pb-1 text-[10px] uppercase tracking-wide text-muted-foreground truncate">
-            {spec.header}
-          </div>
-          <div className="h-px bg-border" />
-        </>
-      )}
+    <Menu ref={ref} className="max-w-[360px]">
+      {spec.header && <MenuHeader className="truncate">{spec.header}</MenuHeader>}
       {colors.length > 0 && (
         <>
           <ColorStrip
@@ -578,32 +553,30 @@ export function DropdownMenuContent({
             focusedIndex={keyFocus?.zone === 'colors' ? keyFocus.index : null}
             onEmit={onEmit}
           />
-          <div className="h-px bg-border" />
+          <MenuSeparator />
         </>
       )}
       {renderItems()}
       {spec.newAction && (
         <>
-          {items.length > 0 && <div className="h-px bg-border" />}
-          <button
+          {items.length > 0 && <MenuSeparator />}
+          <MenuItem
             {...(keyFocus?.zone === 'new' ? { 'data-key-focus': '' } : {})}
-            className={`w-full text-left px-3 py-1.5 flex items-center gap-2 text-primary hover:bg-accent/50 ${
-              keyFocus?.zone === 'new' ? 'bg-accent' : ''
-            }`}
             onClick={() => onEmit({ type: 'new' })}
+            icon={<Plus size={12} />}
+            keys={spec.keyboard && rowKeys ? [ROW_KEYS.new] : undefined}
+            selected={keyFocus?.zone === 'new'}
           >
-            <Plus size={12} />
-            <span className="flex-1">{spec.newAction.label}</span>
-            {spec.keyboard && rowKeys && <kbd className="font-mono text-muted-foreground">{ROW_KEYS.new}</kbd>}
-          </button>
+            {spec.newAction.label}
+          </MenuItem>
         </>
       )}
       {actions.length > 0 && (
         <>
-          {(items.length > 0 || spec.newAction) && <div className="h-px bg-border" />}
+          {(items.length > 0 || spec.newAction) && <MenuSeparator />}
           {actions.map((action, idx) => (
             <div key={action.id}>
-              {action.divider === 'before' && idx > 0 && <div className="border-t border-border" />}
+              {action.divider === 'before' && idx > 0 && <MenuSeparator />}
               <ActionRow
                 action={action}
                 focused={keyFocus?.zone === 'actions' && keyFocus.index === idx}
@@ -614,6 +587,6 @@ export function DropdownMenuContent({
           ))}
         </>
       )}
-    </div>
+    </Menu>
   )
 }

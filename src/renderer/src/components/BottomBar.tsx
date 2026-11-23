@@ -7,10 +7,11 @@
 
 import { useEffect } from 'react'
 import { Check } from 'lucide-react'
-import { HintBar, WhichKeyHints } from './KeyHints'
+import { WhichKeyHints } from './KeyHints'
 import type { VimKeymap } from '../lib/vim-keymap'
 import { useWhichKey } from '../lib/which-key'
 import { clearNotice, useNoticeStore } from '../lib/notice'
+import { HintBar } from '@bedware/ui'
 
 const NOTICE_SHOWN_MS = 2600
 

@@ -30,7 +30,7 @@ import { internalPageOf } from '../lib/internal-pages'
 import { useSearchFields } from '../lib/search-fields'
 import { SEARCH_FIELD_OPTIONS, type SearchFieldKind } from '../../../shared/search-fields'
 import { useHintLabels, useHintTargets, useReservedHintKeys } from '../lib/hint-labels'
-import { ColumnsSwitch, usePageColumns, type Columns } from './ColumnsSwitch'
+import { ColumnsSwitch, PageSegmented, usePageColumns, type Columns } from './ColumnsSwitch'
 import { EntityIcon, LIST_PAGE_ROOT, LIST_ROW_SCROLL, ListPageHeader, PageScopeSwitch, listBoxClass, listColumnCount } from './ListPage'
 import { usePageKeys } from '../lib/vim-mode'
 import { keyTokenFromEvent } from '../lib/vim-keymap'
@@ -43,6 +43,7 @@ import { RowCap } from './KeyHints'
 import { openDropdownAsync, type DropdownAction } from './dropdown-protocol'
 import { InputDialog } from './InputDialog'
 import { ConfirmDialog } from './ConfirmDialog'
+import { Kbd } from '@bedware/ui'
 
 export interface SearchPageProps {
   /** The page's own tab: picking a result closes it. */
@@ -669,34 +670,30 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
           </>
         )}
       >
-          <div className="flex h-8 shrink-0 items-center rounded-md bg-secondary p-0.5" role="radiogroup" aria-label="What to search">
-            {FILTER_TYPES.map((type) => {
+          <PageSegmented
+            label="What to search"
+            className="shrink-0"
+            value={filter}
+            onChange={selectFilter}
+            options={FILTER_TYPES.map((type) => {
               const Icon = TYPE_ICONS[type]
-              const active = filter === type
-              return (
-                <button
-                  key={type}
-                  type="button"
-                  role="radio"
-                  aria-checked={active}
-                  tabIndex={-1}
-                  onClick={() => selectFilter(type)}
-                  title={`${TYPE_LABELS[type]} (${TYPE_KEYS[type]} in COMMAND)`}
-                  className={`flex h-7 items-center gap-1.5 rounded px-2.5 text-xs font-medium transition-colors ${
-                    active ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  <Icon size={13} />
-                  {TYPE_LABELS[type]}
-                  {/* How many there are; of the kind shown, how many of them
-                      the filter leaves (11/21). */}
-                  <span className="tabular-nums opacity-50">{active ? countLabel : counts[type]}</span>
-                  {/* Its key, while the keys are COMMAND's. */}
-                  {vimMode === 'command' && <kbd className="font-mono text-[10px]">{TYPE_KEYS[type]}</kbd>}
-                </button>
-              )
+              return {
+                value: type,
+                icon: <Icon size={13} />,
+                title: `${TYPE_LABELS[type]} (${TYPE_KEYS[type]} in COMMAND)`,
+                label: (
+                  <>
+                    {TYPE_LABELS[type]}
+                    {/* How many there are; of the kind shown, how many of them
+                        the filter leaves (11/21). */}
+                    <span className="tabular-nums opacity-50">{filter === type ? countLabel : counts[type]}</span>
+                    {/* Its key, while the keys are COMMAND's. */}
+                    {vimMode === 'command' && <Kbd on="button">{TYPE_KEYS[type]}</Kbd>}
+                  </>
+                ),
+              }
             })}
-          </div>
+          />
           {scopeApplies && windowWorkspaceId && (
             <PageScopeSwitch
               on={scope === 'current'}

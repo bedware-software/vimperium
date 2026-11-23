@@ -13,6 +13,7 @@ import type { ComponentType, CSSProperties, ReactNode } from 'react'
 import { pageWidthClass, type Columns } from './ColumnsSwitch'
 import type { VimMode } from '../lib/vim-mode'
 import { cn } from '../lib/utils'
+import { Switch } from '@bedware/ui'
 
 /** The page's root: the scroller. */
 export const LIST_PAGE_ROOT = 'absolute inset-0 z-50 overflow-y-auto [scrollbar-gutter:stable] bg-background text-foreground select-none'
@@ -71,21 +72,14 @@ export function PageScopeSwitch({ on, label, onToggle, title, className }: {
   className?: string
 }) {
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={on}
-      tabIndex={-1}
-      onClick={onToggle}
+    <label
       title={title}
       className={cn('flex h-7 shrink-0 items-center gap-1.5 px-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground', className)}
     >
       {label}
-      <span className={cn('relative inline-flex h-3.5 w-6 shrink-0 items-center rounded-full px-0.5 transition-colors', on ? 'bg-primary' : 'bg-muted-foreground/30')}>
-        <span className={cn('h-2.5 w-2.5 rounded-full shadow-sm transition-transform', on ? 'translate-x-[10px] bg-primary-foreground' : 'translate-x-0 bg-white')} />
-      </span>
+      <Switch tabIndex={-1} checked={on} onChange={onToggle} label={label} />
       <span className="opacity-50">Tab</span>
-    </button>
+    </label>
   )
 }
 

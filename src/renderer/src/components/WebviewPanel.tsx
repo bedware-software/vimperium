@@ -4,7 +4,7 @@ import type { TabGroup } from '../store/types'
 import { log } from '../lib/log'
 import { focusAndSelectUrlBar } from '../lib/focus-url-bar'
 import { keepsChromeKeyboard, usePageKeys, type VimMode } from '../lib/vim-mode'
-import { KeyCap, vimKeyCaps } from './KeyHints'
+import { vimKeyCaps } from './KeyHints'
 import { internalPageOf, isInternalUrl } from '../lib/internal-pages'
 import { WifiOff, SearchX, Unplug, CloudOff, RotateCw, ShieldAlert, CircleAlert, type LucideIcon } from 'lucide-react'
 import type { PermissionKind } from '../lib/permissions'
@@ -21,6 +21,7 @@ import { SearchPage } from './SearchPage'
 import { KeysPage } from './KeysPage'
 import { PlacePage } from './PlacePage'
 import { BookshelfPage } from './BookshelfPage'
+import { Button, Kbd } from '@bedware/ui'
 
 // Tab rendering lives in the main process now, as a WebContentsView per tab
 // attached to the window's root contentView. This component is a thin layout
@@ -759,15 +760,13 @@ export function WebviewPanel({ splitPickerKeymap, splitPickerFocusTick, vimKeyma
               {activeError.description} ({activeError.code})
             </p>
             <p className="mb-7 text-sm leading-relaxed text-muted-foreground">{errorInfo.message}</p>
-            <button
-              type="button"
+            <Button variant="primary"
               onClick={handleRetry}
-              className="flex h-9 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90"
             >
               <RotateCw size={15} />
               Reload
-              {vimKeyCaps(vimKeymap, 'reload')[0] && <KeyCap onPrimary>{vimKeyCaps(vimKeymap, 'reload')[0]}</KeyCap>}
-            </button>
+              {vimKeyCaps(vimKeymap, 'reload')[0] && <Kbd on="button">{vimKeyCaps(vimKeymap, 'reload')[0]}</Kbd>}
+            </Button>
           </div>
         </div>
       )}
@@ -864,14 +863,12 @@ function CertWarningOverlay({
         </p>
         <p className="mb-7 font-mono text-xs text-muted-foreground">{code}</p>
         <div className="flex items-center gap-4">
-          <button
-            type="button"
+          <Button variant="primary"
             onClick={onBack}
-            className="flex h-9 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90"
           >
             Back to safety
-            {backKey && <KeyCap onPrimary>{backKey}</KeyCap>}
-          </button>
+            {backKey && <Kbd on="button">{backKey}</Kbd>}
+          </Button>
           <button
             type="button"
             onClick={onContinue}

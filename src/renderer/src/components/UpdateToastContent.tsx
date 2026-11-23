@@ -1,3 +1,4 @@
+import { Button } from '@bedware/ui'
 import { useEffect, useRef, type ReactNode } from 'react'
 import { Download, RefreshCw, X, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react'
 
@@ -100,13 +101,13 @@ export function UpdateToastContent({
           v{status.version} will install on quit, or restart now.
         </div>
       </div>
-      <button
+      <Button variant="primary"
         onClick={onInstall}
-        className="flex items-center gap-1 h-7 px-2.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/80 text-xs font-medium shrink-0"
+        className="shrink-0"
       >
         <RefreshCw size={12} />
         Restart
-      </button>
+      </Button>
     </Shell>
   )
 }
