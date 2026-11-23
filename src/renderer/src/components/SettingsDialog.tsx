@@ -1,4 +1,4 @@
-import { Badge, Button, Hint, HintBar, Kbd, Panel, PanelRow, Segmented, Switch, InputField as TextField } from '@bedware/ui'
+import { Badge, Button, ChoiceCards, GroupTitle, Hint, HintBar, HotkeyButton, LinkButton, ListRow, Nav, NavItem, Panel, PanelRow, Segmented, Switch, Textarea, InputField as TextField, IconButton } from '@bedware/ui'
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { X, RotateCcw, Sun, Moon, Monitor, AlertTriangle, Trash2, Download, Bell, CheckCircle2, Loader2, Puzzle, ExternalLink, Plus, Globe, Pin, PinOff, SlidersHorizontal, Palette, Keyboard, Info, Compass, ShieldCheck, Cloud, FolderOpen, RefreshCw, Wifi, Building2, KeyRound, Search, FileUp, Pencil, Copy, Check, Eye, EyeOff, ChevronDown, ChevronRight, UserRound, FingerprintPattern } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -337,22 +337,15 @@ function eventToAccelerator(e: KeyboardEvent): string | null {
   return parts.join('+')
 }
 
-/** Format an Electron accelerator for display as <Kbd> elements */
-function formatAccelerator(accel: string): React.ReactNode {
+/** An Electron accelerator as the key caps to show. */
+function acceleratorKeys(accel: string): string[] {
   const isMac = navigator.platform.includes('Mac')
-  const parts = accel
+  return accel
     .replace(/CmdOrCtrl/g, isMac ? '⌘' : 'Ctrl')
     .replace(/Shift/g, isMac ? '⇧' : 'Shift')
     .replace(/Alt/g, isMac ? '⌥' : 'Alt')
     .split('+')
     .filter(Boolean)
-  return (
-    <span className="inline-flex items-center gap-0.5">
-      {parts.map((part, i) => (
-        <Kbd key={i}>{part}</Kbd>
-      ))}
-    </span>
-  )
 }
 
 export type SettingsTab = SettingsSection
@@ -615,7 +608,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
   const [expandedExtensions, setExpandedExtensions] = useState<Set<string>>(new Set())
   const [extCommands, setExtCommands] = useState<Record<string, ExtensionCommand[]>>({})
   const [recordingCommand, setRecordingCommand] = useState<{ extensionId: string; command: string } | null>(null)
-  const [commandError, setCommandError] = useState<{ extensionId: string; message: string } | null>(null)
+  const [commandError, setCommandError] = useState<{ extensionId: string; command: string; message: string } | null>(null)
   const [extInstalling, setExtInstalling] = useState(false)
   const [extError, setExtError] = useState<string | null>(null)
   const [defaultBrowserStatus, setDefaultBrowserStatus] = useState<DefaultBrowserStatus | null>(null)
@@ -843,7 +836,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
       const accel = eventToAccelerator(e)
       if (!accel) return // a bare modifier — wait for the key
       const fail = (message: string): void => {
-        setCommandError({ extensionId, message })
+        setCommandError({ extensionId, command, message })
         setRecordingCommand(null)
       }
       if (!/(^|\+)(CmdOrCtrl|Alt)\+/.test(accel)) {
@@ -1740,32 +1733,26 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                 {filterResults.length === 0 ? (
                   <div className="px-2.5 py-2 text-xs text-muted-foreground">No settings match</div>
                 ) : filterResults.map((entry, i) => (
-                  <div
+                  <ListRow
                     key={entry.item}
-                    role="option"
-                    aria-selected={i === filterSelected}
+                    selected={i === filterSelected}
                     onMouseEnter={() => setFilterSelected(i)}
                     onClick={() => pickFilterResult(entry)}
-                    className={cn(
-                      'flex h-8 cursor-default select-none items-center gap-1.5 rounded-md px-2.5 text-xs',
-                      i === filterSelected && 'bg-accent text-accent-foreground',
-                    )}
                   >
-                    <span className="shrink-0 text-muted-foreground">{settingsSectionLabel(entry.section)} ›</span>
-                    <span className="truncate text-foreground">{entry.title}</span>
-                  </div>
+                    <span className="text-muted-foreground">{settingsSectionLabel(entry.section)} › </span>
+                    {entry.title}
+                  </ListRow>
                 ))}
               </div>
             )}
           </div>
-          <button
+          <IconButton
             data-detached-no-drag
             onClick={handleCancel}
-            aria-label="Close Settings"
-            className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground"
+            label="Close Settings"
           >
             <X size={16} />
-          </button>
+          </IconButton>
         </div>
 
         {/* Body: sidebar + content */}
@@ -1775,29 +1762,23 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
               each, j / k don't: J / K go through them. */}
           <aside className="w-52 bg-card border-r border-border p-3 flex flex-col shrink-0">
             {[SETTINGS_SECTIONS.filter((section) => section.id !== 'about'), SETTINGS_SECTIONS.filter((section) => section.id === 'about')].map((group, g) => (
-              <nav key={g} className={cn('flex flex-col gap-1', g === 1 && 'mt-auto pt-3 border-t border-border')}>
+              <Nav key={g} className={cn(g === 1 && 'mt-auto pt-3 border-t border-border')}>
                 {group.map(({ id, label }) => {
                   const Icon = SECTION_ICONS[id]
                   return (
-                    <button
+                    <NavItem
                       key={id}
-                      type="button"
                       data-vim-item={`nav:${id}`}
                       data-vim-nowalk
-                      aria-current={activeTab === id ? 'page' : undefined}
+                      current={activeTab === id}
+                      icon={<Icon size={14} />}
                       onClick={() => setActiveTab(id)}
-                      className={`flex items-center gap-2 h-8 px-2 rounded-md text-sm text-left transition-colors ${
-                        activeTab === id
-                          ? 'bg-accent text-accent-foreground'
-                          : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
-                      }`}
                     >
-                      <Icon size={14} className="shrink-0" />
-                      <span className="truncate">{label}</span>
-                    </button>
+                      {label}
+                    </NavItem>
                   )
                 })}
-              </nav>
+              </Nav>
             ))}
           </aside>
 
@@ -1867,34 +1848,23 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                 <p className="text-[11px] text-muted-foreground mb-3">
                   How the mode's key cap — CMD, WEB, INS — shows the mode's colour.
                 </p>
-                <div
-                  role="radiogroup"
-                  aria-label="Vim mode indicator"
+                <ChoiceCards
+                  label="Vim mode indicator"
                   data-vim-item="appearance:vim-indicator"
-                  className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2 rounded-lg"
-                >
-                  {VIM_INDICATORS.map((v) => (
-                    <button
-                      key={v.id}
-                      type="button"
-                      role="radio"
-                      aria-checked={vimIndicator === v.id}
-                      onClick={() => { setVimIndicator(v.id); previewAppearance({ vimIndicator: v.id }) }}
-                      title={v.hint}
-                      className={`flex flex-col items-start gap-2 rounded-lg border px-3 py-2.5 text-left transition-colors ${
-                        vimIndicator === v.id
-                          ? 'border-primary bg-primary/10'
-                          : 'border-border hover:bg-secondary'
-                      }`}
-                    >
+                  value={vimIndicator}
+                  onChange={(id) => { setVimIndicator(id); previewAppearance({ vimIndicator: id }) }}
+                  options={VIM_INDICATORS.map((v) => ({
+                    value: v.id,
+                    title: v.label,
+                    description: v.hint,
+                    preview: (
                       <span className="flex gap-1.5">
                         <VimModeBadge mode="command" indicator={v.id} />
                         <VimModeBadge mode="insert" indicator={v.id} />
                       </span>
-                      <span className="text-xs font-medium text-foreground">{v.label}</span>
-                    </button>
-                  ))}
-                </div>
+                    ),
+                  }))}
+                />
               </div>
 
               {/* The mode as a light on the address bar's edge. */}
@@ -1904,36 +1874,27 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                   A light moving round the address bar's edge in the mode's colours — cool for
                   COMMAND, green for INSERT — fading from one to the other as the mode changes.
                 </p>
-                <div
-                  role="radiogroup"
-                  aria-label="Vim mode edge"
+                <ChoiceCards
+                  label="Vim mode edge"
                   data-vim-item="appearance:vim-edge"
-                  className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2 rounded-lg"
-                >
-                  {VIM_EDGES.map((v) => (
-                    <button
-                      key={v.id}
-                      type="button"
-                      role="radio"
-                      aria-checked={vimEdge === v.id}
-                      onClick={() => { setVimEdge(v.id); previewAppearance({ vimEdge: v.id }) }}
-                      title={v.hint}
-                      className={`flex flex-col items-stretch gap-3 rounded-lg border px-3 pt-3.5 pb-2.5 text-left transition-colors ${
-                        vimEdge === v.id
-                          ? 'border-primary bg-primary/10'
-                          : 'border-border hover:bg-secondary'
-                      }`}
-                    >
-                      {(['command', 'insert'] as const).map((mode) => (
-                        <span key={mode} className="field relative flex items-center justify-end h-6 rounded-md pr-1">
-                          <VimModeBadge mode={mode} />
-                          <ModeEdge mode={mode} edge={v.id} />
-                        </span>
-                      ))}
-                      <span className="text-xs font-medium text-foreground">{v.label}</span>
-                    </button>
-                  ))}
-                </div>
+                  value={vimEdge}
+                  onChange={(id) => { setVimEdge(id); previewAppearance({ vimEdge: id }) }}
+                  options={VIM_EDGES.map((v) => ({
+                    value: v.id,
+                    title: v.label,
+                    description: v.hint,
+                    preview: (
+                      <span className="flex flex-col gap-3 pt-1">
+                        {(['command', 'insert'] as const).map((mode) => (
+                          <span key={mode} className="field relative flex items-center justify-end h-6 rounded-md pr-1">
+                            <VimModeBadge mode={mode} />
+                            <ModeEdge mode={mode} edge={v.id} />
+                          </span>
+                        ))}
+                      </span>
+                    ),
+                  }))}
+                />
                 <label className="mt-3 flex items-center gap-2.5 text-xs text-foreground cursor-pointer">
                   <Switch
                     label="Vim mode edge on every field"
@@ -2121,15 +2082,14 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                           Edge's app-bound encryption only lets Edge unlock these passwords. Export each profile below, then import each CSV into {profileNameForPartition(passwordPartition)}. Exported CSV files contain plaintext passwords.
                         </p>
                       </div>
-                      <button
-                        type="button"
+                      <IconButton size={24}
                         data-vim-item="pw:edge-help-close"
                         onClick={() => setEdgeExportHelpOpen(false)}
-                        className="h-6 w-6 shrink-0 flex items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
-                        aria-label="Close Edge export help"
+                        className="shrink-0"
+                        label="Close Edge export help"
                       >
                         <X size={13} />
-                      </button>
+                      </IconButton>
                     </div>
                     <div className="mt-3 space-y-2">
                       {edgeSource.profiles.filter((profile) => profile.appBoundPasswordCount > 0).map((profile) => (
@@ -2189,15 +2149,14 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                     Import CSV…
                   </Button>
                   {passwordEntries.length > 0 && (
-                    <button
-                      type="button"
+                    <Button variant="quiet-danger" size="sm"
                       data-vim-item="pw:remove-all"
                       data-vim-danger
                       onClick={() => setPasswordClearConfirmOpen(true)}
-                      className="ml-auto h-8 px-2 text-[11px] font-medium text-destructive hover:underline"
+                      className="ml-auto"
                     >
                       Remove all
-                    </button>
+                    </Button>
                   )}
                 </div>
 
@@ -2214,15 +2173,13 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                       <p className="text-xs font-semibold text-foreground">
                         {passwordEditor.id ? 'Edit password entry' : 'Add password entry'}
                       </p>
-                      <button
-                        type="button"
+                      <IconButton size={24}
                         data-vim-item="pw:editor-close"
                         onClick={() => setPasswordEditor(null)}
-                        className="h-6 w-6 flex items-center justify-center rounded hover:bg-muted text-muted-foreground"
-                        aria-label="Close password editor"
+                        label="Close password editor"
                       >
                         <X size={13} />
-                      </button>
+                      </IconButton>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <label className="col-span-2">
@@ -2262,16 +2219,14 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                             spellCheck={false}
                             placeholder={passwordEditor.id && passwordBusyId === passwordEditor.id ? 'Loading…' : undefined}
                             trailing={(
-                                <button
-                                  type="button"
+                                <IconButton size={24}
+                                  pressed={editorPasswordVisible}
                                   data-vim-item="pw:editor-show"
                                   onClick={() => setEditorPasswordVisible((visible) => !visible)}
-                                  className="h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
-                                  aria-label={editorPasswordVisible ? 'Hide password' : 'Show password'}
-                                  title={editorPasswordVisible ? 'Hide password' : 'Show password'}
+                                  label={editorPasswordVisible ? 'Hide password' : 'Show password'}
                                 >
                                   {editorPasswordVisible ? <EyeOff size={13} /> : <Eye size={13} />}
-                                </button>
+                                </IconButton>
                             )}
                           />
                         </div>
@@ -2324,7 +2279,6 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                       const busy = passwordBusyId === entry.id
                       const copied = (field: 'username' | 'password'): boolean =>
                         copiedPasswordField?.id === entry.id && copiedPasswordField.field === field
-                      const rowButton = 'h-7 w-7 shrink-0 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground'
                       return (
                         <div key={entry.id} data-password-item>
                           <div data-vim-item={`pw-row:${entry.id}`} data-vim-kind="row" className="group flex items-center gap-1 py-2 rounded-md">
@@ -2350,47 +2304,39 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                               </div>
                               <ChevronDown size={14} className={`shrink-0 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`} />
                             </button>
-                            <button
-                              type="button"
+                            <IconButton
                               data-vim-cell="copy"
                               onClick={() => copyPasswordEntryField(entry, 'username')}
-                              className={rowButton}
-                              aria-label={`Copy username ${entry.username}`}
+                              label={`Copy username ${entry.username}`}
                               title="Copy username"
                             >
                               {copied('username') ? <Check size={12} className="text-success" /> : <UserRound size={12} />}
-                            </button>
-                            <button
-                              type="button"
+                            </IconButton>
+                            <IconButton
                               data-vim-cell="copy-password"
                               onClick={() => copyPasswordEntryField(entry, 'password')}
                               disabled={busy}
-                              className={rowButton}
-                              aria-label={`Copy password for ${entry.username}`}
+                              label={`Copy password for ${entry.username}`}
                               title="Copy password"
                             >
                               {busy ? <Loader2 size={12} className="animate-spin" /> : copied('password') ? <Check size={12} className="text-success" /> : <KeyRound size={12} />}
-                            </button>
-                            <button
-                              type="button"
+                            </IconButton>
+                            <IconButton
                               data-vim-cell="edit"
                               onClick={() => startEditPassword(entry)}
-                              className={rowButton}
-                              aria-label={`Edit ${entry.username}`}
+                              label={`Edit ${entry.username}`}
                               title="Edit"
                             >
                               <Pencil size={12} />
-                            </button>
-                            <button
-                              type="button"
+                            </IconButton>
+                            <IconButton danger
                               data-vim-cell="remove"
                               onClick={() => handleDeletePassword(entry.id)}
-                              className={`${rowButton} hover:text-destructive`}
-                              aria-label={`Remove ${entry.username}`}
+                              label={`Remove ${entry.username}`}
                               title="Remove"
                             >
                               <Trash2 size={12} />
-                            </button>
+                            </IconButton>
                           </div>
 
                           {isOpen && (
@@ -2429,17 +2375,16 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                                       </button>
                                     )}
                                   </dd>
-                                  <button
-                                    type="button"
+                                  <IconButton
+                                    pressed={revealed !== undefined}
                                     data-vim-cell="reveal"
                                     onClick={() => togglePasswordReveal(entry.id)}
                                     disabled={busy}
-                                    className="h-7 w-7 shrink-0 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
-                                    aria-label={revealed !== undefined ? 'Hide password' : 'Show password'}
-                                    title={revealed !== undefined ? 'Hide password' : 'Show password'}
+                                    className="shrink-0"
+                                    label={revealed !== undefined ? 'Hide password' : 'Show password'}
                                   >
                                     {busy ? <Loader2 size={12} className="animate-spin" /> : revealed !== undefined ? <EyeOff size={12} /> : <Eye size={12} />}
-                                  </button>
+                                  </IconButton>
                                   <Button variant="ghost"
                                     data-vim-cell="copy-password"
                                     onClick={() => copyPasswordEntryField(entry, 'password')}
@@ -2467,15 +2412,13 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                                   <Pencil size={12} />
                                   Edit
                                 </Button>
-                                <button
-                                  type="button"
+                                <Button variant="quiet-danger"
                                   data-vim-cell="remove"
                                   onClick={() => handleDeletePassword(entry.id)}
-                                  className="h-7 px-2.5 flex items-center gap-1.5 rounded-md text-xs font-medium text-destructive hover:bg-destructive/10"
+                                  icon={<Trash2 size={12} />}
                                 >
-                                  <Trash2 size={12} />
                                   Remove
-                                </button>
+                                </Button>
                               </div>
                             </div>
                           )}
@@ -2521,15 +2464,14 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                               {' · '}Saved {formatPasswordDate(passkey.createdAt)}
                             </p>
                           </div>
-                          <button
-                            type="button"
+                          <Button variant="quiet-danger" size="sm"
                             data-vim-cell="remove"
                             onClick={() => setPasskeyToRemove(passkey)}
-                            className="h-7 px-2.5 flex items-center gap-1.5 rounded-md text-xs font-medium text-destructive hover:bg-destructive/10 shrink-0"
+                            icon={<Trash2 size={12} />}
+                            className="shrink-0"
                           >
-                            <Trash2 size={12} />
                             Remove
-                          </button>
+                          </Button>
                         </div>
                       ))}
                     </div>
@@ -2792,18 +2734,18 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                   </span>
                   <Switch label="Bangs" data-vim-item="general:bangs" checked={bangsEnabled} onChange={setBangsEnabled} />
                 </label>
-                <button
+                <LinkButton
                   data-vim-item="general:manage-bangs"
                   onClick={() => {
                     handleSave()
                     useAppStore.getState().showInternalPage(BANGS_URL)
                   }}
-                  className="mt-2 flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-primary hover:bg-secondary"
+                  className="mt-2"
                   title="Save Settings and open the Bangs page (vimperium://bangs)"
                 >
                   Manage bangs…
-                  <ExternalLink size={12} />
-                </button>
+                  <ExternalLink size={12} className="ml-1 inline align-[-2px]" />
+                </LinkButton>
               </div>
 
               {/* Default browser */}
@@ -3036,13 +2978,12 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                       onChange={(e) => setProxy((prev) => ({ ...prev, proxyRules: e.target.value }))}
                       placeholder="http://127.0.0.1:8080 or socks5://127.0.0.1:1080"
                     />
-                    <input
+                    <TextField
                       data-vim-item="network:proxy-bypass"
                       type="text"
                       value={proxy.proxyBypassRules}
                       onChange={(e) => setProxy((prev) => ({ ...prev, proxyBypassRules: e.target.value }))}
                       placeholder="<-loopback>;localhost;*.internal"
-                      className="w-full h-9 px-3 field rounded-xl text-sm text-foreground outline-none"
                     />
                     <p className="text-[11px] text-muted-foreground">
                       Server and bypass list are applied using Chromium proxy rules.
@@ -3096,14 +3037,15 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
               {/* Integrated Windows Authentication (SSO) */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">Integrated Windows Authentication (SSO)</label>
-                <textarea
+                <Textarea
+                  mono
                   data-vim-item="enterprise:sso"
                   value={authServerAllowlist}
                   onChange={(e) => setAuthServerAllowlist(e.target.value)}
                   rows={2}
                   spellCheck={false}
                   placeholder="owa.example.com, *.corp.example.com"
-                  className="w-full px-3 py-2 text-sm field text-foreground rounded-xl outline-none font-mono"
+                  className="w-full"
                 />
                 <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
                   Hosts listed here sign in automatically with your <span className="text-foreground">Windows account</span> (NTLM / Kerberos),
@@ -3152,15 +3094,13 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                       </PanelRow>
                     ))}
                     <PanelRow className="justify-end">
-                      <button
-                        type="button"
+                      <Button variant="quiet-danger" size="sm"
                         data-vim-item="enterprise:clear-creds"
                         data-vim-danger
                         onClick={clearAllSavedCredentials}
-                        className="text-[11px] font-medium text-destructive hover:underline"
                       >
                         Remove all
-                      </button>
+                      </Button>
                     </PanelRow>
                   </Panel>
                 )}
@@ -3206,14 +3146,15 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
               </div>
 
               <div className="flex items-stretch gap-2">
-                <input
+                <TextField
+                  mono
+                  boxClassName="flex-1"
                   data-vim-item="ext:install-input"
                   type="text"
                   value={extInput}
                   onChange={(e) => setExtInput(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter' && !extInstalling) handleInstallExtension() }}
                   placeholder="https://chromewebstore.google.com/detail/…/<id> or <id>"
-                  className="flex-1 h-9 px-3 field rounded-xl text-sm text-foreground outline-none font-mono"
                   disabled={extInstalling}
                 />
                 <Button variant="primary"
@@ -3276,18 +3217,17 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                           ]).size
                           return (
                             <>
-                              <button
-                                type="button"
+                              <LinkButton
                                 data-vim-cell="details"
                                 aria-expanded={expanded}
                                 onClick={() => toggleExtensionDetails(ext.id)}
-                                className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+                                className="mt-1"
                               >
-                                {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                                {expanded ? <ChevronDown size={12} className="mr-1 inline align-[-2px]" /> : <ChevronRight size={12} className="mr-1 inline align-[-2px]" />}
                                 {permissionCount} permission{permissionCount === 1 ? '' : 's'}
                                 {commands.length > 0 &&
                                   ` · ${commands.length} keyboard shortcut${commands.length === 1 ? '' : 's'}`}
-                              </button>
+                              </LinkButton>
                               {expanded && (
                                 <div className="mt-2 flex flex-col gap-3 rounded-md border border-border p-3">
                                   {!ext.permissionsFromOriginal && (
@@ -3304,9 +3244,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                                   />
                                   {commands.length > 0 && (
                                     <div>
-                                      <div className="mb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                                        Keyboard shortcuts
-                                      </div>
+                                      <GroupTitle className="mb-1">Keyboard shortcuts</GroupTitle>
                                       <div className="flex flex-col gap-1">
                                         {commands.map((c) => {
                                           const recording =
@@ -3317,32 +3255,27 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                                                 {c.description}
                                               </span>
                                               <div className="flex shrink-0 items-center gap-1">
-                                                <button
-                                                  type="button"
+                                                <HotkeyButton
                                                   data-vim-cell="record"
+                                                  keys={c.shortcut ? acceleratorKeys(c.shortcut) : []}
+                                                  recording={recording}
+                                                  invalid={commandError?.extensionId === ext.id && commandError.command === c.name}
+                                                  emptyLabel="Not set"
+                                                  invalidLabel="Try again"
                                                   onClick={() => {
                                                     setCommandError(null)
                                                     setRecordingCommand(recording ? null : { extensionId: ext.id, command: c.name })
                                                   }}
                                                   title="Click, then press the new shortcut (Escape cancels)"
-                                                  className={`h-6 min-w-[96px] rounded border px-2 text-[11px] ${
-                                                    recording
-                                                      ? 'border-primary text-primary'
-                                                      : 'border-input text-foreground hover:bg-muted'
-                                                  }`}
-                                                >
-                                                  {recording ? 'Press keys…' : c.shortcut ? formatAccelerator(c.shortcut) : 'Not set'}
-                                                </button>
+                                                />
                                                 {c.shortcut && !recording && (
-                                                  <button
-                                                    type="button"
+                                                  <IconButton size={24}
                                                     data-vim-cell="remove"
                                                     onClick={() => applyExtensionCommand(ext.id, c.name, '')}
-                                                    title="Remove shortcut"
-                                                    className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+                                                    label="Remove shortcut"
                                                   >
                                                     <X size={11} />
-                                                  </button>
+                                                  </IconButton>
                                                 )}
                                               </div>
                                             </div>
@@ -3362,16 +3295,14 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         {ext.hasAction && (
-                          <button
+                          <IconButton
                             data-vim-cell="pin"
+                            pressed={ext.pinned ?? true}
                             onClick={() => handleTogglePinned(ext.id, !(ext.pinned ?? true))}
-                            className={`h-7 w-7 rounded-md flex items-center justify-center hover:bg-muted ${
-                              (ext.pinned ?? true) ? 'text-foreground' : 'text-muted-foreground'
-                            }`}
-                            title={(ext.pinned ?? true) ? 'Hide from toolbar (unpin)' : 'Show in toolbar (pin)'}
+                            label={(ext.pinned ?? true) ? 'Hide from toolbar (unpin)' : 'Show in toolbar (pin)'}
                           >
                             {(ext.pinned ?? true) ? <Pin size={12} /> : <PinOff size={12} />}
-                          </button>
+                          </IconButton>
                         )}
                         {ext.hasOptionsPage && (
                           <Button variant="secondary"
@@ -3392,14 +3323,13 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                           />
                           Enabled
                         </label>
-                        <button
+                        <IconButton danger
                           data-vim-cell="remove"
                           onClick={() => handleUninstallExtension(ext.id)}
-                          className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                          title="Uninstall"
+                          label="Uninstall"
                         >
                           <Trash2 size={12} />
-                        </button>
+                        </IconButton>
                       </div>
                     </PanelRow>
                   ))
@@ -3462,7 +3392,10 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                     Reset to Defaults
                   </Button>
                 </div>
-                <textarea
+                {/* overflow-auto: the package's textarea hides overflow, made for one that grows. */}
+                <Textarea
+                  mono
+                  autoGrow={false}
                   data-vim-item="shortcuts:vim-keymap"
                   value={vimKeymapText}
                   onChange={(event) => setVimKeymapText(event.target.value)}
@@ -3471,7 +3404,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                   autoCorrect="off"
                   wrap="off"
                   rows={24}
-                  className="w-full px-3 py-2 field rounded-xl font-mono text-xs leading-relaxed text-foreground outline-none resize-y"
+                  className="w-full overflow-auto"
                 />
                 {vimKeymapErrors.length > 0 && (
                   <div className="mt-2 px-3 py-2 rounded-md border border-destructive/40 bg-destructive/10 text-xs text-destructive space-y-0.5">
@@ -3519,14 +3452,13 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                 <div className="flex items-center justify-between mb-1">
                   <label className="block text-sm font-medium text-foreground">Exceptions</label>
                   {permissionGrants.length > 0 && (
-                    <button
+                    <Button variant="quiet-danger" size="sm"
                       data-vim-item="perm:clear-all"
                       data-vim-danger
                       onClick={clearAllPermissionGrants}
-                      className="text-xs text-muted-foreground hover:text-foreground"
                     >
                       Clear all
-                    </button>
+                    </Button>
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
@@ -3605,14 +3537,14 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                         <Badge tone={g.decision === 'allow' ? 'success' : 'error'} className="shrink-0">
                           {g.decision === 'allow' ? 'Allowed' : 'Blocked'}
                         </Badge>
-                        <button
-                          aria-label="Remove"
+                        <IconButton
+                          label="Remove"
                           data-vim-cell="remove"
                           onClick={() => clearPermissionGrant(g)}
-                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground"
+                          className="shrink-0"
                         >
                           <Trash2 size={14} />
-                        </button>
+                        </IconButton>
                       </PanelRow>
                     ))}
                   </Panel>
@@ -3669,8 +3601,8 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                       ] as const
                     ).map((row) => (
                       <PanelRow key={row.label} title={row.label}>
-                        <button
-                          type="button"
+                        <LinkButton
+                          mono
                           data-vim-item={`about:path:${row.label}`}
                           onClick={() => {
                             navigator.clipboard.writeText(row.value).catch((err) => {
@@ -3678,10 +3610,9 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                             })
                           }}
                           title="Click to copy"
-                          className="text-xs text-muted-foreground font-mono truncate hover:text-foreground transition-colors text-right select-all"
                         >
                           {row.value}
-                        </button>
+                        </LinkButton>
                       </PanelRow>
                     ))}
                 </Panel>
@@ -3833,9 +3764,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                 <div className="flex flex-col gap-4">
                   {CREDIT_GROUPS.map((group) => (
                     <div key={group.id}>
-                      <div className="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                        {group.label}
-                      </div>
+                      <GroupTitle className="mb-1.5">{group.label}</GroupTitle>
                       <Panel className="flex flex-col p-1">
                         {group.credits.map((credit) => (
                           <button
@@ -3848,7 +3777,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                           >
                             <span className="shrink-0 text-sm font-medium text-foreground">{credit.name}</span>
                             <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{credit.role}</span>
-                            <Badge className="shrink-0">{credit.license}</Badge>
+                            <Badge plain className="shrink-0">{credit.license}</Badge>
                             <ExternalLink size={11} className="shrink-0 text-muted-foreground" />
                           </button>
                         ))}
@@ -3963,15 +3892,9 @@ function AboutLink({ item, url, onOpen, children }: {
   children: React.ReactNode
 }) {
   return (
-    <button
-      type="button"
-      data-vim-item={item}
-      onClick={() => onOpen(url)}
-      title={url}
-      className="font-medium text-foreground underline-offset-2 hover:underline"
-    >
+    <LinkButton data-vim-item={item} onClick={() => onOpen(url)} title={url}>
       {children}
-    </button>
+    </LinkButton>
   )
 }
 

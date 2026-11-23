@@ -1,3 +1,4 @@
+import { Badge, SectionTitle } from '@bedware/ui'
 import { describeExtensionPermissions } from '../lib/extension-permissions'
 
 interface Props {
@@ -43,17 +44,12 @@ function PermissionGroup({ title, items }: { title: string; items: string[] }) {
   if (items.length === 0) return null
   return (
     <div>
-      <div className="mb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-        {title} · {items.length}
-      </div>
+      <SectionTitle level={2} title={`${title} · ${items.length}`} className="mb-1" />
       <div className="flex flex-wrap gap-1">
         {items.map((p) => (
-          <span
-            key={p}
-            className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-foreground select-text break-all"
-          >
+          <Badge key={p} plain className="max-w-full whitespace-normal break-all select-text">
             {p}
-          </span>
+          </Badge>
         ))}
       </div>
     </div>

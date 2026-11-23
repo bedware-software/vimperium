@@ -36,13 +36,14 @@ const MODES: { id: DarkPagesMode; label: string; short: string; hint: string }[]
   { id: 'theme', label: "With Vimperium's theme", short: 'Auto', hint: "Pages are dark while Vimperium's own theme is — Settings → Appearance; under System, as the OS switches." },
 ]
 
-/** Off / On / With Vimperium's theme. `compact`: the short names, for the
- *  popover. `vimItem`: its id for Vim's form keys (Settings). */
+/** Off / On / With Vimperium's theme. `compact`: the short names on the
+ *  small track, for the popover. `vimItem`: its id for Vim's form keys (Settings). */
 export function DarkPagesModeSwitch({ compact = false, className, vimItem }: { compact?: boolean; className?: string; vimItem?: string }) {
   const { config } = useDarkPages()
   return (
     <Segmented
       label="Dark pages"
+      size={compact ? 'sm' : 'md'}
       data-vim-item={vimItem}
       className={className}
       value={config.mode}

@@ -28,7 +28,7 @@ import { log } from '../lib/log'
 import { focusAddressFilter, useAddressFilter, type AddressFilterKeyEvent } from '../lib/address-filter'
 import { openDropdownAsync, type DropdownAction } from './dropdown-protocol'
 import { KeysHelp, KeysHelpButton } from './KeyHints'
-import { Badge, Button, Hint, HintBar, Kbd, Segmented } from '@bedware/ui'
+import { Badge, Button, GroupTitle, Hint, HintBar, IconButton, Kbd, Segmented } from '@bedware/ui'
 
 type SortKey = 'date' | 'size' | 'name'
 type SortDir = 'asc' | 'desc'
@@ -747,6 +747,7 @@ export function DownloadsPage() {
               Sort by {keyOf('sort') && <Kbd>{keyOf('sort')}</Kbd>}
             </span>
             <Segmented
+              size="sm"
               label="Sort downloads"
               value={sort.key}
               options={SORT_KEYS.map((key) => {
@@ -794,12 +795,7 @@ export function DownloadsPage() {
           )}
           {rows.map((row) =>
             row.kind === 'day' ? (
-              <div
-                key={row.key}
-                className="px-3 pb-1.5 pt-4 text-[11px] font-medium uppercase tracking-wider text-muted-foreground first:pt-1"
-              >
-                {row.label}
-              </div>
+              <GroupTitle key={row.key} className="mt-2 first:mt-0">{row.label}</GroupTitle>
             ) : (
               <DownloadRow
                 key={row.key}
@@ -893,7 +889,6 @@ function DownloadRow({
   const percent = percentOf(entry)
   const source = entry.originUrl || entry.url
   const status = statusLine(entry)
-  const iconButton = 'flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground'
 
   return (
     <div
@@ -958,41 +953,40 @@ function DownloadRow({
         selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
       }`}>
         {entry.state === 'progressing' && (
-          <button tabIndex={-1} onClick={(e) => { e.stopPropagation(); onTogglePause() }} className={iconButton} title={titleWithKey('Pause', keyOf('pause'))}>
+          <IconButton tabIndex={-1} onClick={(e) => { e.stopPropagation(); onTogglePause() }} label={titleWithKey('Pause', keyOf('pause'))}>
             <Pause size={14} />
-          </button>
+          </IconButton>
         )}
         {entry.state === 'paused' && (
-          <button tabIndex={-1} onClick={(e) => { e.stopPropagation(); onTogglePause() }} className={iconButton} title={titleWithKey('Resume', keyOf('pause'))}>
+          <IconButton tabIndex={-1} onClick={(e) => { e.stopPropagation(); onTogglePause() }} label={titleWithKey('Resume', keyOf('pause'))}>
             <Play size={14} />
-          </button>
+          </IconButton>
         )}
         {canRetry(entry) && (
-          <button tabIndex={-1} onClick={(e) => { e.stopPropagation(); onRetry() }} className={iconButton} title={titleWithKey('Retry', keyOf('retry'))}>
+          <IconButton tabIndex={-1} onClick={(e) => { e.stopPropagation(); onRetry() }} label={titleWithKey('Retry', keyOf('retry'))}>
             <RotateCw size={14} />
-          </button>
+          </IconButton>
         )}
         {openable && (
-          <button tabIndex={-1} onClick={(e) => { e.stopPropagation(); onOpen() }} className={iconButton} title={titleWithKey('Open', keyOf('primary'))}>
+          <IconButton tabIndex={-1} onClick={(e) => { e.stopPropagation(); onOpen() }} label={titleWithKey('Open', keyOf('primary'))}>
             <FolderOpen size={14} />
-          </button>
+          </IconButton>
         )}
         {canShow(entry) && (
-          <button tabIndex={-1} onClick={(e) => { e.stopPropagation(); onShow() }} className={iconButton} title={titleWithKey('Show in folder', keyOf('showInFolder'))}>
+          <IconButton tabIndex={-1} onClick={(e) => { e.stopPropagation(); onShow() }} label={titleWithKey('Show in folder', keyOf('showInFolder'))}>
             <Folder size={14} />
-          </button>
+          </IconButton>
         )}
-        <button tabIndex={-1} onClick={(e) => { e.stopPropagation(); onCopy() }} className={iconButton} title={titleWithKey('Copy download link', keyOf('copy'))}>
+        <IconButton tabIndex={-1} onClick={(e) => { e.stopPropagation(); onCopy() }} label={titleWithKey('Copy download link', keyOf('copy'))}>
           <Link2 size={14} />
-        </button>
-        <button
+        </IconButton>
+        <IconButton danger
           tabIndex={-1}
           onClick={(e) => { e.stopPropagation(); onRemove() }}
-          className={`${iconButton} hover:text-destructive`}
-          title={titleWithKey(live ? 'Cancel' : 'Remove from list', keyOf('remove'))}
+          label={titleWithKey(live ? 'Cancel' : 'Remove from list', keyOf('remove'))}
         >
           {live ? <X size={14} /> : <Trash2 size={14} />}
-        </button>
+        </IconButton>
       </div>
     </div>
   )

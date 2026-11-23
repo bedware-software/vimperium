@@ -30,7 +30,7 @@ import { log } from '../lib/log'
 import { focusAddressFilter, useAddressFilter, type AddressFilterKeyEvent } from '../lib/address-filter'
 import { openDropdownAsync, type DropdownAction } from './dropdown-protocol'
 import { KeysHelp, KeysHelpButton } from './KeyHints'
-import { Badge, Button, Hint, HintBar, Kbd, Panel, PanelRow, Segmented, Switch, InputField as TextField } from '@bedware/ui'
+import { Badge, Button, GroupTitle, Hint, HintBar, IconButton, Kbd, LinkButton, Panel, PanelRow, Segmented, Switch, InputField as TextField } from '@bedware/ui'
 
 type SortKey = 'category' | 'trigger' | 'name'
 type SortDir = 'asc' | 'desc'
@@ -677,6 +677,7 @@ export function BangsPage() {
             Search engine {keyOf('engine') && <Kbd>{keyOf('engine')}</Kbd>}
           </span>
           <Segmented
+            size="sm"
             label="Search engine"
             value={customActive ? CUSTOM_ENGINE : currentEngine ?? ''}
             options={[
@@ -752,6 +753,7 @@ export function BangsPage() {
               Sort by {keyOf('sort') && <Kbd>{keyOf('sort')}</Kbd>}
             </span>
             <Segmented
+              size="sm"
               label="Sort bangs"
               value={sort.key}
               options={SORT_KEYS.map((key) => {
@@ -804,12 +806,7 @@ export function BangsPage() {
           )}
           {rows.map((row) =>
             row.kind === 'heading' ? (
-              <div
-                key={row.key}
-                className="px-3 pb-1.5 pt-4 text-[11px] font-medium uppercase tracking-wider text-muted-foreground first:pt-1"
-              >
-                {row.label}
-              </div>
+              <GroupTitle key={row.key} className="mt-2 first:mt-0">{row.label}</GroupTitle>
             ) : (
               <BangRow
                 key={row.key}
@@ -958,14 +955,14 @@ function BangEditor({
         <div className="mb-4 flex items-center gap-2">
           <Zap size={15} className="text-primary" />
           <h2 className="text-sm font-semibold">{state.mode === 'add' ? 'Add a bang' : `Edit !${state.draft.trigger}`}</h2>
-          <button
+          <IconButton size={24}
             onClick={onCancel}
-            className="ml-auto flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
-            aria-label="Cancel"
+            className="ml-auto"
+            label="Cancel"
             tabIndex={-1}
           >
             <X size={13} />
-          </button>
+          </IconButton>
         </div>
         <Panel className="mb-4">
           <PanelRow
@@ -1035,14 +1032,13 @@ function BangEditor({
             {knownLabels.length > 0 && <> Labels: {knownLabels.map((l, i) => (
               <span key={l}>
                 {i > 0 && ', '}
-                <button
-                  type="button"
+                <LinkButton
+                  mono
                   tabIndex={-1}
                   onClick={() => { if (!labels.includes(l)) setLabelsText(labels.concat(l).join(', ')) }}
-                  className="font-mono text-primary hover:underline"
                 >
                   {l}
-                </button>
+                </LinkButton>
               </span>
             ))}.</>}
           </span>
@@ -1087,7 +1083,6 @@ function BangRow({
   onRemove: () => void
   onContextMenu: (at: { x: number; y: number }) => void
 }) {
-  const iconButton = 'flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground'
   return (
     <div
       id={`bang-${bang.id}`}
@@ -1118,9 +1113,7 @@ function BangRow({
             <span className="shrink-0 text-[11px] text-muted-foreground">{bang.category}</span>
           )}
           {(bang.labels ?? []).map((l) => (
-            <span key={l} className="shrink-0 rounded bg-secondary px-1.5 py-px font-mono text-[10px] text-muted-foreground" title={`!${l} searches every bang labelled ${l}`}>
-              {l}
-            </span>
+            <Badge key={l} plain className="shrink-0" title={`!${l} searches every bang labelled ${l}`}>{l}</Badge>
           ))}
         </div>
         <div className="mt-0.5 truncate font-mono text-[11px] text-muted-foreground" title={bang.url}>
@@ -1130,23 +1123,22 @@ function BangRow({
       <div className={`flex w-[124px] shrink-0 items-center justify-end gap-0.5 ${
         selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
       }`}>
-        <button tabIndex={-1} onClick={(e) => { e.stopPropagation(); onToggle() }} className={iconButton} title={titleWithKey(bang.enabled ? 'Turn off' : 'Turn on', keyOf('toggle'))}>
+        <IconButton tabIndex={-1} onClick={(e) => { e.stopPropagation(); onToggle() }} label={titleWithKey(bang.enabled ? 'Turn off' : 'Turn on', keyOf('toggle'))}>
           {bang.enabled ? <Power size={14} /> : <PowerOff size={14} />}
-        </button>
-        <button tabIndex={-1} onClick={(e) => { e.stopPropagation(); onCopy() }} className={iconButton} title={titleWithKey(`Copy !${bang.trigger}`, keyOf('copy'))}>
+        </IconButton>
+        <IconButton tabIndex={-1} onClick={(e) => { e.stopPropagation(); onCopy() }} label={titleWithKey(`Copy !${bang.trigger}`, keyOf('copy'))}>
           <Copy size={14} />
-        </button>
-        <button tabIndex={-1} onClick={(e) => { e.stopPropagation(); onEdit() }} className={iconButton} title={titleWithKey('Edit', keyOf('edit'))}>
+        </IconButton>
+        <IconButton tabIndex={-1} onClick={(e) => { e.stopPropagation(); onEdit() }} label={titleWithKey('Edit', keyOf('edit'))}>
           <Pencil size={14} />
-        </button>
-        <button
+        </IconButton>
+        <IconButton danger
           tabIndex={-1}
           onClick={(e) => { e.stopPropagation(); onRemove() }}
-          className={`${iconButton} hover:text-destructive`}
-          title={titleWithKey('Delete', keyOf('remove'))}
+          label={titleWithKey('Delete', keyOf('remove'))}
         >
           <Trash2 size={14} />
-        </button>
+        </IconButton>
       </div>
     </div>
   )

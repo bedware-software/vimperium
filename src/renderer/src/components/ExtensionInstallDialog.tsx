@@ -4,7 +4,7 @@ import { DetachedWindow } from './DetachedWindow'
 import { ExtensionPermissionList } from './ExtensionPermissionList'
 import { describeExtensionPermissions } from '../lib/extension-permissions'
 import { useYesNoKeys } from '../lib/dialog-keys'
-import { Button, Hint } from '@bedware/ui'
+import { Button, Hint, LinkButton } from '@bedware/ui'
 
 export interface ExtensionInstallPreview {
   id: string
@@ -102,14 +102,12 @@ export function ExtensionInstallDialog({ preview, installing, error, onConfirm, 
           ) : (
             <p className="text-xs text-muted-foreground">Needs no special permissions.</p>
           )}
-          <button
-            type="button"
+          <LinkButton className="mt-3"
             onClick={() => setShowAll((v) => !v)}
-            className="mt-3 flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
           >
             {showAll ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
             {showAll ? 'Hide permission list' : 'Show all permissions'}
-          </button>
+          </LinkButton>
           {error && (
             <div className="mt-3 flex items-start gap-1.5 text-xs text-destructive">
               <AlertTriangle size={12} className="mt-0.5 shrink-0" />

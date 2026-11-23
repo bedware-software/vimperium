@@ -5,7 +5,7 @@
 // site asking mid-typing doesn't cut in; Esc in it, once clicked, dismisses.
 // Its buttons are the mouse's: no key reaches them until it's clicked.
 
-import { Button } from '@bedware/ui'
+import { Button, IconButton } from '@bedware/ui'
 import type { ReactNode } from 'react'
 import { Bell, Camera, Clipboard, MapPin, Mic, Music, ShieldAlert, X, type LucideIcon } from 'lucide-react'
 import { DetachedWindow } from './DetachedWindow'
@@ -51,15 +51,13 @@ function PagePrompt({ open, title, height, anchorRef, onDismiss, children }: She
 
 function DismissButton({ onClick }: { onClick: () => void }) {
   return (
-    <button
-      type="button"
-      aria-label="Dismiss"
-      title="Dismiss"
+    <IconButton size={32}
+      label="Dismiss"
       onClick={onClick}
-      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground"
+      className="shrink-0"
     >
       <X size={16} />
-    </button>
+    </IconButton>
   )
 }
 

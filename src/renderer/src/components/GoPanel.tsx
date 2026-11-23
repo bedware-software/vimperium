@@ -15,7 +15,7 @@ import { cn } from '../lib/utils'
 import { isCopyKey } from '../lib/vim-mode'
 import { displayKeySequence } from '../lib/vim-keymap'
 import { useVimEdge, type VimEdge } from '../lib/vim-edge'
-import { Button, Hint, HintBar, InputField as Field } from '@bedware/ui'
+import { Button, Hint, HintBar, InputField as Field, IconButton } from '@bedware/ui'
 
 const WIDTH = 660
 // The field's row (h-11), the hint bar (h-10), the border.
@@ -339,14 +339,15 @@ export function GoPanel({ open, focusTick, onClose, anchorRef }: {
               trailing={(
                 <>
                   {count}
-                  <button
-                    type="button"
+                  <IconButton
+                    size={20}
+                    pressed={attrs}
+                    className="shrink-0"
                     onClick={toggleAttrs}
-                    title={iconsTitle}
-                    className={cn('shrink-0', attrs ? 'text-primary' : 'text-muted-foreground/50')}
+                    label={iconsTitle}
                   >
                     <Image size={14} />
-                  </button>
+                  </IconButton>
                 </>
               )}
             >

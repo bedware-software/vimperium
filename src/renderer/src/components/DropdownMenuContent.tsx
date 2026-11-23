@@ -1,4 +1,4 @@
-import { Kbd, Menu, MenuHeader, MenuItem, MenuSeparator } from '@bedware/ui'
+import { Menu, MenuHeader, MenuItem, MenuSeparator, IconButton } from '@bedware/ui'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   DndContext,
@@ -57,8 +57,7 @@ function SortableRow({
   sortable: boolean
   editable: boolean
   deletable: boolean
-  /** Highlighted by keyboard navigation: its rename and delete show, with
-   *  their keys. */
+  /** Highlighted by keyboard navigation: its rename and delete keys show. */
   focused?: boolean
   /** The list was opened from the keyboard: rows show their keys. */
   keyboard?: boolean
@@ -76,66 +75,72 @@ function SortableRow({
     transition,
   }
 
-  // Local markup, not MenuItem: MenuItem is a single button, and this row
-  // holds the pick button plus rename and delete, and is the drag handle.
+  // With actions MenuItem is a div, not a button: no Enter/Space of its own.
+  // From the keyboard, Enter is the menu's own handler's (the row the keys
+  // are on), so only Space is taken here then.
+  const hasActions = editable || deletable
+  const onRowKeyDown = (e: React.KeyboardEvent<HTMLElement>): void => {
+    if (e.target !== e.currentTarget) return
+    if (e.key !== ' ' && (e.key !== 'Enter' || keyboard)) return
+    e.preventDefault()
+    onEmit({ type: 'select', id: item.id })
+  }
+
   return (
-    <div
+    <MenuItem
       ref={setNodeRef}
       style={style}
       {...(sortable ? attributes : {})}
       {...(sortable ? listeners : {})}
+      // After dnd-kit's attributes (role="button", and tabIndex only when sortable).
+      role="menuitem"
+      tabIndex={0}
       {...(focused ? { 'data-key-focus': '' } : {})}
-      className={`flex items-center gap-2 px-3 py-1.5 group/row transition-colors ${
-        selected
-          ? 'bg-accent text-accent-foreground'
-          : focused ? 'bg-accent/50 text-foreground' : 'text-foreground hover:bg-accent/50'
-      } ${focused ? 'ring-1 ring-inset ring-primary/60' : ''} ${isDragging ? 'opacity-60' : ''} ${sortable ? 'cursor-grab active:cursor-grabbing' : ''}`}
+      {...(hasActions ? { onKeyDown: onRowKeyDown } : {})}
+      className={[isDragging && 'opacity-60', sortable && 'cursor-grab active:cursor-grabbing'].filter(Boolean).join(' ') || undefined}
+      onClick={() => onEmit({ type: 'select', id: item.id })}
+      icon={<Icon size={12} />}
+      current={selected}
+      selected={focused}
+      keys={[
+        ...(focused && editable ? [ROW_KEYS.rename] : []),
+        ...(focused && deletable ? [ROW_KEYS.delete] : []),
+        ...(keyboard && digit ? [digit] : []),
+      ]}
+      actions={hasActions ? (
+        <>
+          {editable && (
+            <IconButton size={20}
+              data-row-action
+              // Not a drag's start.
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation()
+                onEmit({ type: 'edit', id: item.id, name: item.name })
+              }}
+              label={`Rename ${item.name}`}
+            >
+              <Pencil size={11} />
+            </IconButton>
+          )}
+          {deletable && (
+            <IconButton size={20} danger
+              data-row-action
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation()
+                onEmit({ type: 'delete', id: item.id, name: item.name })
+              }}
+              label={`Delete ${item.name}`}
+            >
+              <Trash2 size={11} />
+            </IconButton>
+          )}
+        </>
+      ) : undefined}
     >
-      <button
-        className="flex items-center gap-2 flex-1 min-w-0 text-left"
-        onClick={() => onEmit({ type: 'select', id: item.id })}
-      >
-        <Icon size={12} className="text-muted-foreground shrink-0" />
-        <span className="truncate">{item.name}</span>
-      </button>
-      {/* Shown on hover, on a Tab-focused button, and on the row the keys
-          are on — with their keys then. */}
-      <div className={`flex items-center gap-0.5 shrink-0 transition-all ${
-        focused ? 'opacity-100' : 'opacity-0 group-hover/row:opacity-100 group-focus-within/row:opacity-100'
-      }`}>
-        {editable && (
-          <button
-            data-row-action
-            onPointerDown={(e) => e.stopPropagation()}
-            className="h-5 w-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-            onClick={(e) => {
-              e.stopPropagation()
-              onEmit({ type: 'edit', id: item.id, name: item.name })
-            }}
-            title={`Rename ${item.name}`}
-          >
-            <Pencil size={11} />
-          </button>
-        )}
-        {focused && editable && <Kbd className="mr-1">{ROW_KEYS.rename}</Kbd>}
-        {deletable && (
-          <button
-            data-row-action
-            onPointerDown={(e) => e.stopPropagation()}
-            className="h-5 w-5 flex items-center justify-center rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-            onClick={(e) => {
-              e.stopPropagation()
-              onEmit({ type: 'delete', id: item.id, name: item.name })
-            }}
-            title={`Delete ${item.name}`}
-          >
-            <Trash2 size={11} />
-          </button>
-        )}
-        {focused && deletable && <Kbd>{ROW_KEYS.delete}</Kbd>}
-      </div>
-      {keyboard && digit && <Kbd className="shrink-0">{digit}</Kbd>}
-    </div>
+      {item.name}
+    </MenuItem>
   )
 }
 
@@ -563,6 +568,7 @@ export function DropdownMenuContent({
           <MenuItem
             {...(keyFocus?.zone === 'new' ? { 'data-key-focus': '' } : {})}
             onClick={() => onEmit({ type: 'new' })}
+            accent
             icon={<Plus size={12} />}
             keys={spec.keyboard && rowKeys ? [ROW_KEYS.new] : undefined}
             selected={keyFocus?.zone === 'new'}

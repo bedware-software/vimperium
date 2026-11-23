@@ -1,3 +1,4 @@
+import { IconButton } from '@bedware/ui'
 import { Fragment, useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } from 'react'
 import { useAppStore, getSidebarOrder, GROUP_COLORS, alternateTabId } from '../store/app-store'
 import { log } from '../lib/log'
@@ -37,20 +38,19 @@ function TabMarks({ audible, muted = false, onToggleMute, reloadSeconds, inGroup
   return (
     <span className={`shrink-0 flex items-center gap-1 text-primary ${className}`}>
       {onToggleMute && (audible || muted) ? (
-        <button
-          type="button"
+        <IconButton
+          size={20}
           // The row's own press starts a drag, its click shows the tab.
           onMouseDown={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.stopPropagation()
             onToggleMute()
           }}
-          className={`flex h-5 w-5 items-center justify-center rounded hover:bg-muted ${muted ? 'text-muted-foreground' : ''}`}
           title={muted ? 'Muted — click to unmute' : 'Playing sound — click to mute'}
-          aria-label={muted ? 'Unmute tab' : 'Mute tab'}
+          label={muted ? 'Unmute tab' : 'Mute tab'}
         >
           {muted ? <VolumeX size={12} /> : <Volume2 size={12} />}
-        </button>
+        </IconButton>
       ) : audible && (
         <span className="flex items-center" title={inGroup ? 'A tab in this group is playing sound' : 'Playing sound'} aria-label="Playing sound">
           <Volume2 size={12} />
@@ -1442,7 +1442,7 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
             space. Each button has a card-tone background so the icons
             stay readable when they hover over the colored pill text. */}
         <div className="absolute right-1 top-0 bottom-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">
-          <button
+          <IconButton size={24}
             onMouseDown={(e) => e.stopPropagation()}
             // A middle click on "Add tab" must not fall through and close the group.
             onAuxClick={(e) => e.stopPropagation()}
@@ -1450,22 +1450,20 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
               e.stopPropagation()
               addTab(group.id)
             }}
-            className="h-6 w-6 items-center justify-center rounded bg-card/85 backdrop-blur-sm hover:bg-muted text-muted-foreground hover:text-foreground flex"
-            title="Add tab"
+            label="Add tab"
           >
             <Plus size={14} />
-          </button>
-          <button
+          </IconButton>
+          <IconButton size={24} danger
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation()
               closeGroup(group.id)
             }}
-            className="h-6 w-6 items-center justify-center rounded bg-card/85 backdrop-blur-sm hover:bg-destructive/20 text-muted-foreground hover:text-destructive flex"
-            title="Close group"
+            label="Close group"
           >
             <X size={14} />
-          </button>
+          </IconButton>
         </div>
       </div>
     )

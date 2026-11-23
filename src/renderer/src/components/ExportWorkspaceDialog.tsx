@@ -1,4 +1,4 @@
-import { Button } from '@bedware/ui'
+import { Button, Checkbox } from '@bedware/ui'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronRight, Folder, Upload, Layers } from 'lucide-react'
 import type { Workspace } from '../store/types'
@@ -154,16 +154,22 @@ export function ExportWorkspaceDialog({ open, workspaces, profileName, onConfirm
                   onMouseDown={() => keys.setCursor(index)}
                   onClick={() => toggleExpand(w.id)}
                 >
-                  <input
-                    type="checkbox"
-                    checked={isSelected}
-                    onChange={(e) => {
-                      e.stopPropagation()
-                      toggleSelect(w.id)
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                    className="h-3.5 w-3.5 shrink-0 accent-primary cursor-pointer"
-                  />
+                  {/* The span keeps the click from the row (it folds); Checkbox's
+                      own onClick can't be replaced. */}
+                  <span className="flex shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      aria-label={`Select ${w.name}`}
+                      checked={isSelected}
+                      onChange={() => toggleSelect(w.id)}
+                      // A button: useChecklistKeys leaves it its Enter, which
+                      // would tick; Enter goes ahead from anywhere in the list.
+                      onKeyDown={(e) => {
+                        if (e.key !== 'Enter' || e.metaKey || e.altKey || e.ctrlKey) return
+                        e.preventDefault()
+                        handleExport()
+                      }}
+                    />
+                  </span>
                   <ChevronRight
                     size={14}
                     className={`text-muted-foreground shrink-0 transition-transform ${

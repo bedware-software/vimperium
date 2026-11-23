@@ -70,15 +70,16 @@ export function usePageColumns(storageKey: string): {
   return { columns, setColumns, keyFree, onKey }
 }
 
-/** A Segmented in a list page's header, its choices out of the Tab order:
- *  the page's keys reach them, and Tab is the page's own. The package has no
- *  prop for it, so the attribute is set on its buttons after each render. */
+/** A Segmented in a list page's header (the small track), its choices out
+ *  of the Tab order: the page's keys reach them, and Tab is the page's own.
+ *  The package has no prop for it, so the attribute is set on its buttons
+ *  after each render. */
 export function PageSegmented<T extends string | boolean>(props: SegmentedProps<T>) {
   const ref = useRef<HTMLSpanElement>(null)
   useLayoutEffect(() => {
     ref.current?.querySelectorAll('[role="radio"]').forEach((radio) => radio.setAttribute('tabindex', '-1'))
   })
-  return <span ref={ref} className="contents"><Segmented {...props} /></span>
+  return <span ref={ref} className="contents"><Segmented size="sm" {...props} /></span>
 }
 
 /** The switch, the key's cap before it while the keys are COMMAND's. */

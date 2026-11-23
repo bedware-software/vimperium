@@ -5,6 +5,7 @@
 // the same contract WebviewPanel has with tab views. The tab column
 // shrinks by flex layout, so its own ResizeObserver re-bounds the page.
 
+import { IconButton } from '@bedware/ui'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 
@@ -160,14 +161,12 @@ export function SidePanel({ suppressed }: { suppressed: boolean }) {
         <div className="flex h-10 shrink-0 items-center gap-2 border-b border-border pl-1.5 pr-2">
           {meta?.iconUrl && <img src={meta.iconUrl} alt="" className="h-4 w-4 shrink-0" />}
           <span className="flex-1 truncate text-sm font-medium text-foreground">{meta?.name ?? 'Side panel'}</span>
-          <button
-            aria-label="Close side panel"
-            title="Close side panel"
+          <IconButton size={24}
+            label="Close side panel"
             onClick={() => window.electronAPI.closeSidePanel?.()}
-            className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
           >
             <X size={14} />
-          </button>
+          </IconButton>
         </div>
         {/* Must stay empty: main paints the panel's WebContentsView here. */}
         <div ref={placeholderRef} className="min-h-0 flex-1" />

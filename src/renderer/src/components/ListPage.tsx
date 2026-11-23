@@ -77,7 +77,7 @@ export function PageScopeSwitch({ on, label, onToggle, title, className }: {
       className={cn('flex h-7 shrink-0 items-center gap-1.5 px-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground', className)}
     >
       {label}
-      <Switch tabIndex={-1} checked={on} onChange={onToggle} label={label} />
+      <Switch size="xs" tabIndex={-1} checked={on} onChange={onToggle} label={label} />
       <span className="opacity-50">Tab</span>
     </label>
   )

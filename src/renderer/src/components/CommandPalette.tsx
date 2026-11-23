@@ -9,7 +9,7 @@ import { actionHint, type HintSettings } from '../lib/shortcut-hints'
 import { usePopupVimMode } from '../lib/vim-mode'
 import type { VimKeymap } from '../lib/vim-keymap'
 import { isSplitShown, useSplitStore } from '../lib/split-view'
-import { CommandRow, Hint, HintBar } from '@bedware/ui'
+import { CommandRow, GroupTitle, Hint, HintBar } from '@bedware/ui'
 
 interface Props {
   open: boolean
@@ -389,9 +389,7 @@ export function CommandPalette({ open, onOpenChange, onAction, vimKeymap }: Prop
         <div ref={listRef} role="listbox" className="flex-1 overflow-y-auto py-1">
           {grouped.map((group) => (
             <div key={group.category}>
-              <div className="px-4 py-1.5 text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
-                {group.category}
-              </div>
+              <GroupTitle>{group.category}</GroupTitle>
               {group.items.map((cmd) => {
                 const idx = flatIdx++
                 const isSelected = idx === selectedIndex

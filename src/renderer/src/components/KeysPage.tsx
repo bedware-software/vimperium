@@ -30,7 +30,7 @@ import { useReservedHintKeys } from '../lib/hint-labels'
 import { SEQUENCE_JOIN } from '../../../shared/vim-keys'
 import { LEAVE_INSERT_CAP } from './KeyHints'
 import { cn } from '../lib/utils'
-import { Kbd } from '@bedware/ui'
+import { Kbd, LinkButton } from '@bedware/ui'
 
 export interface KeysPageProps {
   keymap: ParsedVimKeymap
@@ -296,9 +296,9 @@ export function KeysPage({ keymap, vimPending, vimMode = null }: KeysPageProps) 
             </span>
             <span className="ml-auto hidden truncate text-xs text-muted-foreground sm:block">
               Esc or ? closes ·{' '}
-              <button type="button" tabIndex={-1} onClick={openKeySettings} className="hover:text-foreground">
+              <LinkButton tabIndex={-1} onClick={openKeySettings} className="align-bottom">
                 Settings → Keyboard Shortcuts edits them
-              </button>
+              </LinkButton>
               {vimMode === 'command' && <Kbd className="ml-1.5 font-mono">{SETTINGS_KEY}</Kbd>}
             </span>
           </div>

@@ -21,7 +21,7 @@ import { SearchPage } from './SearchPage'
 import { KeysPage } from './KeysPage'
 import { PlacePage } from './PlacePage'
 import { BookshelfPage } from './BookshelfPage'
-import { Button, Kbd } from '@bedware/ui'
+import { Button, Kbd, LinkButton } from '@bedware/ui'
 
 // Tab rendering lives in the main process now, as a WebContentsView per tab
 // attached to the window's root contentView. This component is a thin layout
@@ -869,13 +869,11 @@ function CertWarningOverlay({
             Back to safety
             {backKey && <Kbd on="button">{backKey}</Kbd>}
           </Button>
-          <button
-            type="button"
+          <LinkButton
             onClick={onContinue}
-            className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
           >
             Continue to {hostname} (unsafe)
-          </button>
+          </LinkButton>
         </div>
       </div>
     </div>

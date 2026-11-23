@@ -10,7 +10,7 @@ import { darkPagesActions, useDarkPages } from '../lib/dark-pages'
 import { actionHint, type HintSettings } from '../lib/shortcut-hints'
 import { ComfortSliders, DarkPagePreview, DarkPagesModeSwitch, acceleratorCaps } from './DarkPagesControls'
 import { darkPagesGloballyOn, normalizeSiteKey, type DarkPagesRule, type DarkPagesStyle } from '../../../shared/dark-pages'
-import { Badge, Button, Kbd, Panel, PanelRow, InputField as TextField } from '@bedware/ui'
+import { Badge, Button, ChoiceCards, Kbd, Panel, PanelRow, InputField as TextField, IconButton } from '@bedware/ui'
 
 const STYLES: { id: DarkPagesStyle; title: string; icon: typeof Sparkles; body: string }[] = [
   {
@@ -118,28 +118,23 @@ export function DarkPagesSettings({ hintSettings }: { hintSettings: HintSettings
       <div>
         <h3 className="mb-1 text-sm font-semibold text-foreground">Style</h3>
         <p className="mb-3 text-[11px] text-muted-foreground">How a page turns dark.</p>
-        <div role="radiogroup" aria-label="Style" data-vim-item="dark:style" className="grid grid-cols-2 gap-2 rounded-lg">
-          {STYLES.map(({ id, title, icon: Icon, body }) => (
-            <button
-              key={id}
-              type="button"
-              role="radio"
-              aria-checked={config.style === id}
-              onClick={() => darkPagesActions.set({ style: id })}
-              className={cn(
-                'flex flex-col items-start gap-1.5 rounded-lg border px-3 py-2.5 text-left transition-colors',
-                config.style === id ? 'border-primary bg-primary/10' : 'border-border hover:bg-secondary',
-              )}
-            >
-              <span className="flex items-center gap-1.5 text-xs font-medium text-foreground">
-                <Icon size={13} className={config.style === id ? 'text-primary' : 'text-muted-foreground'} />
+        <ChoiceCards
+          label="Style"
+          data-vim-item="dark:style"
+          value={config.style}
+          onChange={(style) => darkPagesActions.set({ style })}
+          options={STYLES.map(({ id, title, icon: Icon, body }) => ({
+            value: id,
+            title: (
+              <span className="flex items-center gap-1.5">
+                <Icon size={13} className="shrink-0 text-muted-foreground" />
                 {title}
                 {id === 'smart' && <Badge tone="accent">Recommended</Badge>}
               </span>
-              <span className="text-[11px] leading-snug text-muted-foreground">{body}</span>
-            </button>
-          ))}
-        </div>
+            ),
+            description: body,
+          }))}
+        />
       </div>
 
       <div>
@@ -160,7 +155,7 @@ export function DarkPagesSettings({ hintSettings }: { hintSettings: HintSettings
           <h3 className="text-sm font-semibold text-foreground">Sites</h3>
           {sites.length > 0 && (
             <Button
-              variant="ghost"
+              variant="quiet-danger"
               icon={<Trash2 size={12} />}
               data-vim-item="dark:clear-sites"
               data-vim-danger
@@ -204,16 +199,15 @@ export function DarkPagesSettings({ hintSettings }: { hintSettings: HintSettings
                 {/* Not PanelRow's title: that one doesn't truncate, and a long address would push the buttons out. */}
                 <span className="min-w-0 flex-1 truncate text-sm text-foreground">{site}</span>
                 <RulePicker site={site} rule={rule} onPick={(r) => darkPagesActions.setSite(site, r)} />
-                <button
-                  type="button"
+                <IconButton
+                  danger
                   data-vim-cell="remove"
                   onClick={() => darkPagesActions.setSite(site, null)}
-                  className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
                   title={`Drop the rule: ${site} follows the switch`}
-                  aria-label={`Remove ${site}`}
+                  label={`Remove ${site}`}
                 >
                   <X size={14} />
-                </button>
+                </IconButton>
               </PanelRow>
             ))}
           </Panel>

@@ -5,7 +5,7 @@ import { DetachedWindow } from './DetachedWindow'
 import { vimKeyCaps } from './KeyHints'
 import { useChecklistKeys } from '../lib/dialog-keys'
 import { useWindowVimKeymap } from '../lib/window-vim-keymap'
-import { Button, Hint, HintBar } from '@bedware/ui'
+import { Button, Checkbox, Hint, HintBar } from '@bedware/ui'
 
 /** The keys of Import's and Export's lists (lib/dialog-keys.ts
  *  useChecklistKeys), along the bottom: Vim mode's when it's on. */
@@ -164,16 +164,22 @@ export function ImportWorkspaceDialog({ open, candidates, onConfirm, onCancel }:
                   onMouseDown={() => keys.setCursor(index)}
                   onClick={() => toggleExpand(c.id)}
                 >
-                  <input
-                    type="checkbox"
-                    checked={isSelected}
-                    onChange={(e) => {
-                      e.stopPropagation()
-                      toggleSelect(c.id)
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                    className="h-3.5 w-3.5 shrink-0 accent-primary cursor-pointer"
-                  />
+                  {/* The span keeps the click from the row (it folds); Checkbox's
+                      own onClick can't be replaced. */}
+                  <span className="flex shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      aria-label={`Select ${c.name}`}
+                      checked={isSelected}
+                      onChange={() => toggleSelect(c.id)}
+                      // A button: useChecklistKeys leaves it its Enter, which
+                      // would tick; Enter goes ahead from anywhere in the list.
+                      onKeyDown={(e) => {
+                        if (e.key !== 'Enter' || e.metaKey || e.altKey || e.ctrlKey) return
+                        e.preventDefault()
+                        handleImport()
+                      }}
+                    />
+                  </span>
                   <ChevronRight
                     size={14}
                     className={`text-muted-foreground shrink-0 transition-transform ${

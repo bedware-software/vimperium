@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { X, Lock, Unlock, ShieldAlert, ChevronDown, ChevronRight } from 'lucide-react'
+import { IconButton, LinkButton, SectionTitle } from '@bedware/ui'
 import { DetachedWindow } from './DetachedWindow'
 
 interface CertInfo {
@@ -101,9 +102,9 @@ export function CertificatePopup({ open, url, security, onClose }: Props) {
               {isSecure ? 'Connection is secure' : isWarning ? 'Certificate error' : 'Connection is not secure'}
             </span>
           </div>
-          <button onClick={onClose} className="h-6 w-6 flex items-center justify-center rounded hover:bg-accent text-muted-foreground">
+          <IconButton label="Close" size={24} onClick={onClose}>
             <X size={14} />
-          </button>
+          </IconButton>
         </div>
 
         <div className="flex-1 overflow-y-auto">
@@ -134,45 +135,46 @@ export function CertificatePopup({ open, url, security, onClose }: Props) {
               {cert && (
                 <>
                   <div className="mb-3">
-                    <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Issued To</h4>
+                    <SectionTitle level={2} title="Issued To" className="mb-1" />
                     <Row label="Common Name (CN)" value={cert.subject.CN} />
                     <Row label="Organization (O)" value={cert.subject.O} />
                     <Row label="Organizational Unit (OU)" value={cert.subject.OU || '<Not Part Of Certificate>'} />
                   </div>
 
                   <div className="mb-3">
-                    <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Issued By</h4>
+                    <SectionTitle level={2} title="Issued By" className="mb-1" />
                     <Row label="Common Name (CN)" value={cert.issuer.CN} />
                     <Row label="Organization (O)" value={cert.issuer.O} />
                     <Row label="Organizational Unit (OU)" value={cert.issuer.OU || '<Not Part Of Certificate>'} />
                   </div>
 
                   <div className="mb-2">
-                    <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Validity Period</h4>
+                    <SectionTitle level={2} title="Validity Period" className="mb-1" />
                     <Row label="Issued On" value={formatDate(cert.validFrom)} />
                     <Row label="Expires On" value={formatDate(cert.validTo)} />
                   </div>
 
-                  <button
+                  <LinkButton
+                    aria-expanded={showDetails}
                     onClick={() => setShowDetails(!showDetails)}
-                    className="flex items-center gap-1 text-xs text-primary hover:underline mt-2"
+                    className="mt-2 flex items-center gap-1"
                   >
                     {showDetails ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                     Details
-                  </button>
+                  </LinkButton>
 
                   {showDetails && (
                     <div className="mt-2 pt-2 border-t border-border">
                       {cert.serialNumber && (
                         <div className="mb-3">
-                          <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Serial Number</h4>
+                          <SectionTitle level={2} title="Serial Number" className="mb-1" />
                           <p className="text-xs font-mono text-foreground break-all">{cert.serialNumber.toLowerCase()}</p>
                         </div>
                       )}
 
                       {cert.subjectAltNames && (
                         <div className="mb-3">
-                          <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Subject Alternative Names</h4>
+                          <SectionTitle level={2} title="Subject Alternative Names" className="mb-1" />
                           <p className="text-xs font-mono text-foreground break-all">
                             {cert.subjectAltNames.replace(/DNS:/g, '').split(',').map((s) => s.trim()).join(', ')}
                           </p>
@@ -180,20 +182,20 @@ export function CertificatePopup({ open, url, security, onClose }: Props) {
                       )}
 
                       <div className="mb-3">
-                        <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">SHA-256 Fingerprint</h4>
+                        <SectionTitle level={2} title="SHA-256 Fingerprint" className="mb-1" />
                         <p className="text-xs font-mono text-foreground break-all">{formatFingerprint(cert.fingerprint256)}</p>
                       </div>
 
                       {cert.pubkeyFingerprint && (
                         <div className="mb-1">
-                          <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Public Key Fingerprint</h4>
+                          <SectionTitle level={2} title="Public Key Fingerprint" className="mb-1" />
                           <p className="text-xs font-mono text-foreground break-all">{formatFingerprint(cert.pubkeyFingerprint)}</p>
                         </div>
                       )}
 
                       {cert.protocol && (
                         <div className="mt-3 mb-1">
-                          <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Connection</h4>
+                          <SectionTitle level={2} title="Connection" className="mb-1" />
                           <Row label="Protocol" value={cert.protocol} />
                           <Row label="Cipher Suite" value={cert.cipher} />
                         </div>

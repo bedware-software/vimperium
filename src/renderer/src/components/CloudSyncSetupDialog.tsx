@@ -1,4 +1,4 @@
-import { Button } from '@bedware/ui'
+import { Button, LinkButton } from '@bedware/ui'
 import { useEffect, useRef, useState } from 'react'
 import { Cloud, FolderOpen } from 'lucide-react'
 import { DetachedWindow } from './DetachedWindow'
@@ -184,12 +184,11 @@ export function CloudSyncSetupDialog({ open, prompt, onClose }: Props) {
 
         {!busy && (
           <div className="flex items-center justify-between gap-2 px-5 py-4 border-t border-border bg-toolbar shrink-0">
-            <button
+            <LinkButton
               onClick={dontShowAgain}
-              className="h-8 px-2 rounded-md text-[11px] font-medium text-muted-foreground hover:text-foreground"
             >
               Don&apos;t show again
-            </button>
+            </LinkButton>
             <div className="flex items-center gap-2">
               <Button variant="ghost"
                 onClick={onClose}

@@ -3,9 +3,10 @@
 // an X to forget a history entry. Rendered in its own window — see
 // omnibox-protocol.ts; the Toolbar owns selection and the keyboard.
 
+import { cn } from '../lib/utils'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Globe, History, Search, X, Zap } from 'lucide-react'
-import { Kbd } from '@bedware/ui'
+import { Kbd, IconButton } from '@bedware/ui'
 import type { OmniboxPopupEvent, OmniboxPopupRow, OmniboxPopupSpec } from './omnibox-protocol'
 
 /** Bold every occurrence of the typed words, like Chrome's match
@@ -140,7 +141,9 @@ export function OmniboxPopupContent({
               </Kbd>
             )}
             {row.removable && (
-              <button
+              <IconButton
+                size={24}
+                className={cn('shrink-0', selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100')}
                 data-remove
                 tabIndex={-1}
                 onMouseDown={(e) => {
@@ -148,14 +151,10 @@ export function OmniboxPopupContent({
                   e.stopPropagation()
                   if (e.button === 0) onEvent({ type: 'remove', index })
                 }}
-                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground ${
-                  selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                }`}
-                title="Remove suggestion (Shift+Delete)"
-                aria-label="Remove suggestion"
+                label="Remove suggestion (Shift+Delete)"
               >
                 <X size={13} />
-              </button>
+              </IconButton>
             )}
           </div>
         )

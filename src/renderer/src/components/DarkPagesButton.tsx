@@ -17,10 +17,10 @@ import { darkPagesActions, pageLook, useDarkPages } from '../lib/dark-pages'
 import { isInternalUrl } from '../lib/internal-pages'
 import { actionHint, type HintSettings } from '../lib/shortcut-hints'
 import { darkPagesApplies, darkPagesGloballyOn } from '../../../shared/dark-pages'
-import { Button, Hint, HintBar } from '@bedware/ui'
+import { Button, GroupTitle, Hint, HintBar, IconButton, LinkButton } from '@bedware/ui'
 
 const WIDTH = 356
-const HEIGHT = 266
+const HEIGHT = 264
 // A click on the moon right after the popover lost the focus to it is the
 // click that closed it, not one to open it again.
 const REOPEN_GUARD_MS = 250
@@ -100,18 +100,14 @@ export function DarkPagesButton({ url, onOpenSettings }: { url: string; onOpenSe
 
   return (
     <>
-      <button
+      <IconButton
         ref={buttonRef}
-        type="button"
+        size={24}
         onClick={(e) => toggleOpen(e.detail === 0)}
         title={title}
-        aria-label="Dark pages"
-        aria-pressed={look.dark}
-        className={cn(
-          'relative mr-1 h-6 w-6 shrink-0 flex items-center justify-center rounded-md transition-colors',
-          placement ? 'bg-secondary' : 'hover:bg-secondary',
-          look.dark ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
-        )}
+        label="Dark pages"
+        pressed={look.dark}
+        className="mr-1"
       >
         {hint}
         <Moon
@@ -128,7 +124,7 @@ export function DarkPagesButton({ url, onOpenSettings }: { url: string; onOpenSe
             )}
           />
         )}
-      </button>
+      </IconButton>
       {placement && (
         <DarkPagesPopover
           url={url}
@@ -271,14 +267,13 @@ function DarkPagesPopover({ url, placement, byKeys, onClose, onOpenSettings }: {
                 <div className="flex items-center gap-1.5 truncate text-[11px] text-muted-foreground">
                   <span className="truncate">{status}</span>
                   {look.rule && (
-                    <button
-                      type="button"
+                    <LinkButton
                       onClick={() => darkPagesActions.setSite(look.ruleSite!, null)}
-                      className="shrink-0 font-medium text-primary hover:underline"
+                      className="shrink-0"
                       title={`Drop the rule for ${look.ruleSite}: it follows the switch again`}
                     >
                       Reset
-                    </button>
+                    </LinkButton>
                   )}
                 </div>
               </div>
@@ -296,8 +291,8 @@ function DarkPagesPopover({ url, placement, byKeys, onClose, onOpenSettings }: {
           )}
         </div>
 
-        <div className="flex-1 px-3.5 pt-3 pb-2">
-          <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80">Comfort</div>
+        <div className="flex-1 px-3.5 pt-1.5 pb-2">
+          <GroupTitle className="mb-1">Comfort</GroupTitle>
           <ComfortSliders compact />
         </div>
 

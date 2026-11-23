@@ -18,7 +18,7 @@ import { hintIndex, usePopupHints } from '../lib/hint-labels'
 import { usePopupVimMode } from '../lib/vim-mode'
 import { paletteKeymap } from '../lib/vim-keymap'
 import { useWindowVimKeymap } from '../lib/window-vim-keymap'
-import { Hint, HintBar } from '@bedware/ui'
+import { GroupTitle, Hint, HintBar } from '@bedware/ui'
 
 /** One crumb of a row's location path. `pill` marks the segment that names a
  *  tab group, which is rendered as a colored pill like the sidebar's group
@@ -416,9 +416,7 @@ export function PickerDialog({
             sections.map((section) => (
               <div key={section.name ?? '__default__'}>
                 {section.name && (
-                  <div className="px-4 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    {section.name}
-                  </div>
+                  <GroupTitle>{section.name}</GroupTitle>
                 )}
                 {section.items.map((item) => {
                   const idx = flatIdx++

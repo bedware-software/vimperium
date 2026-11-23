@@ -1,4 +1,4 @@
-import { Button } from '@bedware/ui'
+import { Button, IconButton } from '@bedware/ui'
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useAppStore, saveStateNow, findWorkspaceCandidates, buildBookmarkHTML } from '../store/app-store'
 import { log } from '../lib/log'
@@ -318,22 +318,17 @@ function StoreInstallBadge({ activeTabUrl }: { activeTabUrl: string | undefined 
     typeof state === 'object' ? state.error : 'Download and install this extension into Vimperium'
 
   return (
-    <button
+    <Button
+      variant={typeof state === 'object' ? 'danger' : state === 'ok' ? 'secondary' : 'primary'}
+      icon={<Puzzle size={13} />}
+      className="relative shrink-0"
       onClick={handleClick}
       disabled={state === 'installing'}
       title={title}
       style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-      className={`relative shrink-0 flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium transition-colors ${
-        typeof state === 'object'
-          ? 'bg-destructive text-destructive-foreground hover:opacity-90'
-          : state === 'ok'
-            ? 'bg-secondary text-secondary-foreground'
-            : 'bg-primary text-primary-foreground hover:bg-primary/80'
-      }`}
     >
-      <Puzzle size={13} />
-      <span>{label}</span>
-    </button>
+      {label}
+    </Button>
   )
 }
 
@@ -635,19 +630,19 @@ function ExtensionActions({
       {/* The puzzle button: the extensions' menu, on either mouse button.
           Always shown, pinned extensions or not: the menu's last row is the
           way into Settings → Extensions. */}
-      <button
+      <IconButton size={32}
         ref={manageRef}
         onClick={toggleExtensionsMenu}
         onContextMenu={(e) => {
           e.preventDefault()
           toggleExtensionsMenu()
         }}
-        title="Extensions"
-        className="relative h-8 w-8 shrink-0 flex items-center justify-center rounded-md bg-secondary hover:bg-muted text-secondary-foreground transition-colors"
+        label="Extensions"
+        className="relative shrink-0"
       >
         {manageHint}
         <Puzzle size={15} />
-      </button>
+      </IconButton>
       {visible.map((ext) => {
         const isOpen = openPopupId === ext.id
         const action = actionState.actions.find((a) => a.id === ext.id)
@@ -677,17 +672,17 @@ function ExtensionActions({
         }
         return (
           <span key={ext.id} className="relative flex shrink-0">
-          <button
+          <IconButton
+            size={32}
+            pressed={isOpen || menuExtId === ext.id ? true : undefined}
+            className="relative shrink-0 overflow-hidden"
             ref={(el) => {
               if (el) buttonRefs.current.set(ext.id, el)
               else buttonRefs.current.delete(ext.id)
             }}
             onClick={() => handleClick(ext)}
             onContextMenu={(e) => handleContextMenu(ext, e)}
-            title={dynamicTitle || ext.actionDefaultTitle || ext.name}
-            className={`relative h-8 w-8 shrink-0 flex items-center justify-center rounded-md overflow-hidden transition-colors ${
-              isOpen || menuExtId === ext.id ? 'bg-muted text-foreground' : 'hover:bg-muted text-secondary-foreground'
-            } ${menuExtId === ext.id ? 'ring-2 ring-primary' : ''}`}
+            label={dynamicTitle || ext.actionDefaultTitle || ext.name}
           >
             {iconSrc ? (
               <img
@@ -717,7 +712,7 @@ function ExtensionActions({
                 {dynamicText}
               </span>
             ) : null}
-          </button>
+          </IconButton>
           </span>
         )
       })}
@@ -901,16 +896,16 @@ function AppMenu({ sidebarVisible, onToggleSidebar, onOpenSettings, onOpenAbout,
     // About only.
     <div ref={triggerRef} className="relative shrink-0" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
       {labelHint}
-      <button
+      <IconButton
+        size={32}
+        pressed={open ? true : undefined}
+        className="relative shrink-0"
         onMouseDown={() => { pressedOpenRef.current = open }}
         // A click with no press behind it (detail 0) came from the keys —
         // Enter or Space on the focused button, a hint label — so the menu
         // comes up keyboard-driven.
         onClick={(e) => handleToggle(e.detail === 0)}
-        className={`relative h-8 w-8 shrink-0 flex items-center justify-center rounded-md text-secondary-foreground transition-colors ${
-          open ? 'bg-muted' : 'bg-secondary hover:bg-muted'
-        }`}
-        aria-label="Vimperium menu"
+        label="Vimperium menu"
         aria-haspopup="menu"
         aria-expanded={open}
         title={
@@ -926,7 +921,7 @@ function AppMenu({ sidebarVisible, onToggleSidebar, onOpenSettings, onOpenAbout,
             DEV
           </span>
         )}
-      </button>
+      </IconButton>
       {/* Update status badge — mirrors the downloads button. Spinner while
           checking, a down-arrow when a new version is available (green once
           downloaded and ready to install). Nothing in the default/idle case. */}
@@ -1649,11 +1644,11 @@ export function Toolbar({ windowWorkspaceId, sidebarVisible, pageFullscreen, vim
             list is empty; Menu → Downloads remains the way in. All of it
             seeds/clears via onDownloadsUpdated. */}
         {totalDownloads > 0 && (
-          <button
+          <IconButton size={32}
             onClick={openDownloadsPage}
-            className="relative h-8 w-8 shrink-0 flex items-center justify-center rounded-md bg-secondary hover:bg-muted text-secondary-foreground"
+            className="relative shrink-0"
             style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-            title={
+            label={
               activeDownloads > 0
                 ? `${activeDownloads} active download${activeDownloads === 1 ? '' : 's'}`
                 : downloadsDone
@@ -1685,39 +1680,43 @@ export function Toolbar({ windowWorkspaceId, sidebarVisible, pageFullscreen, vim
                 {totalDownloads > 9 ? '9+' : totalDownloads}
               </span>
             )}
-          </button>
+          </IconButton>
         )}
 
         {/* Nav buttons */}
-        <button
+        <IconButton
+          size={32}
+          label="Back"
+          className="relative shrink-0"
           onClick={handleBack}
-          className="relative h-8 w-8 shrink-0 flex items-center justify-center rounded-md bg-secondary hover:bg-muted text-secondary-foreground"
           style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
         >
           {backHint}
           <ChevronLeft size={16} />
-        </button>
+        </IconButton>
         {canGoForward && (
-          <button
+          <IconButton size={32}
             onClick={handleForward}
-            className="relative h-8 w-8 shrink-0 flex items-center justify-center rounded-md bg-secondary hover:bg-muted text-secondary-foreground"
+            className="relative shrink-0"
             style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-            title="Forward"
+            label="Forward"
           >
             {forwardHint}
             <ChevronRight size={16} />
-          </button>
+          </IconButton>
         )}
-        <button
+        <IconButton
+          size={32}
+          pressed={autoReloadSeconds ? true : undefined}
+          className="relative shrink-0"
           ref={reloadButtonRef}
           onClick={handleReloadOrStop}
           onContextMenu={(e) => {
             e.preventDefault()
             toggleAutoReload().catch((err: unknown) => log.warn('auto-reload menu failed', err))
           }}
-          className={`relative h-8 w-8 shrink-0 flex items-center justify-center rounded-md bg-secondary hover:bg-muted ${autoReloadSeconds ? 'text-primary' : 'text-secondary-foreground'}`}
           style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-          title={
+          label={
             autoReloadSeconds
               ? `Reloading every ${autoReloadLabel(autoReloadSeconds)} — right-click to stop`
               : isLoading ? 'Stop loading' : 'Reload page — right-click to reload on a timer'
@@ -1730,7 +1729,7 @@ export function Toolbar({ windowWorkspaceId, sidebarVisible, pageFullscreen, vim
               {autoReloadLabel(autoReloadSeconds)}
             </span>
           ) : null}
-        </button>
+        </IconButton>
 
         {/* Install-from-store badge. Appears only when the active tab is a
             CWS or Edge Add-ons detail page, giving users a one-click path

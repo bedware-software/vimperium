@@ -7,7 +7,7 @@ import { LEAVE_INSERT_CAP, vimKeyCaps, vimKeyCapsAll } from './KeyHints'
 import { usePopupVimMode } from '../lib/vim-mode'
 import { usePagePlacement } from '../lib/page-placement'
 import type { VimKeymap } from '../lib/vim-keymap'
-import { Hint, HintBar } from '@bedware/ui'
+import { Hint, HintBar, IconButton } from '@bedware/ui'
 
 const WIDTH = 460
 const HEIGHT = 86
@@ -201,32 +201,29 @@ export function FindPopup({ open, focusTick, onClose, anchorRef, vimKeymap }: Pr
             placeholder="Find in page"
             spellCheck={false}
           />
-          <button
-            type="button"
+          <IconButton
+            size={24}
             onClick={() => findNext(false)}
             disabled={!query}
-            title={`Previous match (${prevKeys})`}
-            className="p-1 rounded hover:bg-accent disabled:opacity-40 disabled:cursor-default"
+            label={`Previous match (${prevKeys})`}
           >
             <ChevronUp size={14} />
-          </button>
-          <button
-            type="button"
+          </IconButton>
+          <IconButton
+            size={24}
             onClick={() => findNext(true)}
             disabled={!query}
-            title={`Next match (${nextKeys})`}
-            className="p-1 rounded hover:bg-accent disabled:opacity-40 disabled:cursor-default"
+            label={`Next match (${nextKeys})`}
           >
             <ChevronDown size={14} />
-          </button>
-          <button
-            type="button"
+          </IconButton>
+          <IconButton
+            size={24}
             onClick={onClose}
-            title="Close (Esc)"
-            className="p-1 rounded hover:bg-accent"
+            label="Close (Esc)"
           >
             <X size={14} />
-          </button>
+          </IconButton>
         </div>
         <HintBar>
           {vim.mode === 'command' ? (

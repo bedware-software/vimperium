@@ -1,4 +1,4 @@
-import { Button } from '@bedware/ui'
+import { Button, IconButton } from '@bedware/ui'
 import { useEffect, useRef, type ReactNode } from 'react'
 import { Download, RefreshCw, X, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react'
 
@@ -152,13 +152,13 @@ function Shell({
       className="w-80 max-w-full bg-popover border border-border rounded-lg shadow-lg p-3 flex items-start gap-2"
     >
       {children}
-      <button
+      <IconButton size={20}
         onClick={onClose}
-        aria-label="Dismiss"
-        className="h-5 w-5 flex items-center justify-center rounded hover:bg-muted text-muted-foreground hover:text-foreground shrink-0"
+        label="Dismiss"
+        className="shrink-0"
       >
         <X size={12} />
-      </button>
+      </IconButton>
     </div>
   )
 }

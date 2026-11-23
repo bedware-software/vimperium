@@ -3,7 +3,7 @@
 // cap themselves are @bedware/ui's HintBar, Hint and Kbd.
 
 import type { ReactNode } from 'react'
-import { Button, Hint, Kbd, RowKey } from '@bedware/ui'
+import { Button, Hint, Kbd, RowKey, IconButton } from '@bedware/ui'
 import { cn } from '../lib/utils'
 import { displayKeySequence, keysFor, type VimKeymap } from '../lib/vim-keymap'
 import type { WhichKeyEntry } from '../lib/which-key'
@@ -40,14 +40,13 @@ export function KeysHelp({ rows, onClose, children, fixed = false, columns = 1 }
       >
         <div className="mb-3 flex shrink-0 items-center justify-between">
           <h2 className="text-sm font-semibold">Keyboard shortcuts</h2>
-          <button
+          <IconButton size={24}
             onClick={onClose}
-            className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
-            aria-label="Close keyboard shortcuts"
+            label="Close keyboard shortcuts"
             tabIndex={-1}
           >
             ✕
-          </button>
+          </IconButton>
         </div>
         <div className="min-h-0 overflow-y-auto">
           <div className={cn('grid gap-x-8', columns === 2 && 'grid-cols-2')}>

@@ -22,7 +22,7 @@ export function ScopeSwitch({ on, label, onToggle, title, className = '' }: Prop
       className={`flex items-center gap-1.5 h-6 px-2 text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors ${className}`}
     >
       {label}
-      <Switch checked={on} onChange={onToggle} label={label} />
+      <Switch size="xs" checked={on} onChange={onToggle} label={label} />
       <span className="opacity-50">⇥</span>
     </label>
   )

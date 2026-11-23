@@ -7,7 +7,7 @@ import { usePopupVimMode } from '../lib/vim-mode'
 import { paletteKeymap } from '../lib/vim-keymap'
 import { keymapOnly, useWindowVimKeymap } from '../lib/window-vim-keymap'
 import type { HttpAuthRequest } from '../App'
-import { Button, Hint } from '@bedware/ui'
+import { Button, Checkbox, Hint } from '@bedware/ui'
 
 interface Props {
   request: HttpAuthRequest
@@ -177,17 +177,17 @@ export function HttpAuthDialog({ request, onDone }: Props) {
             <p className="text-[10px] text-muted-foreground/80">Use <span className="text-foreground">DOMAIN\username</span> (or username@domain) if your organization requires it.</p>
           ) : null}
           {canSave ? (
-            <label className="flex items-center gap-2 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={remember}
-                onChange={(e) => setRemember(e.target.checked)}
-                className="h-3.5 w-3.5 accent-primary"
-              />
-              <span className="text-[11px] text-muted-foreground">
-                Remember on this device — sign in automatically next time
-              </span>
-            </label>
+            <Checkbox
+              checked={remember}
+              onChange={setRemember}
+              label="Remember on this device — sign in automatically next time"
+              // A button, not a form field: Enter on it would tick, not sign in.
+              onKeyDown={(e) => {
+                if (e.key !== 'Enter') return
+                e.preventDefault()
+                submit()
+              }}
+            />
           ) : null}
         </div>
 

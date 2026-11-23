@@ -39,7 +39,7 @@ import { keyTokenFromEvent } from '../lib/vim-keymap'
 import { log } from '../lib/log'
 import type { VimKeymap } from '../lib/vim-keymap'
 import type { VimMode } from '../lib/vim-mode'
-import { Button, Kbd } from '@bedware/ui'
+import { Button, GroupTitle, IconButton, Kbd } from '@bedware/ui'
 
 export interface BookshelfPageProps {
   /** The profile this window belongs to: its shelf is the one shown. */
@@ -1120,7 +1120,6 @@ export function BookshelfPage({ profileId, vimKeymap, vimMode, vimPending, hints
             <RowBtn
               label={hasOffline ? 'Open offline copy' : 'Save for offline'}
               onClick={() => { if (hasOffline) openReading(r, true); else void saveOffline(r.id) }}
-              active={hasOffline}
             >
               {hasOffline ? <WifiOff size={13} /> : <Download size={13} />}
             </RowBtn>
@@ -1203,7 +1202,6 @@ export function BookshelfPage({ profileId, vimKeymap, vimMode, vimPending, hints
               <span className="flex-1 min-w-0 truncate">{g.name}</span>
             )}
           </span>
-          {/* Action overlay; card-tone backdrop keeps icons legible. */}
           <div className="absolute right-2 top-0 bottom-0 flex items-center gap-1 opacity-0 group-hover/gh:opacity-100 transition-opacity pointer-events-none group-hover/gh:pointer-events-auto">
             <RowBtn label="Rename group" onClick={() => { setEditingGroupId(g.id); setGroupEditValue(g.name) }}>
               <Pencil size={13} />
@@ -1274,14 +1272,13 @@ export function BookshelfPage({ profileId, vimKeymap, vimMode, vimPending, hints
             >
               New group
             </Button>
-            <button
-              aria-label="Close the Bookshelf"
+            <IconButton size={32}
+              label="Close the Bookshelf"
               onClick={() => closePage('bookshelf')}
-              className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground"
               title={titleWithKey('Close the Bookshelf', closeKey)}
             >
               <X size={15} />
-            </button>
+            </IconButton>
           </div>
         </div>
       </div>
@@ -1314,10 +1311,10 @@ export function BookshelfPage({ profileId, vimKeymap, vimMode, vimPending, hints
           {!isEmpty && !nothingMatches && (
             <>
               {(!q || view.ungrouped.length > 0) && (
-                <div className="flex items-center justify-between px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  <span>To Read{view.ungrouped.length > 0 ? ` · ${view.ungrouped.length}` : ''}</span>
+                <div className="flex items-center justify-between pr-3">
+                  <GroupTitle>To Read{view.ungrouped.length > 0 ? ` · ${view.ungrouped.length}` : ''}</GroupTitle>
                   {selectedIds.size > 0 && (
-                    <span className="normal-case text-primary">{selectedIds.size} selected · ⇧/⌃-click</span>
+                    <span className="text-[11px] font-semibold tracking-wider text-primary">{selectedIds.size} selected · ⇧/⌃-click</span>
                   )}
                 </div>
               )}
@@ -1394,37 +1391,26 @@ export function BookshelfPage({ profileId, vimKeymap, vimMode, vimPending, hints
   )
 }
 
-/** A row's action button — card-tone backdrop (like the sidebar's close/add
- *  buttons) so icons stay readable when floated over a row or the coloured
- *  pill. */
+/** A row's action button: its press isn't the row's (no drag, no open). */
 function RowBtn({
   children,
   label,
   onClick,
-  active = false,
   danger = false,
 }: {
   children: React.ReactNode
   label: string
   onClick: (e: React.MouseEvent) => void
-  active?: boolean
   danger?: boolean
 }) {
   return (
-    <button
-      aria-label={label}
-      title={label}
+    <IconButton
+      label={label}
+      danger={danger}
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => { e.stopPropagation(); onClick(e) }}
-      className={`flex h-7 w-7 items-center justify-center rounded bg-card/85 backdrop-blur-sm ${
-        danger
-          ? 'text-muted-foreground hover:bg-destructive/20 hover:text-destructive'
-          : active
-            ? 'text-primary hover:bg-muted'
-            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-      }`}
     >
       {children}
-    </button>
+    </IconButton>
   )
 }
