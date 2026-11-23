@@ -1,4 +1,4 @@
-import { Button, Checkbox } from '@bedware/ui'
+import { Button, Checkbox, Dot } from '@bedware/ui'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronRight, Folder, Upload, Layers } from 'lucide-react'
 import type { Workspace } from '../store/types'
@@ -197,7 +197,7 @@ export function ExportWorkspaceDialog({ open, workspaces, profileName, onConfirm
                               className="flex items-center gap-2 px-2 py-1 text-[11px] text-muted-foreground"
                               title={tab.url}
                             >
-                              <div className="w-1 h-1 rounded-full bg-muted-foreground/60 shrink-0" />
+                              <Dot className="shrink-0" />
                               <span className="truncate">{tab.title}</span>
                             </div>
                           )
@@ -220,7 +220,7 @@ export function ExportWorkspaceDialog({ open, workspaces, profileName, onConfirm
                                   className="flex items-center gap-2 px-2 py-0.5 text-[11px] text-muted-foreground"
                                   title={t.url}
                                 >
-                                  <div className="w-1 h-1 rounded-full bg-muted-foreground/60 shrink-0" />
+                                  <Dot className="shrink-0" />
                                   <span className="truncate">{t.title}</span>
                                 </div>
                               ))}

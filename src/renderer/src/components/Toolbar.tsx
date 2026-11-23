@@ -1,4 +1,4 @@
-import { Button, IconButton } from '@bedware/ui'
+import { Button, IconButton, Count } from '@bedware/ui'
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useAppStore, saveStateNow, findWorkspaceCandidates, buildBookmarkHTML } from '../store/app-store'
 import { log } from '../lib/log'
@@ -926,21 +926,13 @@ function AppMenu({ sidebarVisible, onToggleSidebar, onOpenSettings, onOpenAbout,
           checking, a down-arrow when a new version is available (green once
           downloaded and ready to install). Nothing in the default/idle case. */}
       {updateChecking ? (
-        <span
-          className="absolute -top-0.5 -right-0.5 w-[14px] h-[14px] rounded-full bg-primary text-primary-foreground flex items-center justify-center pointer-events-none"
-          aria-label="Checking for updates"
-        >
+        <Count className="absolute -top-0.5 -right-0.5" aria-label="Checking for updates">
           <RefreshCw size={9} strokeWidth={3} className="animate-spin" />
-        </span>
+        </Count>
       ) : updateAvailable ? (
-        <span
-          className={`absolute -top-0.5 -right-0.5 w-[14px] h-[14px] rounded-full flex items-center justify-center pointer-events-none ${
-            updateReady ? 'bg-success text-success-foreground' : 'bg-primary text-primary-foreground'
-          }`}
-          aria-label={updateReady ? 'Update ready to install' : 'New version available'}
-        >
+        <Count tone={updateReady ? 'success' : 'accent'} className="absolute -top-0.5 -right-0.5" aria-label={updateReady ? 'Update ready to install' : 'New version available'}>
           <ArrowDown size={9} strokeWidth={3.5} />
-        </span>
+        </Count>
       ) : null}
     </div>
   )
@@ -1659,26 +1651,17 @@ export function Toolbar({ windowWorkspaceId, sidebarVisible, pageFullscreen, vim
             {downloadsHint}
             <DownloadIcon size={15} />
             {activeDownloads > 0 ? (
-              <span
-                className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-semibold leading-[14px] text-center pointer-events-none"
-                aria-label={`${activeDownloads} active downloads`}
-              >
+              <Count aria-label={`${activeDownloads} active downloads`}>
                 {activeDownloads > 9 ? '9+' : activeDownloads}
-              </span>
+              </Count>
             ) : downloadsDone ? (
-              <span
-                className="absolute -top-0.5 -right-0.5 w-[14px] h-[14px] rounded-full bg-success text-success-foreground flex items-center justify-center pointer-events-none"
-                aria-label="Downloads complete"
-              >
+              <Count tone="success" aria-label="Downloads complete">
                 <Check size={9} strokeWidth={3.5} />
-              </span>
+              </Count>
             ) : (
-              <span
-                className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] px-1 rounded-full bg-muted-foreground text-background text-[9px] font-semibold leading-[14px] text-center pointer-events-none"
-                aria-label={`${totalDownloads} downloads`}
-              >
+              <Count tone="muted" aria-label={`${totalDownloads} downloads`}>
                 {totalDownloads > 9 ? '9+' : totalDownloads}
-              </span>
+              </Count>
             )}
           </IconButton>
         )}
@@ -1725,9 +1708,9 @@ export function Toolbar({ windowWorkspaceId, sidebarVisible, pageFullscreen, vim
           {reloadHint}
           {isLoading ? <X size={14} /> : <RotateCw size={14} />}
           {autoReloadSeconds ? (
-            <span className="absolute -bottom-1 -right-1 min-w-[14px] h-[14px] px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-semibold leading-[14px] text-center pointer-events-none">
+            <Count bottom>
               {autoReloadLabel(autoReloadSeconds)}
-            </span>
+            </Count>
           ) : null}
         </IconButton>
 

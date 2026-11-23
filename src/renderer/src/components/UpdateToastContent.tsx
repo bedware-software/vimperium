@@ -1,4 +1,4 @@
-import { Button, IconButton } from '@bedware/ui'
+import { Button, IconButton, Progress } from '@bedware/ui'
 import { useEffect, useRef, type ReactNode } from 'react'
 import { Download, RefreshCw, X, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react'
 
@@ -78,12 +78,7 @@ export function UpdateToastContent({
         <Download size={16} className="text-primary shrink-0" />
         <div className="flex-1 min-w-0">
           <div className="text-sm font-medium text-foreground">Downloading update</div>
-          <div className="mt-1 h-1 bg-secondary rounded-full overflow-hidden">
-            <div
-              className="h-full bg-primary transition-[width]"
-              style={{ width: `${Math.max(0, Math.min(100, status.percent))}%` }}
-            />
-          </div>
+          <Progress label="Downloading update" value={status.percent} className="mt-1 w-full" />
           <div className="text-[11px] text-muted-foreground mt-1">
             v{status.version} - {status.percent}%
           </div>

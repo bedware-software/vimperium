@@ -21,7 +21,7 @@ import { SearchPage } from './SearchPage'
 import { KeysPage } from './KeysPage'
 import { PlacePage } from './PlacePage'
 import { BookshelfPage } from './BookshelfPage'
-import { Button, Kbd, LinkButton } from '@bedware/ui'
+import { Button, Kbd, LinkButton, IconPlate } from '@bedware/ui'
 
 // Tab rendering lives in the main process now, as a WebContentsView per tab
 // attached to the window's root contentView. This component is a thin layout
@@ -853,9 +853,9 @@ function CertWarningOverlay({
     <div className="absolute inset-0 z-50 flex items-center justify-center bg-background text-foreground">
       <OverlayKeys onEnter={onBack} onBack={onBack} />
       <div className="w-full max-w-[440px] px-8">
-        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-destructive/15 text-destructive">
+        <IconPlate tone="error" size="lg" className="mb-5">
           <ShieldAlert size={26} strokeWidth={1.75} />
-        </div>
+        </IconPlate>
         <h2 className="mb-2 text-2xl font-semibold tracking-tight">Your connection isn&apos;t private</h2>
         <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
           Attackers might be trying to steal your information from{' '}

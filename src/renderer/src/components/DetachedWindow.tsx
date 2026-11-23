@@ -117,6 +117,7 @@ function writeSavedBounds(key: string, b: SavedBounds): void {
 }
 
 function syncThemeToPopup(popupDoc: Document): void {
+  popupDoc.documentElement.classList.add('bw-scrollbars')
   const theme = document.documentElement.getAttribute('data-theme')
   if (theme) popupDoc.documentElement.setAttribute('data-theme', theme)
   else popupDoc.documentElement.removeAttribute('data-theme')

@@ -1,4 +1,4 @@
-import { Badge, SectionTitle } from '@bedware/ui'
+import { Badge, SectionTitle, Dot } from '@bedware/ui'
 import { describeExtensionPermissions } from '../lib/extension-permissions'
 
 interface Props {
@@ -24,7 +24,7 @@ export function ExtensionPermissionList({
         <ul className="flex flex-col gap-1">
           {warnings.map((w) => (
             <li key={w} className="flex items-start gap-2 text-xs text-foreground leading-relaxed">
-              <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-muted-foreground" />
+              <Dot className="mt-[7px] shrink-0" />
               {w}
             </li>
           ))}

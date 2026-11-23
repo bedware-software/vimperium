@@ -1,4 +1,4 @@
-import { Menu, MenuHeader, MenuItem, MenuSeparator, IconButton, Kbd } from '@bedware/ui'
+import { Menu, MenuHeader, MenuItem, MenuSeparator, IconButton, Kbd, ColorSwatch } from '@bedware/ui'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   DndContext,
@@ -140,12 +140,9 @@ function SortableRow({
 // wrapped for a frame and then snap. `flex-wrap` is the safety net if a
 // caller ever passes a longer palette.
 //
-// Each circle carries `data-group-container` + `--gc` so the stored hex runs
-// through the same per-theme resolution the sidebar pill uses — see the
-// [data-group-swatch] rules in globals.css. Painting the raw hex here made
-// the swatches read darker than the group they produced under the light
-// theme. Rings live in that CSS too (inset, so selection never grows the
-// swatch's layout box and pushes the strip wider).
+// Each swatch carries `data-group-container` + `--gc`, so the stored hex runs
+// through the same per-theme resolution the Sidebar's pill does (globals.css):
+// the raw hex reads darker than the group it makes under the light theme.
 function ColorStrip({
   colors,
   selected,
@@ -164,21 +161,18 @@ function ColorStrip({
       {colors.map((c, index) => {
         const isSelected = !!selected && norm(selected) === norm(c.value)
         return (
-          <button
+          <ColorSwatch
             key={c.value}
             data-group-container=""
-            data-group-swatch=""
-            {...(isSelected ? { 'data-selected': '' } : {})}
             {...(focusedIndex === index ? { 'data-focused': '' } : {})}
-            title={c.label}
-            aria-label={c.label}
-            aria-pressed={isSelected}
+            color="var(--gc-resolved)"
+            ink="var(--gc-text)"
+            label={c.label}
+            selected={isSelected}
             onClick={() => onEmit({ type: 'color', color: c.value })}
-            className="h-[18px] w-[18px] shrink-0 rounded-full flex items-center justify-center transition-transform hover:scale-110"
+            className="shrink-0"
             style={{ ['--gc' as string]: c.value }}
-          >
-            {isSelected && <Check size={11} strokeWidth={3} />}
-          </button>
+          />
         )
       })}
     </div>

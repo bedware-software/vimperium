@@ -1,4 +1,4 @@
-import { Button, LinkButton, Progress } from '@bedware/ui'
+import { Button, LinkButton, Progress, IconPlate } from '@bedware/ui'
 import { useEffect, useRef, useState } from 'react'
 import { Cloud, FolderOpen } from 'lucide-react'
 import { DetachedWindow } from './DetachedWindow'
@@ -125,9 +125,9 @@ export function CloudSyncSetupDialog({ open, prompt, onClose }: Props) {
     >
       <div className="h-full bg-popover text-popover-foreground border border-border rounded-lg overflow-hidden flex flex-col">
         <div data-detached-drag-handle className="flex items-center gap-3 px-5 pt-5 pb-3 shrink-0">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/15 text-primary shrink-0">
+          <IconPlate className="shrink-0">
             <Cloud size={18} />
-          </span>
+          </IconPlate>
           <div className="min-w-0">
             <h3 className="text-sm font-semibold text-foreground">Set up Cloud Sync</h3>
             <p className="text-[11px] text-muted-foreground">Keep tabs, workspaces, settings and more in sync across your devices.</p>

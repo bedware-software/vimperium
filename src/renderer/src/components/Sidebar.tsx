@@ -1239,7 +1239,7 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
         onContextMenu={(e) => openTabMenu(tab.id, contextMenuPoint(e))}
       >
         {showBefore && (
-          <div className="absolute left-1 right-1 -top-px h-[3px] bg-primary rounded-full z-10" />
+          <div className="absolute left-1 right-1 -top-px h-[3px] bg-primary z-10" />
         )}
         {rowHint(tab.id)}
         <TabFavicon favicon={tab.favicon} />
@@ -1372,7 +1372,7 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
         onContextMenu={(e) => openGroupMenu(group.id, contextMenuPoint(e))}
       >
         {showGroupBefore && (
-          <div className="absolute left-1 right-1 -top-px h-[3px] bg-primary rounded-full z-10" />
+          <div className="absolute left-1 right-1 -top-px h-[3px] bg-primary z-10" />
         )}
         {/* Count badge — leading-edge column. Sized to match a tab row's
             favicon (w-4 h-4) so the leftmost glyph in every sidebar row
@@ -1506,7 +1506,7 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
                     {group.tabs.map((tab, tabIndex) => renderTabRow(tab, group.id, tabIndex))}
                     {showAfterLastInGroup(group.id, group.tabs.length) && (
                       <div data-sidebar-drop-line="" className="relative h-0">
-                        <div className="absolute left-1 right-1 -top-px h-[3px] bg-primary rounded-full z-10" />
+                        <div className="absolute left-1 right-1 -top-px h-[3px] bg-primary z-10" />
                       </div>
                     )}
                   </div>
@@ -1518,14 +1518,14 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
           {/* "After last item" indicator */}
           {showAfterLastSidebarItem && (
             <div data-sidebar-drop-line="" className="relative h-0">
-              <div className="absolute left-1 right-1 -top-px h-[3px] bg-primary rounded-full z-10" />
+              <div className="absolute left-1 right-1 -top-px h-[3px] bg-primary z-10" />
             </div>
           )}
 
           {/* Empty sidebar drop target */}
           {dragging && dropTarget?.containerId === null && sidebarItems.length === 0 && (
             <div data-sidebar-drop-line="" className="relative h-0">
-              <div className="absolute left-1 right-1 top-0 h-[3px] bg-primary rounded-full z-10" />
+              <div className="absolute left-1 right-1 top-0 h-[3px] bg-primary z-10" />
             </div>
           )}
 

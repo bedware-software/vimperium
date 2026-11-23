@@ -119,7 +119,7 @@ export function DarkPagesButton({ url, onOpenSettings }: { url: string; onOpenSe
         {look.rule && (
           <span
             className={cn(
-              'absolute bottom-[3px] right-[3px] h-[5px] w-[5px] rounded-full ring-1 ring-[var(--color-field)]',
+              'absolute bottom-[3px] right-[3px] h-[5px] w-[5px] ring-1 ring-[var(--color-field)]',
               look.rule === 'dark' ? 'bg-primary' : 'bg-muted-foreground',
             )}
           />

@@ -752,7 +752,7 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
                       {item.groupColor && (
                         <span
                           aria-hidden="true"
-                          className="absolute -left-1 h-4 w-0.5 rounded-full"
+                          className="absolute -left-1 h-4 w-0.5"
                           style={{ backgroundColor: 'var(--gc-resolved)' }}
                         />
                       )}

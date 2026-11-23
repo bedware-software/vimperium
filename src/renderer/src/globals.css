@@ -307,27 +307,6 @@ html[data-page-fullscreen] body {
   color: var(--gc-text);
 }
 
-/* Colour swatches in the group context menu. They carry `data-group-container`
- * too, so they run the stored hex through the SAME per-theme resolution the
- * sidebar pill uses — painting the raw hex here made every circle read darker
- * and duller than the group it was about to produce, because the light theme
- * lifts lightness and boosts chroma. Rings and the selected checkmark are
- * derived from --gc-text so they flip ink with the theme alongside the pill. */
-[data-group-swatch] {
-  background-color: var(--gc-resolved);
-  color: var(--gc-text);
-  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--gc-text) 22%, transparent);
-}
-[data-group-swatch][data-selected] {
-  box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--gc-text) 60%, transparent);
-}
-/* Swatch highlighted by keyboard navigation in a vim-mode menu. An outline,
- * not a box-shadow, so it stacks with the selected ring above. */
-[data-group-swatch][data-focused] {
-  outline: 2px solid var(--color-foreground);
-  outline-offset: 1px;
-}
-
 /* Pill/badge text colour: dark on dark theme (the Edge-style palette is
  * medium-light there, so dark text reads), white on light theme (the
  * brightened/saturated light-theme variants need a light label to keep
@@ -411,7 +390,6 @@ html[data-page-fullscreen] body {
   content: '';
   width: 6px;
   height: 6px;
-  border-radius: 50%;
   background: var(--vim-c);
 }
 
@@ -802,26 +780,6 @@ html[data-page-fullscreen] body {
 /* No glitch where the root says data-reduce-motion (lib/motion.ts). */
 [data-reduce-motion] .brand-mark > svg { animation: none !important; }
 
-/* ── Custom scrollbars ── */
-::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-::-webkit-scrollbar-track {
-  background: var(--color-card);
-}
-::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: 9999px;
-  border: 2px solid var(--color-card);
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-muted-foreground);
-}
-::-webkit-scrollbar-corner {
-  background: var(--color-card);
-}
-
 button, [role="button"], a, select, label[for], summary, [onclick] {
   cursor: pointer;
 }
@@ -829,8 +787,6 @@ button, [role="button"], a, select, label[for], summary, [onclick] {
 @layer base {
   * {
     border-color: var(--color-border);
-    scrollbar-width: thin;
-    scrollbar-color: var(--color-border) var(--color-card);
   }
   body {
     background-color: var(--color-background);

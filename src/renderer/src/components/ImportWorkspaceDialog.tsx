@@ -5,7 +5,7 @@ import { DetachedWindow } from './DetachedWindow'
 import { vimKeyCaps } from './KeyHints'
 import { useChecklistKeys } from '../lib/dialog-keys'
 import { useWindowVimKeymap } from '../lib/window-vim-keymap'
-import { Button, Checkbox, Hint, HintBar } from '@bedware/ui'
+import { Button, Checkbox, Hint, HintBar, Dot } from '@bedware/ui'
 
 /** The keys of Import's and Export's lists (lib/dialog-keys.ts
  *  useChecklistKeys), along the bottom: Vim mode's when it's on. */
@@ -208,7 +208,7 @@ export function ImportWorkspaceDialog({ open, candidates, onConfirm, onCancel }:
                               className="flex items-center gap-2 px-2 py-1 text-[11px] text-muted-foreground"
                               title={tab.url}
                             >
-                              <div className="w-1 h-1 rounded-full bg-muted-foreground/60 shrink-0" />
+                              <Dot className="shrink-0" />
                               <span className="truncate">{tab.title}</span>
                             </div>
                           )
@@ -231,7 +231,7 @@ export function ImportWorkspaceDialog({ open, candidates, onConfirm, onCancel }:
                                   className="flex items-center gap-2 px-2 py-0.5 text-[11px] text-muted-foreground"
                                   title={t.url}
                                 >
-                                  <div className="w-1 h-1 rounded-full bg-muted-foreground/60 shrink-0" />
+                                  <Dot className="shrink-0" />
                                   <span className="truncate">{t.title}</span>
                                 </div>
                               ))}

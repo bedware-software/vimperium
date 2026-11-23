@@ -173,7 +173,7 @@ function placeTarget(container: string): { groupId: string | null; archived?: bo
 
 /** The drop-position line, like the sidebar's. */
 function DropLine() {
-  return <div className="absolute left-1 right-1 -top-px h-[3px] bg-primary rounded-full z-10 pointer-events-none" />
+  return <div className="absolute left-1 right-1 -top-px h-[3px] bg-primary z-10 pointer-events-none" />
 }
 
 /** The drop line after a container's last row. */

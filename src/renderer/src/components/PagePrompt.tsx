@@ -5,7 +5,7 @@
 // site asking mid-typing doesn't cut in; Esc in it, once clicked, dismisses.
 // Its buttons are the mouse's: no key reaches them until it's clicked.
 
-import { Button, IconButton } from '@bedware/ui'
+import { Button, IconButton, IconPlate } from '@bedware/ui'
 import type { ReactNode } from 'react'
 import { Bell, Camera, Clipboard, MapPin, Mic, Music, ShieldAlert, X, type LucideIcon } from 'lucide-react'
 import { DetachedWindow } from './DetachedWindow'
@@ -96,9 +96,9 @@ export function PermissionPrompt({
   return (
     <PagePrompt open={open} title="Permission - Vimperium" height={HEIGHT} anchorRef={anchorRef} onDismiss={dismiss}>
       <div className="flex items-center gap-3 min-w-0">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary text-muted-foreground">
+        <IconPlate tone="neutral" size="sm" className="shrink-0">
           <Icon size={16} strokeWidth={1.75} />
-        </div>
+        </IconPlate>
         <p className="min-w-0 flex-1 truncate text-sm" title={`${host} wants to ${describePermissionKinds(kinds)}`}>
           <span className="font-medium">{host}</span>{' '}
           <span className="text-muted-foreground">wants to {describePermissionKinds(kinds)}</span>
@@ -146,9 +146,9 @@ export function OsBlockedPrompt({
   return (
     <PagePrompt open={open} title="Permission - Vimperium" height={TALL_HEIGHT} anchorRef={anchorRef} onDismiss={onDismiss}>
       <div className="flex items-start gap-3 min-w-0">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-destructive/15 text-destructive">
+        <IconPlate tone="error" size="sm" className="shrink-0">
           <ShieldAlert size={16} strokeWidth={1.75} />
-        </div>
+        </IconPlate>
         <p className="min-w-0 flex-1 line-clamp-3 text-[13px] leading-snug text-muted-foreground">
           Your system is blocking Vimperium from using your{' '}
           <span className="font-medium text-foreground">{label}</span>. Enable it in System Settings, then reload the page.
