@@ -8,7 +8,6 @@ import './lib/motion'
 interface UpdateToastSpec {
   status: UpdateToastStatus
   theme?: string
-  themeVariant?: string
 }
 
 function Popup(): React.JSX.Element | null {
@@ -21,8 +20,6 @@ function Popup(): React.JSX.Element | null {
       const root = document.documentElement
       if (next.theme) root.setAttribute('data-theme', next.theme)
       else root.removeAttribute('data-theme')
-      if (next.themeVariant) root.setAttribute('data-theme-variant', next.themeVariant)
-      else root.removeAttribute('data-theme-variant')
     })
     return cleanup
   }, [])

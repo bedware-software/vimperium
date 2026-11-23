@@ -41,7 +41,7 @@ import { DOWNLOADS_FIND_EVENT, DOWNLOADS_RELOAD_EVENT } from './components/Downl
 import { BANGS_FIND_EVENT, BANGS_RELOAD_EVENT } from './components/BangsPage'
 import { BANGS_URL, BOOKSHELF_URL, DOWNLOADS_URL, internalPageOf, isInternalUrl } from './lib/internal-pages'
 import { runInternalPageCommand } from './lib/internal-page-commands'
-import { resolveVariantId, normalizeLightVariant, normalizeDarkVariant, normalizeDensity, applyDensity, type ThemeChoice, type Density } from './lib/theme'
+import { normalizeDensity, applyDensity, type ThemeChoice, type Density } from './lib/theme'
 import { applyVimIndicator, normalizeVimIndicator, type VimIndicator } from './lib/vim-indicator'
 import { applyVimEdge, normalizeVimEdge, type VimEdge } from './lib/vim-edge'
 import { applyMotion, normalizeMotion, type MotionChoice } from './lib/motion'
@@ -56,8 +56,6 @@ interface Settings {
     proxyBypassRules: string
   }
   theme: ThemeChoice
-  lightVariant: string
-  darkVariant: string
   density: Density
   newTabFocus: NewTabFocus
   /** A field a page focuses by itself: 'ignore' (the default) keeps COMMAND,
@@ -568,8 +566,8 @@ function rgbStringToHex(rgb: string): string | null {
  * [data-theme*=""] override) to its final sRGB hex value by letting the
  * browser compute it on a hidden element. Needed because setTitleBarOverlay
  * expects "#rrggbb" strings, whatever notation the CSS value is in. Must be
- * called AFTER the theme/variant data attributes have been written so the
- * computed value reflects the currently active variant.
+ * called AFTER the data-theme attribute has been written so the
+ * computed value reflects the active theme.
  */
 function resolveCssVarToHex(varName: string): string | null {
   const el = document.createElement('div')
@@ -585,7 +583,7 @@ function resolveCssVarToHex(varName: string): string | null {
 
 function getOverlayColors(theme: ThemeChoice): { color: string; symbolColor: string; height: number } {
   const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
-  // Match the title bar background to the active variant's toolbar color
+  // Match the title bar background to the active theme's toolbar color
   // so the Windows min/max/close buttons blend in. The fallbacks are the
   // design system's toolbar and foreground (@bedware/ui tailwind-theme.css).
   return {
@@ -595,12 +593,10 @@ function getOverlayColors(theme: ThemeChoice): { color: string; symbolColor: str
   }
 }
 
-function applyTheme(theme: ThemeChoice, lightVariant: string, darkVariant: string): void {
-  const variant = resolveVariantId(theme, lightVariant, darkVariant)
+function applyTheme(theme: ThemeChoice): void {
   document.documentElement.setAttribute('data-theme', theme)
-  document.documentElement.setAttribute('data-theme-variant', variant)
   window.electronAPI.setTitleBarOverlay(getOverlayColors(theme))
-  log.info('theme applied:', theme, variant)
+  log.info('theme applied:', theme)
 }
 
 /** What . does again: the changes — a tab closed, a row moved, the zoom, a
@@ -790,8 +786,6 @@ export default function App() {
       const s = await window.electronAPI.loadSettings()
       const normalized: Settings = {
         ...s,
-        lightVariant: normalizeLightVariant(s.lightVariant),
-        darkVariant: normalizeDarkVariant(s.darkVariant),
         density: normalizeDensity(s.density),
         vimIndicator: normalizeVimIndicator(s.vimIndicator),
         vimEdge: normalizeVimEdge(s.vimEdge),
@@ -799,7 +793,7 @@ export default function App() {
         newTabFocus: normalizeNewTabFocus(s.newTabFocus),
       }
       setSettings(normalized)
-      applyTheme(normalized.theme, normalized.lightVariant, normalized.darkVariant)
+      applyTheme(normalized.theme)
       applyDensity(normalized.density)
       applyVimIndicator(normalized.vimIndicator)
       applyVimEdge(normalized.vimEdge, normalized.vimEdgeEverywhere === true, normalized.vimEdgeSpeed, normalized.vimEdgeRest, normalized.vimEdgeGlow)
@@ -1495,8 +1489,6 @@ export default function App() {
       const raw = newSettings as Settings
       const s: Settings = {
         ...raw,
-        lightVariant: normalizeLightVariant(raw.lightVariant),
-        darkVariant: normalizeDarkVariant(raw.darkVariant),
         density: normalizeDensity(raw.density),
         vimIndicator: normalizeVimIndicator(raw.vimIndicator),
         vimEdge: normalizeVimEdge(raw.vimEdge),
@@ -1504,7 +1496,7 @@ export default function App() {
         newTabFocus: normalizeNewTabFocus(raw.newTabFocus),
       }
       setSettings(s)
-      applyTheme(s.theme, s.lightVariant, s.darkVariant)
+      applyTheme(s.theme)
       applyDensity(s.density)
       applyVimIndicator(s.vimIndicator)
       applyVimEdge(s.vimEdge, s.vimEdgeEverywhere === true, s.vimEdgeSpeed, s.vimEdgeRest, s.vimEdgeGlow)
@@ -1566,7 +1558,8 @@ export default function App() {
   }, [hydrate, windowWorkspaceId, toggleSidebar])
 
   // When the user has the theme set to "system", follow the OS when it
-  // flips between light and dark by re-resolving which variant to apply.
+  // flips between light and dark: CSS follows by itself, the title-bar
+  // overlay's colours have to be set again.
   // For explicit 'light' / 'dark' themes the OS preference is irrelevant,
   // so skip the update in that case.
   useEffect(() => {
@@ -1574,7 +1567,7 @@ export default function App() {
     if (settings.theme !== 'system') return
     const media = window.matchMedia('(prefers-color-scheme: dark)')
     const update = (): void => {
-      applyTheme(settings.theme, settings.lightVariant, settings.darkVariant)
+      applyTheme(settings.theme)
     }
     media.addEventListener('change', update)
     return () => media.removeEventListener('change', update)
@@ -1618,8 +1611,6 @@ export default function App() {
   const handleSaveSettings = async (newSettings: Settings) => {
     const normalized: Settings = {
       ...newSettings,
-      lightVariant: normalizeLightVariant(newSettings.lightVariant),
-      darkVariant: normalizeDarkVariant(newSettings.darkVariant),
       density: normalizeDensity(newSettings.density),
       vimIndicator: normalizeVimIndicator(newSettings.vimIndicator),
       vimEdge: normalizeVimEdge(newSettings.vimEdge),
@@ -1627,7 +1618,7 @@ export default function App() {
       newTabFocus: normalizeNewTabFocus(newSettings.newTabFocus),
     }
     setSettings(normalized)
-    applyTheme(normalized.theme, normalized.lightVariant, normalized.darkVariant)
+    applyTheme(normalized.theme)
     applyDensity(normalized.density)
     applyVimIndicator(normalized.vimIndicator)
     applyVimEdge(normalized.vimEdge, normalized.vimEdgeEverywhere === true, normalized.vimEdgeSpeed, normalized.vimEdgeRest, normalized.vimEdgeGlow)
@@ -1903,7 +1894,7 @@ export default function App() {
         onClose={() => setSettingsOpen(false)}
         settings={settings}
         onSave={handleSaveSettings}
-        onAppearancePreview={(p) => { applyTheme(p.theme, p.lightVariant, p.darkVariant); applyDensity(p.density); applyVimIndicator(p.vimIndicator); applyVimEdge(p.vimEdge, p.vimEdgeEverywhere, p.vimEdgeSpeed, p.vimEdgeRest, p.vimEdgeGlow); applyMotion(p.motion) }}
+        onAppearancePreview={(p) => { applyTheme(p.theme); applyDensity(p.density); applyVimIndicator(p.vimIndicator); applyVimEdge(p.vimEdge, p.vimEdgeEverywhere, p.vimEdgeSpeed, p.vimEdgeRest, p.vimEdgeGlow); applyMotion(p.motion) }}
         tabRequest={settingsTabRequest}
         vimKeymap={vimReady ? vimKeymap : null}
       />

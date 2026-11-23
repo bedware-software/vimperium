@@ -49,11 +49,10 @@ export interface SuggestionAnchor {
 // Wait this long after the last keystroke before asking the search engine.
 const SUGGEST_DELAY_MS = 90
 
-function readThemeAttrs(): { theme?: string; themeVariant?: string; density?: string } {
+function readThemeAttrs(): { theme?: string; density?: string } {
   const root = document.documentElement
   return {
     theme: root.getAttribute('data-theme') ?? undefined,
-    themeVariant: root.getAttribute('data-theme-variant') ?? undefined,
     density: root.getAttribute('data-density') ?? undefined,
   }
 }

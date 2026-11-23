@@ -152,11 +152,10 @@ function hintId(item: SearchableItem): string {
 }
 
 /** The theme for the row menu's popup (its own window). */
-function readThemeAttrs(): { theme?: string; themeVariant?: string } {
+function readThemeAttrs(): { theme?: string } {
   const root = document.documentElement
   return {
     theme: root.getAttribute('data-theme') ?? undefined,
-    themeVariant: root.getAttribute('data-theme-variant') ?? undefined,
   }
 }
 

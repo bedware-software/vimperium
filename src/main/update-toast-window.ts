@@ -36,7 +36,6 @@ interface UpdateToastSpec {
   status: UpdateToastStatus
   targetRect?: ToastTargetRect
   theme?: string
-  themeVariant?: string
 }
 
 interface ToastRecord {

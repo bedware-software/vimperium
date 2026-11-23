@@ -7,7 +7,7 @@ import { ConfirmDialog } from './ConfirmDialog'
 import { DarkPagesSettings } from './DarkPagesSettings'
 import { ExtensionPermissionList } from './ExtensionPermissionList'
 import { requestExtensionInstall } from '../lib/extension-install'
-import { LIGHT_VARIANTS, DARK_VARIANTS, normalizeLightVariant, normalizeDarkVariant, normalizeDensity, DEFAULT_DENSITY, type ThemeChoice, type Density } from '../lib/theme'
+import { normalizeDensity, DEFAULT_DENSITY, type ThemeChoice, type Density } from '../lib/theme'
 import { VIM_INDICATORS, DEFAULT_VIM_INDICATOR, normalizeVimIndicator, type VimIndicator } from '../lib/vim-indicator'
 import { VimModeBadge } from './VimModeBadge'
 import { ModeEdge } from './ModeEdge'
@@ -49,8 +49,6 @@ interface ProxySettings {
 
 interface Settings {
   theme: ThemeChoice
-  lightVariant: string
-  darkVariant: string
   density: Density
   newTabFocus: 'site' | 'url'
   pageFocus?: 'ignore' | 'take'
@@ -106,8 +104,6 @@ const PERMISSION_POLICY_LABEL: Record<PermissionPolicy, string> = {
 
 interface AppearancePreview {
   theme: ThemeChoice
-  lightVariant: string
-  darkVariant: string
   density: Density
   vimIndicator: VimIndicator
   vimEdge: VimEdge
@@ -511,8 +507,6 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
     if (tabRequest) setActiveTab(tabRequest.tab)
   }, [tabRequest?.v])
   const [theme, setTheme] = useState<ThemeChoice>('dark')
-  const [lightVariant, setLightVariant] = useState<string>(LIGHT_VARIANTS[0].id)
-  const [darkVariant, setDarkVariant] = useState<string>(DARK_VARIANTS[0].id)
   const [density, setDensity] = useState<Density>(DEFAULT_DENSITY)
   const [newTabFocus, setNewTabFocus] = useState<'site' | 'url'>('site')
   const [pageFocus, setPageFocus] = useState<'ignore' | 'take'>('ignore')
@@ -637,8 +631,6 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
   const [installedBrowsers, setInstalledBrowsers] = useState<OtherBrowser[]>([])
   const originalAppearanceRef = useRef<AppearancePreview>({
     theme: 'dark',
-    lightVariant: LIGHT_VARIANTS[0].id,
-    darkVariant: DARK_VARIANTS[0].id,
     density: DEFAULT_DENSITY,
     vimIndicator: DEFAULT_VIM_INDICATOR,
     vimEdge: DEFAULT_VIM_EDGE,
@@ -924,8 +916,6 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
   // Init from settings
   useEffect(() => {
     if (open && settings) {
-      const lv = normalizeLightVariant(settings.lightVariant)
-      const dv = normalizeDarkVariant(settings.darkVariant)
       const dens = normalizeDensity(settings.density)
       const indicator = normalizeVimIndicator(settings.vimIndicator)
       const edge = normalizeVimEdge(settings.vimEdge)
@@ -935,8 +925,6 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
       const edgeGlow = normalizeVimEdgeGlow(settings.vimEdgeGlow)
       const savedMotion = normalizeMotion(settings.motion)
       setTheme(settings.theme)
-      setLightVariant(lv)
-      setDarkVariant(dv)
       setDensity(dens)
       setNewTabFocus(settings.newTabFocus === 'url' ? 'url' : 'site')
       setPageFocus(settings.pageFocus === 'take' ? 'take' : 'ignore')
@@ -952,7 +940,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
       setVimEdgeGlow(edgeGlow)
       setMotion(savedMotion)
       setVimKeymapText(settings.vimKeymap ?? DEFAULT_VIM_KEYMAP)
-      originalAppearanceRef.current = { theme: settings.theme, lightVariant: lv, darkVariant: dv, density: dens, vimIndicator: indicator, vimEdge: edge, vimEdgeEverywhere: edgeEverywhere, vimEdgeSpeed: edgeSpeed, vimEdgeRest: edgeRest, vimEdgeGlow: edgeGlow, motion: savedMotion }
+      originalAppearanceRef.current = { theme: settings.theme, density: dens, vimIndicator: indicator, vimEdge: edge, vimEdgeEverywhere: edgeEverywhere, vimEdgeSpeed: edgeSpeed, vimEdgeRest: edgeRest, vimEdgeGlow: edgeGlow, motion: savedMotion }
       setDefaultUrl(settings.defaultPageUrl)
       setSearchEngine(settings.searchEngine || SEARCH_ENGINES.Google)
       setSearchSuggestions(settings.searchSuggestions !== false)
@@ -1381,8 +1369,6 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
 
     return {
       theme,
-      lightVariant,
-      darkVariant,
       density,
       newTabFocus,
       pageFocus,
@@ -1430,7 +1416,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
   }
 
   const previewAppearance = (next: Partial<AppearancePreview>): void => {
-    onAppearancePreview?.({ theme, lightVariant, darkVariant, density, vimIndicator, vimEdge, vimEdgeEverywhere, vimEdgeSpeed, vimEdgeRest, vimEdgeGlow, motion, ...next })
+    onAppearancePreview?.({ theme, density, vimIndicator, vimEdge, vimEdgeEverywhere, vimEdgeSpeed, vimEdgeRest, vimEdgeGlow, motion, ...next })
   }
 
   const handleWipeAllData = () => {
@@ -1812,7 +1798,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
               <div>
                 <h3 className="text-sm font-semibold text-foreground mb-1">Theme</h3>
                 <p className="text-[11px] text-muted-foreground mb-3">
-                  Choose the overall family, then pick a brightness variant for each family.
+                  Light, dark, or whichever the system is in.
                 </p>
                 <Segmented
                   label="Theme"
@@ -1826,42 +1812,6 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                   ]}
                 />
 
-                {/* Variant pickers — show only the family the current theme
-                    can actually render. On 'system' we show both so the
-                    user can tune each OS state independently. */}
-                {(theme === 'light' || theme === 'system') && (
-                  <div className="mt-3">
-                    <div className="text-[11px] font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
-                      <Sun size={11} />
-                      Light variant
-                    </div>
-                    <Segmented
-                      label="Light variant"
-                      vimItem="appearance:light-variant"
-                      wrap
-                      value={lightVariant}
-                      onChange={(id) => { setLightVariant(id); previewAppearance({ lightVariant: id }) }}
-                      options={LIGHT_VARIANTS.map((v) => ({ value: v.id, label: v.label }))}
-                    />
-                  </div>
-                )}
-
-                {(theme === 'dark' || theme === 'system') && (
-                  <div className="mt-3">
-                    <div className="text-[11px] font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
-                      <Moon size={11} />
-                      Dark variant
-                    </div>
-                    <Segmented
-                      label="Dark variant"
-                      vimItem="appearance:dark-variant"
-                      wrap
-                      value={darkVariant}
-                      onChange={(id) => { setDarkVariant(id); previewAppearance({ darkVariant: id }) }}
-                      options={DARK_VARIANTS.map((v) => ({ value: v.id, label: v.label }))}
-                    />
-                  </div>
-                )}
               </div>
 
               {/* Vim's mode key cap. */}

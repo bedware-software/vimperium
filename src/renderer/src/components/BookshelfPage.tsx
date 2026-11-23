@@ -115,11 +115,10 @@ export function lastWebTab(s: AppState): Tab | null {
 // ── Helpers ──
 
 /** Mirror the parent's theme attrs onto the dropdown popup (its own window). */
-function readThemeAttrs(): { theme?: string; themeVariant?: string } {
+function readThemeAttrs(): { theme?: string } {
   const root = document.documentElement
   return {
     theme: root.getAttribute('data-theme') ?? undefined,
-    themeVariant: root.getAttribute('data-theme-variant') ?? undefined,
   }
 }
 

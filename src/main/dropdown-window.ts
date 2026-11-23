@@ -34,7 +34,6 @@ interface DropdownSpecPayload {
   anchor?: DropdownAnchor
   position?: DropdownPosition
   theme?: string
-  themeVariant?: string
   iconName?: string
   selectedId?: string | null
   items?: Array<{ id: string; name: string }>

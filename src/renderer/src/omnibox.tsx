@@ -20,8 +20,6 @@ function Popup() {
       const root = document.documentElement
       if (s.theme) root.setAttribute('data-theme', s.theme)
       else root.removeAttribute('data-theme')
-      if (s.themeVariant) root.setAttribute('data-theme-variant', s.themeVariant)
-      else root.removeAttribute('data-theme-variant')
       if (s.density) root.setAttribute('data-density', s.density)
       else root.removeAttribute('data-density')
     })

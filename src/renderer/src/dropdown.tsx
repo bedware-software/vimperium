@@ -25,8 +25,6 @@ function Popup() {
       const root = document.documentElement
       if (next.theme) root.setAttribute('data-theme', next.theme)
       else root.removeAttribute('data-theme')
-      if (next.themeVariant) root.setAttribute('data-theme-variant', next.themeVariant)
-      else root.removeAttribute('data-theme-variant')
     })
     return cleanup
   }, [])
