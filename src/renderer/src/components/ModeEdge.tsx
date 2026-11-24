@@ -1,6 +1,6 @@
 import { useLayoutEffect, useMemo, useRef, type CSSProperties } from 'react'
 import type { VimMode } from '../lib/vim-mode'
-import { isSidesEdge, useVimEdge, useVimEdgeEverywhere, useVimEdgeGlow, useVimEdgeTiming, vimEdgePace, type VimEdge } from '../lib/vim-edge'
+import { isSidesEdge, useVimEdge, useVimEdgeEverywhere, useVimEdgeTiming, vimEdgePace, type VimEdge } from '../lib/vim-edge'
 
 interface Props {
   /** Null while Vim mode is off: no edge. */
@@ -15,27 +15,26 @@ interface Props {
   pace?: { speed: number; rest: number }
 }
 
-/** Vim's mode as a light moving round the edge of the field it's put in —
- *  the address bar, InputField — in the mode's colours, the way Settings →
- *  Appearance says (.mode-edge in globals.css). The field must be
- *  positioned and must not clip what spills past it. A layer per mode, both
- *  running; the mode's layer shows, the change crossfading. */
+/** Vim's mode on the edge of the field it's put in — the address bar,
+ *  InputField: INSERT wears a ring in the plate's colours, the way Settings →
+ *  Appearance says (.mode-edge in globals.css); COMMAND has no edge, so its
+ *  layer isn't drawn and the ring fades as the mode changes. No glow round
+ *  the ring either: the glow's box isn't drawn. The field must be positioned
+ *  and must not clip what spills past it. */
 export function ModeEdge({ mode, edge, addressBar = false, pace: ownPace }: Props) {
   const chosen = useVimEdge()
   const everywhere = useVimEdgeEverywhere()
   const timing = useVimEdgeTiming()
   const look = edge ?? chosen
-  // The pace, from Settings: the period, and a resting comet's timing.
-  const glow = useVimEdgeGlow()
   const pace = useMemo(() => {
     const { speed, ease } = vimEdgePace(look, (ownPace ?? timing).speed, (ownPace ?? timing).rest)
-    return { '--speed': speed, '--halo': glow / 100, ...(ease ? { '--pass-ease': ease } : {}) } as CSSProperties
-  }, [look, timing, glow, ownPace])
+    return { '--speed': speed, ...(ease ? { '--pass-ease': ease } : {}) } as CSSProperties
+  }, [look, timing, ownPace])
   const shown = mode !== null && look !== 'off' && (addressBar || everywhere || edge !== undefined)
   const ref = useRef<HTMLSpanElement>(null)
 
-  // The layers cut the field's own shape out of themselves, so they need
-  // its radius — whatever the field's classes make it.
+  // The layer cuts the field's own shape out of itself, so it needs its
+  // radius — whatever the field's classes make it.
   useLayoutEffect(() => {
     const el = ref.current
     const field = el?.parentElement
@@ -45,23 +44,16 @@ export function ModeEdge({ mode, edge, addressBar = false, pace: ownPace }: Prop
   }, [look, shown])
 
   if (!shown) return null
-  // The ring and the glow, each a clipping box. A turning look has one mover
-  // in it. A comet resting at the sides slides strips past instead: a
-  // window with the top's and the bottom's in it, then the left end's and
-  // the right end's. Keyed by which, so a change of look makes the boxes
-  // anew and the strips start together.
-  const strips = isSidesEdge(look)
-  const box = (key: string) => strips
-    ? <i key={`${key}-strips`}><i><i /><i /></i><i /><i /></i>
-    : <i key={key}><i /></i>
+  // The ring, a clipping box. A turning look has one mover in it. A comet
+  // resting at the sides (an old look) slides strips past instead: a window
+  // with the top's and the bottom's in it, then the left end's and the right
+  // end's. Keyed by which, so a change of look makes the box anew.
+  const ring = isSidesEdge(look)
+    ? <i key="ring-strips"><i><i /><i /></i><i /><i /></i>
+    : <i key="ring"><i /></i>
   return (
     <span ref={ref} className="mode-edge" data-edge={look} style={pace} aria-hidden="true">
-      {(['command', 'insert'] as const).map((layer) => (
-        <span key={layer} data-for={layer} data-on={mode === layer ? '' : undefined}>
-          {box('ring')}
-          {box('glow')}
-        </span>
-      ))}
+      <span data-for="insert" data-on={mode === 'insert' ? '' : undefined}>{ring}</span>
     </span>
   )
 }

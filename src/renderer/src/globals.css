@@ -108,16 +108,15 @@
 }
 
 :root {
-  /* Vim's mode on a field's edge (.mode-edge below): three colours a mode,
-   * all from the brand's tokens — COMMAND the plate's (yellow on dark, black
-   * with a yellow edge on light), INSERT the link's (peach, dark orange).
+  /* Three colours a mode, the plate's for both: INSERT's ring (.mode-edge
+   * below; COMMAND has none) and the list pages' icons (ListPage.tsx).
    * Declared on the root, which carries data-theme, so they follow it. */
   --vim-edge-command-1: var(--bw-plate);
   --vim-edge-command-2: var(--bw-plate-edge);
   --vim-edge-command-3: var(--bw-plate-pressed);
-  --vim-edge-insert-1: var(--bw-link);
-  --vim-edge-insert-2: color-mix(in oklab, var(--bw-link) 70%, var(--bw-text-strong));
-  --vim-edge-insert-3: color-mix(in oklab, var(--bw-link) 70%, var(--bw-error));
+  --vim-edge-insert-1: var(--bw-plate);
+  --vim-edge-insert-2: var(--bw-plate-edge);
+  --vim-edge-insert-3: var(--bw-plate-pressed);
 }
 
 
@@ -353,56 +352,39 @@ html[data-page-fullscreen] body {
   min-width: calc-size(max-content, min(size, 3rem));
 }
 
-/* Vim's mode, shown as a key cap (VimModeBadge): @bedware/ui's cap, a little
- * bigger, one width for CMD / INS so a switch doesn't shift what's beside
- * it, and the mode's colour shown as Settings → Appearance says
- * (data-indicator, lib/vim-indicator.ts). */
-.bw-kbd.vim-mode {
-  display: inline-flex;
-  justify-content: center;
-  font-family: var(--font-sans);
-  width: 42px;
-  padding: 4px 0;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+/* Vim's mode label (VimModeBadge), its look by Settings → Appearance
+ * (data-indicator, lib/vim-indicator.ts): COMMAND quiet or outlined, INSERT
+ * a plate in both. Monospace, so CMD and INS are one width and a switch
+ * doesn't shift what's beside it. */
+.vim-mode {
+  flex: none;
+  font: 700 10px var(--bw-font-mono);
+  letter-spacing: 0.06em;
+  padding: 3px 6px;
+  color: var(--bw-text-muted);
+  background: var(--bw-surface-3);
 }
-.bw-kbd.vim-mode[data-mode="command"] { --vim-c: var(--color-vim-command); --vim-t: var(--color-vim-command-text); }
-.bw-kbd.vim-mode[data-mode="insert"] { --vim-c: var(--color-vim-insert); --vim-t: var(--color-vim-insert-text); }
-.bw-kbd.vim-mode[data-indicator="rim-label"] { border-color: var(--vim-c); color: var(--vim-t); }
-.bw-kbd.vim-mode[data-indicator="rim"] { border-color: var(--vim-c); }
-.bw-kbd.vim-mode[data-indicator="label"] { color: var(--vim-t); }
-/* The wash is an image over the cap's own fill, whichever the theme gives. */
-.bw-kbd.vim-mode[data-indicator="tint"] {
-  border-color: var(--vim-c);
-  background-image: linear-gradient(color-mix(in oklab, var(--vim-c) 18%, transparent), color-mix(in oklab, var(--vim-c) 18%, transparent));
+.vim-mode[data-indicator="outline"][data-mode="command"] {
+  color: var(--bw-plate);
+  box-shadow: inset 0 0 0 1.5px var(--bw-plate);
 }
-/* A thicker bottom edge, the padding giving back what it adds. */
-.bw-kbd.vim-mode[data-indicator="base"] {
-  border-bottom: 3px solid var(--vim-c);
-  padding-bottom: 2.5px;
-}
-.bw-kbd.vim-mode[data-indicator="dot"] {
-  width: 50px;
-  gap: 4px;
-}
-.bw-kbd.vim-mode[data-indicator="dot"]::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  background: var(--vim-c);
+.vim-mode[data-mode="insert"] {
+  color: var(--bw-on-plate);
+  background: var(--bw-plate);
+  box-shadow: inset 0 -2px 0 var(--bw-plate-edge);
 }
 
 /* ── Vim's mode on a field's edge (ModeEdge, lib/vim-edge.ts) ──
- * A light that keeps moving round the address bar (and, when asked, the
- * popups' boxes), in the mode's colours. Each field holds a layer per mode;
- * a mode change crossfades them, so any look fades rather than jumps, and
- * the hidden one stops being drawn once it has faded out. A layer is a box
- * --pad bigger than the field all round, its content box — the field's own
- * shape, --r its radius, set by ModeEdge — cut out by a mask: what it draws
- * shows only outside the field, never over what's typed. In it a ring
- * (1.5px out) and a glow (a blurred copy, 4px out), each a clipping box
- * with a static background of its own and a mover inside.
+ * INSERT's ring round the address bar (and, when asked, the popups' boxes);
+ * COMMAND has none. ModeEdge draws INSERT's layer alone, and of it the ring
+ * alone, so the rules for COMMAND's layer and for the glow (`i + i`, --halo,
+ * --glow) match nothing now. Only Glint is offered in Settings: the other
+ * [data-edge] looks below are the old design's, kept but out of reach.
+ * The layer is a box --pad bigger than the field all round, its content box
+ * — the field's own shape, --r its radius, set by ModeEdge — cut out by a
+ * mask: what it draws shows only outside the field, never over what's
+ * typed. In it the ring (1.5px out), a clipping box with a static
+ * background of its own and a mover inside. A mode change fades the layer.
  *
  * Everything that moves is a transform — a gradient drawn once, turned or
  * slid — so the GPU runs it with no style, paint or raster per frame; a

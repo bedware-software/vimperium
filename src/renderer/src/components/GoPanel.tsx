@@ -14,7 +14,7 @@ import { cyrillicReadings } from '../lib/translit'
 import { cn } from '../lib/utils'
 import { isCopyKey } from '../lib/vim-mode'
 import { displayKeySequence } from '../lib/vim-keymap'
-import { useVimEdge, type VimEdge } from '../lib/vim-edge'
+import { useVimEdge } from '../lib/vim-edge'
 import { Button, Hint, HintBar, InputField as Field, IconButton } from '@bedware/ui'
 
 const isMac = navigator.platform.toLowerCase().includes('mac')
@@ -24,7 +24,7 @@ const isMac = navigator.platform.toLowerCase().includes('mac')
 const WIDTH = isMac ? 660 : 800
 // The field's row (h-11), the hint bar (h-10), the border.
 const HEIGHT = 86
-// Small: the field (h-8) and, all round it, room for its edge's glow —
+// Small: the field (h-8) and, all round it, room for its edge's ring —
 // the window cuts off what spills past it.
 const SMALL_WIDTH = 340
 const SMALL_HEIGHT = 56
@@ -34,9 +34,6 @@ const LIFT = 0.16
 const ATTRS_KEY = 'go-by-title'
 const SPOT_KEY = 'go-spot'
 const SMALL_KEY = 'go-small'
-// The small box's edge: quick, all but no rest in the ends. Below Settings'
-// own range on purpose.
-const SMALL_PACE = { speed: 2.4, rest: 0.1 } as const
 // Where a drag left it, as an offset from its own spot: it follows the
 // window's size like the spot does.
 const OFFSET_KEY = 'go-offset'
@@ -319,8 +316,6 @@ export function GoPanel({ open, focusTick, onClose, anchorRef }: {
   const counter = result && query ? (result.total > 0 ? `${result.index}/${result.total}` : 'Nothing') : ''
   const shift = isMac ? '⇧' : 'Shift'
   const iconsTitle = 'Whether a control is found by its title too — an icon with no text (Tab)'
-  // The address bar's comet, whichever it is; a comet of its own otherwise.
-  const smallEdge: VimEdge = chosenEdge.startsWith('comet') ? chosenEdge : 'comet-sides'
 
   const inputProps = {
     ref: inputRef,
@@ -379,7 +374,8 @@ export function GoPanel({ open, focusTick, onClose, anchorRef }: {
                 </>
               )}
             >
-              <ModeEdge mode="command" edge={smallEdge} pace={SMALL_PACE} />
+              {/* The box always types: INSERT's edge, unless Settings says Off. */}
+              <ModeEdge mode="insert" edge={chosenEdge} />
             </Field>
           </div>
         </div>

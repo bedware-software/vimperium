@@ -72,11 +72,9 @@ const STATIC: SettingsIndexEntry[] = [
   { section: 'appearance', item: 'appearance:light-variant', title: 'Light variant', keywords: 'theme brightness soft', fallback: 'appearance:theme' },
   { section: 'appearance', item: 'appearance:dark-variant', title: 'Dark variant', keywords: 'theme brightness soft', fallback: 'appearance:theme' },
   { section: 'appearance', item: 'appearance:vim-indicator', title: 'Vim mode indicator', keywords: 'cmd ins key cap badge colour', fallback: 'appearance:theme' },
-  { section: 'appearance', item: 'appearance:vim-edge', title: 'Vim mode edge', keywords: 'address bar light comet', fallback: 'appearance:theme' },
+  { section: 'appearance', item: 'appearance:vim-edge', title: 'Vim mode edge', keywords: 'address bar ring glint insert', fallback: 'appearance:theme' },
   { section: 'appearance', item: 'appearance:vim-edge-everywhere', title: 'Vim mode edge on every field', keywords: 'search find palette', fallback: 'appearance:theme' },
-  { section: 'appearance', item: 'appearance:vim-edge-speed', title: 'Vim mode edge: lap', keywords: 'speed pace fast slow seconds comet light', fallback: 'appearance:theme' },
-  { section: 'appearance', item: 'appearance:vim-edge-rest', title: 'Vim mode edge: rest at the sides', keywords: 'pause stop stay ends comet seconds', fallback: 'appearance:theme' },
-  { section: 'appearance', item: 'appearance:vim-edge-glow', title: 'Vim mode edge: glow', keywords: 'halo size intensity blur light comet', fallback: 'appearance:theme' },
+  { section: 'appearance', item: 'appearance:vim-edge-speed', title: 'Vim mode edge: pace', keywords: 'speed lap fast slow seconds glint', fallback: 'appearance:theme' },
   { section: 'appearance', item: 'appearance:motion', title: 'Motion', keywords: 'animation animations reduce reduced motion effects moving still glitch light system always never' },
   // Dark pages
   { section: 'darkPages', item: 'dark:mode', title: 'Dark pages', keywords: 'off on theme night mode' },

@@ -1,27 +1,22 @@
-// How Vim's mode key cap (VimModeBadge) shows the mode's colour — a
-// Settings → Appearance choice while Vim mode is on. The caps read it
-// through useVimIndicator, so every cap follows a change at once, popups'
-// included (they render from this window). The looks are kbd.vim-mode's
-// [data-indicator] rules in globals.css.
+// How Vim's mode label (VimModeBadge) looks — a Settings → Appearance
+// choice. The labels read it through useVimIndicator, so every one follows a
+// change at once, popups' included (they render from this window). The looks
+// are .vim-mode's [data-indicator] rules in globals.css.
 
 import { useSyncExternalStore } from 'react'
 
-export type VimIndicator = 'rim-label' | 'rim' | 'label' | 'tint' | 'base' | 'dot' | 'plain'
+export type VimIndicator = 'quiet' | 'outline'
 
 export const VIM_INDICATORS: readonly { id: VimIndicator; label: string; hint: string }[] = [
-  { id: 'rim-label', label: 'Rim and label', hint: 'The rim and the label in the mode\'s colour.' },
-  { id: 'rim', label: 'Rim', hint: 'Only the rim in the mode\'s colour.' },
-  { id: 'label', label: 'Label', hint: 'Only the label in the mode\'s colour.' },
-  { id: 'tint', label: 'Rim and tint', hint: 'The rim in the mode\'s colour over a faint wash of it.' },
-  { id: 'base', label: 'Base', hint: 'A thick bottom edge in the mode\'s colour, like a key\'s base.' },
-  { id: 'dot', label: 'Dot', hint: 'A dot in the mode\'s colour before the label.' },
-  { id: 'plain', label: 'Plain', hint: 'No colour: the label alone tells the mode.' },
+  { id: 'quiet', label: 'Quiet', hint: 'COMMAND is muted grey; INSERT a yellow plate.' },
+  { id: 'outline', label: 'Outline', hint: 'COMMAND is yellow in a yellow frame; INSERT a yellow plate.' },
 ] as const
 
-export const DEFAULT_VIM_INDICATOR: VimIndicator = 'rim-label'
+export const DEFAULT_VIM_INDICATOR: VimIndicator = 'quiet'
 
+/** Anything else — the looks before these two — reads as Quiet. */
 export function normalizeVimIndicator(value: string | undefined): VimIndicator {
-  return VIM_INDICATORS.some((v) => v.id === value) ? (value as VimIndicator) : DEFAULT_VIM_INDICATOR
+  return value === 'outline' ? 'outline' : DEFAULT_VIM_INDICATOR
 }
 
 let current: VimIndicator = DEFAULT_VIM_INDICATOR

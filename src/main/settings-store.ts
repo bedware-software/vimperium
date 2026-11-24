@@ -36,22 +36,19 @@ export interface Settings {
    *  Sidebar's own shown/hidden toggle stays as it was. */
   hideSidebarInInsert: boolean
   /** How Vim's mode key cap shows the mode's colour (renderer
-   *  lib/vim-indicator.ts): 'rim-label', 'rim', 'label', 'tint', 'base',
-   *  'dot' or 'plain'. */
+   *  lib/vim-indicator.ts): 'quiet' or 'outline'. */
   vimIndicator: string
   /** How a field's edge shows Vim's mode (renderer lib/vim-edge.ts):
-   *  'comet-rail', 'comet-rail-sides', 'comet', 'comet-sides', 'aurora',
-   *  'living', 'glint', 'ember' or 'off'. */
+   *  'glint' or 'off'. */
   vimEdge: string
   /** The edge on every field that shows the mode, not the address bar
    *  alone. */
   vimEdgeEverywhere: boolean
   /** The edge's pace (renderer lib/vim-edge.ts): seconds a lap of its light
-   *  takes, and seconds a comet resting at the sides stays in each end. */
+   *  takes, and — the old looks' only — seconds a comet resting at the sides
+   *  stays in each end. */
   vimEdgeSpeed: number
   vimEdgeRest: number
-  /** The edge's glow, percent of the designed size; 0 is none. */
-  vimEdgeGlow: number
   /** Whether the app's own decorations move — the edge's light, the mark's
    *  glitch (renderer lib/motion.ts): 'system' goes by the OS's Reduce
    *  motion, 'always' and 'never' don't. Null is no choice made: the
@@ -127,8 +124,10 @@ export const MAX_BINDINGS_PER_ACTION = 2
 const KNOWN_LIGHT_VARIANTS = new Set(['light-default', 'light-soft'])
 const KNOWN_DARK_VARIANTS = new Set(['dark-default', 'dark-soft'])
 const KNOWN_DENSITIES = new Set(['compact', 'normal'])
-const KNOWN_VIM_INDICATORS = new Set(['rim-label', 'rim', 'label', 'tint', 'base', 'dot', 'plain'])
-const KNOWN_VIM_EDGES = new Set(['comet-rail', 'comet-rail-sides', 'comet', 'comet-sides', 'aurora', 'living', 'glint', 'ember', 'off'])
+// A saved look that's gone reads as the default: any indicator of before as
+// 'quiet', any edge but 'off' as 'glint'.
+const vimIndicatorChoice = (value: unknown): string => (value === 'outline' ? 'outline' : 'quiet')
+const vimEdgeChoice = (value: unknown): string => (value === 'off' ? 'off' : 'glint')
 /** The edge's seconds, kept within the slider's range (lib/vim-edge.ts). */
 function edgeSeconds(value: unknown, min: number, max: number, fallback: number): number {
   return typeof value === 'number' && Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallback
@@ -343,12 +342,11 @@ export const DEFAULT_SETTINGS: Settings = {
   urlEditorEditMode: 'command',
   vimMode: true,
   hideSidebarInInsert: false,
-  vimIndicator: 'rim-label',
-  vimEdge: 'comet-rail',
+  vimIndicator: 'quiet',
+  vimEdge: 'glint',
   vimEdgeEverywhere: false,
   vimEdgeSpeed: 10,
   vimEdgeRest: 3,
-  vimEdgeGlow: 100,
   motion: null,
   vimKeymap: null,
   defaultPageUrl: '',
@@ -699,16 +697,11 @@ export function loadSettings(): Settings {
     // Vim is the only mode, whatever an older build saved.
     vimMode: true,
     hideSidebarInInsert: saved?.hideSidebarInInsert === true,
-    vimIndicator: KNOWN_VIM_INDICATORS.has(saved?.vimIndicator as string)
-      ? (saved!.vimIndicator as string)
-      : DEFAULT_SETTINGS.vimIndicator,
-    vimEdge: KNOWN_VIM_EDGES.has(saved?.vimEdge as string)
-      ? (saved!.vimEdge as string)
-      : DEFAULT_SETTINGS.vimEdge,
+    vimIndicator: vimIndicatorChoice(saved?.vimIndicator),
+    vimEdge: vimEdgeChoice(saved?.vimEdge),
     vimEdgeEverywhere: saved?.vimEdgeEverywhere === true,
     vimEdgeSpeed: edgeSeconds(saved?.vimEdgeSpeed, 4, 30, DEFAULT_SETTINGS.vimEdgeSpeed),
     vimEdgeRest: edgeSeconds(saved?.vimEdgeRest, 0, 10, DEFAULT_SETTINGS.vimEdgeRest),
-    vimEdgeGlow: edgeSeconds(saved?.vimEdgeGlow, 0, 200, DEFAULT_SETTINGS.vimEdgeGlow),
     motion: motionChoice(saved?.motion),
     vimKeymap: normalizeVimKeymap(saved?.vimKeymap),
     searchSuggestions: saved?.searchSuggestions !== false,
@@ -763,16 +756,11 @@ export function saveSettings(settings: Settings): void {
     // Cloud Sync, and turns Vim off without it.
     vimMode: true,
     hideSidebarInInsert: settings.hideSidebarInInsert === true,
-    vimIndicator: KNOWN_VIM_INDICATORS.has(settings.vimIndicator)
-      ? settings.vimIndicator
-      : DEFAULT_SETTINGS.vimIndicator,
-    vimEdge: KNOWN_VIM_EDGES.has(settings.vimEdge)
-      ? settings.vimEdge
-      : DEFAULT_SETTINGS.vimEdge,
+    vimIndicator: vimIndicatorChoice(settings.vimIndicator),
+    vimEdge: vimEdgeChoice(settings.vimEdge),
     vimEdgeEverywhere: settings.vimEdgeEverywhere === true,
     vimEdgeSpeed: edgeSeconds(settings.vimEdgeSpeed, 4, 30, DEFAULT_SETTINGS.vimEdgeSpeed),
     vimEdgeRest: edgeSeconds(settings.vimEdgeRest, 0, 10, DEFAULT_SETTINGS.vimEdgeRest),
-    vimEdgeGlow: edgeSeconds(settings.vimEdgeGlow, 0, 200, DEFAULT_SETTINGS.vimEdgeGlow),
     motion: motionChoice(settings.motion),
     vimKeymap: normalizeVimKeymap(settings.vimKeymap),
     searchSuggestions: settings.searchSuggestions !== false,

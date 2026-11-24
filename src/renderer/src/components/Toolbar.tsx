@@ -240,7 +240,8 @@ function Dropdown(props: DropdownTriggerProps) {
   return (
     <div ref={triggerRef} className="relative" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
       {hint}
-      <Button variant="secondary"
+      <Button variant="bare"
+        aria-expanded={open}
         onMouseDown={() => { pressedOpenRef.current = open }}
         // A click with no press behind it (detail 0) came from the keys —
         // Enter on the focused button, a ; label — so the list comes up
@@ -248,9 +249,10 @@ function Dropdown(props: DropdownTriggerProps) {
         onClick={(e) => handleToggle(e.detail === 0)}
         className="shrink-0"
       >
-        <Icon size={13} className="text-muted-foreground" />
+        {/* No colour of their own: the button's, which turns with its plate. */}
+        <Icon size={13} />
         <span className="max-w-[100px] truncate">{selected?.name || label}</span>
-        <ChevronDown size={12} className={`text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown size={12} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
       </Button>
     </div>
   )
@@ -482,6 +484,7 @@ function ExtensionActions({
   // its icon; Shift with that key (or Shift+Enter) opens its own menu —
   // pin, options, disable, remove. Manage Extensions is Settings'.
   const extensionsMenuClosedAt = useRef(0)
+  const [extensionsMenuOpen, setExtensionsMenuOpen] = useState(false)
   const openExtensionsMenuRef = useRef<() => Promise<void>>(async () => {})
   openExtensionsMenuRef.current = async () => {
     const r = manageRef.current?.getBoundingClientRect()
@@ -489,6 +492,7 @@ function ExtensionActions({
     const withAction = extensions.filter((ext) => ext.enabled && ext.hasAction)
     const actions: DropdownAction[] = withAction.map((ext) => ({ id: `open:${ext.id}`, shiftId: `menu:${ext.id}`, label: ext.name, iconName: 'Puzzle' }))
     actions.push({ id: 'manage', label: 'Manage Extensions', iconName: 'Settings', ...(actions.length > 0 ? { divider: 'before' as const } : {}) })
+    setExtensionsMenuOpen(true)
     const result = await openDropdownAsync({
       kind: 'menu',
       anchor: { x: r.left, y: r.top, width: r.width, height: r.height },
@@ -496,7 +500,7 @@ function ExtensionActions({
       header: withAction.length > 0 ? 'Extensions — Shift+key: its menu' : 'Extensions',
       actions,
       keyboard: true,
-    })
+    }).finally(() => setExtensionsMenuOpen(false))
     extensionsMenuClosedAt.current = Date.now()
     if (!result || result.type !== 'action') return
     if (result.actionId === 'manage') {
@@ -630,7 +634,7 @@ function ExtensionActions({
       {/* The puzzle button: the extensions' menu, on either mouse button.
           Always shown, pinned extensions or not: the menu's last row is the
           way into Settings → Extensions. */}
-      <IconButton size={32}
+      <IconButton bare size={32}
         ref={manageRef}
         onClick={toggleExtensionsMenu}
         onContextMenu={(e) => {
@@ -638,6 +642,7 @@ function ExtensionActions({
           toggleExtensionsMenu()
         }}
         label="Extensions"
+        aria-expanded={extensionsMenuOpen}
         className="relative shrink-0"
       >
         {manageHint}
@@ -672,7 +677,7 @@ function ExtensionActions({
         }
         return (
           <span key={ext.id} className="relative flex shrink-0">
-          <IconButton
+          <IconButton bare
             size={32}
             pressed={isOpen || menuExtId === ext.id ? true : undefined}
             className="relative shrink-0 overflow-hidden"
@@ -896,7 +901,7 @@ function AppMenu({ sidebarVisible, onToggleSidebar, onOpenSettings, onOpenAbout,
     // About only.
     <div ref={triggerRef} className="relative shrink-0" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
       {labelHint}
-      <IconButton
+      <IconButton bare
         size={32}
         pressed={open ? true : undefined}
         className="relative shrink-0"
@@ -1636,7 +1641,7 @@ export function Toolbar({ windowWorkspaceId, sidebarVisible, pageFullscreen, vim
             list is empty; Menu → Downloads remains the way in. All of it
             seeds/clears via onDownloadsUpdated. */}
         {totalDownloads > 0 && (
-          <IconButton size={32}
+          <IconButton bare size={32}
             onClick={openDownloadsPage}
             className="relative shrink-0"
             style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
@@ -1667,7 +1672,7 @@ export function Toolbar({ windowWorkspaceId, sidebarVisible, pageFullscreen, vim
         )}
 
         {/* Nav buttons */}
-        <IconButton
+        <IconButton bare
           size={32}
           label="Back"
           className="relative shrink-0"
@@ -1678,7 +1683,7 @@ export function Toolbar({ windowWorkspaceId, sidebarVisible, pageFullscreen, vim
           <ChevronLeft size={16} />
         </IconButton>
         {canGoForward && (
-          <IconButton size={32}
+          <IconButton bare size={32}
             onClick={handleForward}
             className="relative shrink-0"
             style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
@@ -1688,7 +1693,7 @@ export function Toolbar({ windowWorkspaceId, sidebarVisible, pageFullscreen, vim
             <ChevronRight size={16} />
           </IconButton>
         )}
-        <IconButton
+        <IconButton bare
           size={32}
           pressed={autoReloadSeconds ? true : undefined}
           className="relative shrink-0"
@@ -1725,9 +1730,8 @@ export function Toolbar({ windowWorkspaceId, sidebarVisible, pageFullscreen, vim
           ref={urlBarRef}
           // The address editor lines up with it (UrlEditor.tsx).
           data-url-bar=""
-          // z-1: its edge's glow (ModeEdge) spills over the neighbours on both
-          // sides; without it the buttons after it in the bar paint over the
-          // glow's right half.
+          // z-1: its edge's ring (ModeEdge) lies just outside it; without it
+          // the buttons after it in the bar paint over the ring's right end.
           className="field relative z-[1] flex-[5] min-w-0 flex items-center h-8 rounded-lg"
           style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
         >
