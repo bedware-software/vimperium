@@ -17,7 +17,11 @@ import { displayKeySequence } from '../lib/vim-keymap'
 import { useVimEdge, type VimEdge } from '../lib/vim-edge'
 import { Button, Hint, HintBar, InputField as Field, IconButton } from '@bedware/ui'
 
-const WIDTH = 660
+const isMac = navigator.platform.toLowerCase().includes('mac')
+
+// Wide enough for the hint bar, which clips what doesn't fit: off the Mac the
+// keys are spelled out (Ctrl+K, Shift) where the Mac has one glyph each.
+const WIDTH = isMac ? 660 : 800
 // The field's row (h-11), the hint bar (h-10), the border.
 const HEIGHT = 86
 // Small: the field (h-8) and, all round it, room for its edge's glow —
@@ -40,8 +44,9 @@ const OFFSET_KEY = 'go-offset'
 // the page keeps it — its click handlers run, a copy lands — before the
 // panel takes the keyboard back.
 const REFOCUS_MS = 250
-
-const isMac = navigator.platform.toLowerCase().includes('mac')
+// After Enter the page takes the focus for the press (main's
+// 'vimperium-go-click'): a blur this soon after isn't the user leaving.
+const FOLLOW_BLUR_MS = 1000
 
 interface GoResult {
   type: 'go-result'
@@ -117,6 +122,7 @@ export function GoPanel({ open, focusTick, onClose, anchorRef }: {
   // The tab whose page has Go's highlights up, to take them down.
   const askedTabRef = useRef<string | null>(null)
   const seqRef = useRef(0)
+  const followedAtRef = useRef(0)
 
   useEffect(() => {
     if (!open) return
@@ -148,7 +154,26 @@ export function GoPanel({ open, focusTick, onClose, anchorRef }: {
     if (!open || !popupWindow) return
     const t = setTimeout(() => inputRef.current?.focus(), 0)
     return () => clearTimeout(t)
-  }, [open, popupWindow, focusTick, refocus])
+    // `small`: each size has a field of its own, and the new one mounts
+    // unfocused — keys then miss handleKeyDown and reach the app menu.
+  }, [open, popupWindow, focusTick, refocus, small])
+
+  // Focus gone elsewhere (a click on the page, another window) closes it.
+  useEffect(() => {
+    if (!open || !popupWindow) return
+    // Not before it first has the focus: showing it blurs it in passing.
+    let armed = popupWindow.document.hasFocus()
+    const onFocus = (): void => { armed = true }
+    const onBlur = (): void => {
+      if (armed && Date.now() - followedAtRef.current > FOLLOW_BLUR_MS) onClose()
+    }
+    popupWindow.addEventListener('focus', onFocus)
+    popupWindow.addEventListener('blur', onBlur)
+    return () => {
+      popupWindow.removeEventListener('focus', onFocus)
+      popupWindow.removeEventListener('blur', onBlur)
+    }
+  }, [open, popupWindow, onClose])
 
   const send = (tabId: string, msg: Record<string, unknown>): void => window.electronAPI?.goSend?.(tabId, msg)
 
@@ -281,6 +306,7 @@ export function GoPanel({ open, focusTick, onClose, anchorRef }: {
       case 'Enter': {
         e.preventDefault()
         if (e.repeat || !askedTabRef.current || !result || result.total === 0) return
+        followedAtRef.current = Date.now()
         send(askedTabRef.current, { op: 'follow', newTab: e.shiftKey })
         // Followed: the box is empty for the next thing to go to. A link
         // sent to a new tab leaves it, for the next of the same matches.
@@ -343,6 +369,8 @@ export function GoPanel({ open, focusTick, onClose, anchorRef }: {
                     size={20}
                     pressed={attrs}
                     className="shrink-0"
+                    // The box keeps the keyboard.
+                    onMouseDown={(e) => e.preventDefault()}
                     onClick={toggleAttrs}
                     label={iconsTitle}
                   >

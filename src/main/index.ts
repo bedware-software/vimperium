@@ -3434,8 +3434,8 @@ function toggleUiDevTools(win: Electron.BaseWindow | undefined): void {
 /** The app menu. Vim is the only mode, so the app's own items carry no
  *  accelerator — COMMAND's keys run them (an accelerator would take its
  *  combination from every page). What keeps a key is the OS's own: the
- *  roles' (copy, paste, undo, select all, hide, quit, minimize, zoom,
- *  fullscreen). No reload/forceReload roles: theirs is Ctrl+R, which would
+ *  roles' (copy, paste, undo, select all, hide, quit, zoom, fullscreen;
+ *  minimize on the Mac only). No reload/forceReload roles: theirs is Ctrl+R, which would
  *  reload the focused page (or the chrome) past COMMAND's r. */
 function buildMenu(): void {
   const template: Electron.MenuItemConstructorOptions[] = [
@@ -3583,7 +3583,12 @@ function buildMenu(): void {
     {
       label: 'Window',
       submenu: [
-        { role: 'minimize' },
+        // Off the Mac the role's key is Ctrl+M, which would take it from the
+        // pages and from Go's panel (GoPanel.tsx), minimizing whichever
+        // window has the focus: there the item has no key.
+        process.platform === 'darwin'
+          ? { role: 'minimize' }
+          : { label: 'Minimize', click: (_item, win) => win?.minimize() },
         { role: 'zoom' },
         { type: 'separator' },
         { role: 'front' },

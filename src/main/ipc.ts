@@ -950,8 +950,6 @@ export function registerIpcHandlers(): void {
     pinPopup(popup, parent, s.left, s.top)
   })
 
-  // Hand the keyboard back to a popup that's already open (Find in Page
-  // asked for again while the page has the keys).
   // A pinned popup's content grew or shrank (the address editor's keys
   // strip wrapping onto a second row; Go made small): the window takes the
   // new height — and width, when given — its spot kept. The spot remembers
@@ -976,6 +974,8 @@ export function registerIpcHandlers(): void {
     if (b.height !== h || (w !== undefined && b.width !== w)) popup.setBounds({ ...b, height: h, width: w ?? b.width })
   })
 
+  // Hand the keyboard back to a popup that's already open (Find in Page
+  // asked for again while the page has the keys).
   ipcMain.on('detached-window:focus', (_e, popupId: unknown) => {
     const popup = typeof popupId === 'string' ? pinnablePopups.get(popupId) : undefined
     if (!popup || popup.isDestroyed()) return
