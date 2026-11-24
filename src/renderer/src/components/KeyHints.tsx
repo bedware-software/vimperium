@@ -48,7 +48,7 @@ export function RowHint({ mode, label, pending, className, always = false, index
   const faded = !numbered && !!label && !!pending && !typed
   return (
     <RowKey quiet={numbered} className={cn('z-10 transition-opacity', faded && 'opacity-30', className)}>
-      <span className="text-primary">{label.slice(0, typed)}</span>{label.slice(typed)}
+      {typed > 0 && <span className="bw-vimlabel__typed">{label.slice(0, typed)}</span>}{label.slice(typed)}
     </RowKey>
   )
 }

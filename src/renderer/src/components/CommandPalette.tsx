@@ -183,8 +183,9 @@ function rowCap(
   const typed = pending && label.startsWith(pending) ? pending.length : 0
   return {
     rowKey: (
-      <span className={pending && !typed ? 'opacity-30' : undefined}>
-        <span className="text-primary">{label.slice(0, typed)}</span>{label.slice(typed)}
+      // Stretched to the cap's height, as the typed part's plate fills it.
+      <span className={`inline-flex items-center self-stretch ${pending && !typed ? 'opacity-30' : ''}`}>
+        {typed > 0 && <span className="bw-vimlabel__typed">{label.slice(0, typed)}</span>}{label.slice(typed)}
       </span>
     ),
     rowKeyQuiet: false,
