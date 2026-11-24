@@ -17,7 +17,9 @@ export default defineConfig({
     }
   },
   preload: {
-    plugins: [externalizeDepsPlugin()],
+    // @bedware/ui (its vim-keys entry, src/shared/vim-keys.ts) is bundled in:
+    // it is ESM, which a page's sandboxed preload can't require.
+    plugins: [externalizeDepsPlugin({ exclude: ['@bedware/ui'] })],
     build: {
       outDir: 'out/preload',
       rollupOptions: {

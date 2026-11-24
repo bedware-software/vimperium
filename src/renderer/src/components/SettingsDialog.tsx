@@ -25,8 +25,7 @@ import { SETTINGS_SECTIONS, filterSettingsIndex, settingsIndex, settingsSectionL
 import { cn } from '../lib/utils'
 import { InputField } from './InputField'
 import { KeysHelp, LEAVE_INSERT_CAP, vimKeyCaps, vimKeyCapsAll } from './KeyHints'
-import { VimFormCursorHints, VimFormLabels } from './VimForm'
-import { VimSelect } from './VimSelect'
+import { VimFormCursorHints, VimFormLabels, VimSelect, type VimFormRowHint } from '@bedware/ui/vim-form'
 import { DEFAULT_SEARCH_FIELDS, SEARCH_FIELD_KINDS, SEARCH_FIELD_OPTIONS, normalizeSearchFields, type SearchFields } from '../../../shared/search-fields'
 import { ACTION_LABELS } from '../lib/action-labels'
 import { SEARCH_ENGINES } from '../../../shared/search-engines'
@@ -39,6 +38,9 @@ import {
   type PermissionPolicy,
   type PermissionGrant,
 } from '../lib/permissions'
+
+// A saved password's row: its Copy password button, and the key for it.
+const PASSWORD_ROW_HINTS: readonly VimFormRowHint[] = [{ cell: 'copy-password', command: 'row-copy-password', label: 'Password' }]
 
 interface ProxySettings {
   mode: 'system' | 'direct' | 'custom'
@@ -3942,7 +3944,7 @@ function SettingsHintBar({ form, keymap, mode, firstLabel, closeWarning, filterS
     <>
       <Hint label="Navigate" keys={caps('cursor-down', 'cursor-up')} />
       <Hint label="Section" keys={caps('section-next', 'section-prev')} />
-      <VimFormCursorHints form={form} keymap={keymap} />
+      <VimFormCursorHints form={form} keymap={keymap} rowHints={PASSWORD_ROW_HINTS} />
       {firstLabel && <Hint label="Go to" keys={[`${firstLabel}…`]} />}
       <Hint label="Find" keys={caps('filter')} />
       <Hint label="Save" keys={caps('save')} />

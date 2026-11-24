@@ -11,11 +11,14 @@
 // Page, `url-` in the address editor, anything else in COMMAND mode.
 
 import { ACTION_LABELS } from './action-labels'
+import { bindKeys as bind, createVimKeymap, parseKeySequence } from '@bedware/ui/vim-form'
 import { SEQUENCE_JOIN, type VimKeymap } from '../../../shared/vim-keys'
 import { DEFAULT_VIM_KEYMAP, contextOf, renamedVimCommand, type VimContext } from '../../../shared/vim-default-keymap'
 
 export { keyTokenFromEvent, matchKeys, isPageCommand, type VimKeymap, type VimKeymapEntries } from '../../../shared/vim-keys'
 export { DEFAULT_VIM_KEYMAP, type VimContext } from '../../../shared/vim-default-keymap'
+// How sequences are written, read on a keycap and bound: @bedware/ui's.
+export { parseKeySequence, formatKeySequence, displayKeySequence, keysFor } from '@bedware/ui/vim-form'
 
 /** What each Vim command does, for the help window. App commands use the
  *  regular shortcuts' names (ACTION_LABELS); the ones keymap v13 brought in
@@ -171,84 +174,6 @@ export interface ParsedVimKeymap {
   errors: string[]
 }
 
-// Named keys, lower-cased name → canonical token.
-const NAMED_KEYS: Record<string, string> = {
-  cr: '<CR>', enter: '<CR>', return: '<CR>',
-  esc: '<Esc>', escape: '<Esc>',
-  space: '<Space>',
-  tab: '<Tab>', 's-tab': '<S-Tab>',
-  bs: '<BS>', backspace: '<BS>',
-  del: '<Del>', delete: '<Del>',
-  up: '<Up>', down: '<Down>', left: '<Left>', right: '<Right>',
-  's-up': '<S-Up>', 's-down': '<S-Down>', 's-left': '<S-Left>', 's-right': '<S-Right>',
-  home: '<Home>', end: '<End>',
-  pageup: '<PageUp>', pagedown: '<PageDown>',
-  lt: '<', bslash: '\\', bar: '|',
-}
-for (let n = 1; n <= 12; n++) NAMED_KEYS[`f${n}`] = `<F${n}>`
-
-/** A named key in angle brackets, without them: `cr`, `C-l`, `c-s-j`, `C-1`. */
-function namedKeyToken(name: string): string | null {
-  const ctrl = /^c-(s-)?([a-z0-9])$/i.exec(name)
-  if (ctrl) return `<C-${ctrl[1] ? 'S-' : ''}${ctrl[2].toLowerCase()}>`
-  return NAMED_KEYS[name.toLowerCase()] ?? null
-}
-
-/** Splits one written key sequence (`gg`, `<S-Tab>`, `g<CR>`) into canonical
- *  tokens, or returns an error message. */
-function parseKeySequence(text: string): string[] | string {
-  const tokens: string[] = []
-  let i = 0
-  while (i < text.length) {
-    if (text[i] === '<') {
-      const close = text.indexOf('>', i + 1)
-      if (close > i + 1) {
-        const named = namedKeyToken(text.slice(i + 1, close))
-        if (!named) return `unknown key ${text.slice(i, close + 1)}`
-        tokens.push(named)
-        i = close + 1
-        continue
-      }
-    }
-    // One character — by code point, so a stray non-BMP glyph isn't split.
-    const ch = String.fromCodePoint(text.codePointAt(i)!)
-    tokens.push(ch)
-    i += ch.length
-  }
-  return tokens
-}
-
-/** The canonical way to write a token sequence back out. */
-export function formatKeySequence(tokens: readonly string[]): string {
-  return tokens.join('')
-}
-
-const isMac = typeof navigator !== 'undefined' && navigator.platform.includes('Mac')
-
-const TOKEN_DISPLAY: Record<string, string> = {
-  '<CR>': 'Enter', '<Esc>': 'Esc', '<Space>': 'Space', '<Tab>': 'Tab', '<S-Tab>': 'Shift+Tab',
-  '<BS>': 'Backspace', '<Del>': 'Del', '<Up>': '↑', '<Down>': '↓', '<Left>': '←', '<Right>': '→',
-  '<Home>': 'Home', '<End>': 'End', '<PageUp>': 'PgUp', '<PageDown>': 'PgDn',
-  '<S-Up>': isMac ? '⇧↑' : 'Shift+↑', '<S-Down>': isMac ? '⇧↓' : 'Shift+↓',
-  '<S-Left>': isMac ? '⇧←' : 'Shift+←', '<S-Right>': isMac ? '⇧→' : 'Shift+→',
-}
-
-/** How a written sequence reads on a keycap: `<CR>` as Enter, `<C-j>` as
- *  Ctrl+J (⌃J on a Mac), `gg` as is. */
-export function displayKeySequence(written: string): string {
-  const tokens = parseKeySequence(written)
-  if (typeof tokens === 'string') return written
-  return tokens.map((token) => {
-    const ctrl = /^<C-(S-)?(.)>$/.exec(token)
-    if (ctrl) {
-      const letter = ctrl[2].toUpperCase()
-      if (isMac) return `⌃${ctrl[1] ? '⇧' : ''}${letter}`
-      return `Ctrl+${ctrl[1] ? 'Shift+' : ''}${letter}`
-    }
-    return TOKEN_DISPLAY[token] ?? token
-  }).join('')
-}
-
 let knownCommands: Set<string> | null = null
 
 /** Every command the config may name: the ones the default config lists. */
@@ -268,25 +193,6 @@ function getKnownCommands(): Set<string> {
  *  commands — for the help window. */
 export function vimCommandsInOrder(): string[] {
   return [...getKnownCommands(), ...Object.keys(LIST_COMMANDS), 'row-open']
-}
-
-/** Adds `seq → command` unless it clashes with a binding already there:
- *  the same keys, or one sequence being the start of the other (`g` would
- *  fire before `gg` could be typed). Returns the clash, if any. */
-function bind(map: VimKeymap, seq: string[], command: string): string | null {
-  const key = seq.join(SEQUENCE_JOIN)
-  for (const [existing, other] of map) {
-    const a = existing.split(SEQUENCE_JOIN)
-    const shorter = a.length <= seq.length ? a : seq
-    const longer = a.length <= seq.length ? seq : a
-    if (shorter.every((t, idx) => t === longer[idx])) {
-      return a.length === seq.length
-        ? `${formatKeySequence(seq)} is already bound to ${other}`
-        : `${formatKeySequence(seq)} clashes with ${formatKeySequence(a)} (${other})`
-    }
-  }
-  map.set(key, command)
-  return null
 }
 
 export function parseVimKeymap(text: string): ParsedVimKeymap {
@@ -452,30 +358,17 @@ export function settingsCommandsInOrder(): string[] {
 
 /** Settings' COMMAND keys, from the main window's map (see above). */
 export function settingsKeymap(parsed: ParsedVimKeymap): VimKeymap {
-  const map: VimKeymap = new Map()
   const fromMain = new Map<string, string[]>()
   for (const [settings, main] of Object.entries(SETTINGS_FROM_MAIN)) {
     fromMain.set(main, [...(fromMain.get(main) ?? []), settings])
   }
+  const base: VimKeymap = new Map()
   for (const [seq, command] of parsed.main) {
-    for (const settings of fromMain.get(command) ?? []) bind(map, seq.split(SEQUENCE_JOIN), settings)
+    for (const settings of fromMain.get(command) ?? []) bind(base, seq.split(SEQUENCE_JOIN), settings)
   }
-  const bound = new Set(map.values())
-  for (const { keys, command, fallback } of SETTINGS_FIXED) {
-    if (fallback && bound.has(command)) continue
-    const seq = parseKeySequence(keys)
-    if (typeof seq === 'string') continue
-    // A clash (the user's map took the key here) leaves it unbound.
-    bind(map, seq, command)
-  }
-  return map
-}
-
-/** How `command` is bound in `map`, each sequence written out — for hints. */
-export function keysFor(map: VimKeymap, command: string): string[] {
-  const out: string[] = []
-  for (const [seq, bound] of map) if (bound === command) out.push(seq.split(SEQUENCE_JOIN).join(''))
-  return out
+  // Not vimFormKeymap: the package's default keys (gg, dd, y, e…) are the
+  // user's map's to give here. A fixed key that map took stays unbound.
+  return createVimKeymap(SETTINGS_FIXED, base)
 }
 
 /** `map` with Enter showing the row the Sidebar's cursor is on — for while

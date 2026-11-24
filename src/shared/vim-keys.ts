@@ -1,63 +1,16 @@
-// Key handling Vim mode shares between the window renderer (COMMAND mode in
-// the browser chrome, its popups) and tab pages (COMMAND mode in the page,
-// src/preload/webview-stealth.ts): turning a keydown into a key token and
-// resolving token sequences against a keymap. Pure — no DOM beyond the
-// KeyboardEvent fields it reads.
+// Vim's key handling for the window renderer (COMMAND mode in the browser
+// chrome, its popups) and tab pages (src/preload/webview-stealth.ts). The
+// mechanism — key tokens, sequences against a keymap — is @bedware/ui's,
+// through its React-free entry: the preload bundles it (electron.vite.config.ts
+// keeps it out of the externals; a page's preload can't require the package).
+// Here: which commands are the page's, and which a count repeats.
 
-/** Joins the tokens of a key sequence into a keymap key. */
-export const SEQUENCE_JOIN = '\u0000'
+import { timesFor as timesForIn } from '@bedware/ui/vim-keys'
 
-/** Key sequence (tokens joined by {@link SEQUENCE_JOIN}) → command. */
-export type VimKeymap = Map<string, string>
-
-/** A keymap as it crosses IPC: [sequence, command] pairs. */
-export type VimKeymapEntries = Array<[string, string]>
-
-const NAMED_EVENT_KEYS: Record<string, string> = {
-  Enter: '<CR>', Escape: '<Esc>', ' ': '<Space>', Backspace: '<BS>', Delete: '<Del>',
-  ArrowUp: '<Up>', ArrowDown: '<Down>', ArrowLeft: '<Left>', ArrowRight: '<Right>',
-  Home: '<Home>', End: '<End>', PageUp: '<PageUp>', PageDown: '<PageDown>',
-}
-
-// US-layout characters by physical key, [plain, shifted], for keys typed in
-// another input language (Russian: the j key gives "о").
-const US_LAYOUT: Record<string, [string, string]> = {
-  Backquote: ['`', '~'], Minus: ['-', '_'], Equal: ['=', '+'],
-  BracketLeft: ['[', '{'], BracketRight: [']', '}'], Backslash: ['\\', '|'],
-  Semicolon: [';', ':'], Quote: ["'", '"'], Comma: [',', '<'], Period: ['.', '>'], Slash: ['/', '?'],
-  Digit1: ['1', '!'], Digit2: ['2', '@'], Digit3: ['3', '#'], Digit4: ['4', '$'], Digit5: ['5', '%'],
-  Digit6: ['6', '^'], Digit7: ['7', '&'], Digit8: ['8', '*'], Digit9: ['9', '('], Digit0: ['0', ')'],
-}
-
-type KeyEventLike = Pick<KeyboardEvent, 'key' | 'code' | 'shiftKey' | 'metaKey' | 'ctrlKey' | 'altKey' | 'isComposing'>
-
-/** The key token a keydown stands for, or null for a bare modifier, a dead
- *  key or a key with Alt/Cmd held (those are never Vim keys). Ctrl counts
- *  only with a letter or a digit: `<C-l>`, `<C-1>`, `<C-S-l>` with Shift. */
-export function keyTokenFromEvent(e: KeyEventLike): string | null {
-  if (e.metaKey || e.altKey || e.isComposing) return null
-  if (e.ctrlKey) {
-    // By physical key, like the letters below. Ctrl+[ is never a token: main
-    // turns it into COMMAND mode first, and a popup's Vim keys match it by
-    // its code (isLeaveInsertKey).
-    const chord = /^(?:Key([A-Z])|Digit([0-9]))$/.exec(e.code)
-    return chord ? `<C-${e.shiftKey ? 'S-' : ''}${(chord[1] ?? chord[2]).toLowerCase()}>` : null
-  }
-  if (e.key === 'Tab') return e.shiftKey ? '<S-Tab>' : '<Tab>'
-  const named = NAMED_EVENT_KEYS[e.key]
-  // The arrows count Shift: <S-Down> extends what <Down> moves.
-  if (named && e.shiftKey && /^Arrow/.test(e.key)) return `<S-${named.slice(1)}`
-  if (named) return named
-  if (/^F([1-9]|1[0-2])$/.test(e.key)) return `<${e.key}>`
-  if (e.key.length !== 1) return null
-  // Printable ASCII as typed; anything else by its physical key.
-  if (e.key >= '!' && e.key <= '~') return e.key
-  const letter = /^Key([A-Z])$/.exec(e.code)
-  if (letter) return e.shiftKey ? letter[1] : letter[1].toLowerCase()
-  const other = US_LAYOUT[e.code]
-  if (other) return e.shiftKey ? other[1] : other[0]
-  return e.key
-}
+export {
+  SEQUENCE_JOIN, MAX_COUNT, KeySequencer, keyTokenFromEvent, isCtrlToken, matchKeys, runTimes,
+  type VimKeymap, type VimKeymapEntries, type KeymapMatch,
+} from '@bedware/ui/vim-keys'
 
 /** COMMAND-mode commands the page runs itself (webview-stealth.ts) — the
  *  window renderer passes them on to the active page when the keyboard is
@@ -72,125 +25,17 @@ export function isPageCommand(command: string): boolean {
   return PAGE_COMMANDS.has(command)
 }
 
-/** A Ctrl chord's token (`<C-l>`). */
-export function isCtrlToken(token: string): boolean {
-  return token.startsWith('<C-')
-}
-
 /** Commands a count repeats (5j, 3x): moving and what's worth doing
  *  several times over. Any other runs once whatever the count — nobody
  *  means five new workspaces. */
-const COUNT_COMMANDS = new Set([
+export const COUNT_COMMANDS: ReadonlySet<string> = new Set([
   'scroll-down', 'scroll-up', 'half-page-down', 'half-page-up',
   'close-tab', 'reopen-closed-tab', 'next-tab', 'prev-tab',
   'cursor-down-show', 'cursor-up-show', 'row-down', 'row-up', 'row-select-down', 'row-select-up',
   'row-move-down', 'row-move-up', 'zoom-in', 'zoom-out', 'increment-url', 'decrement-url', 'repeat',
 ])
 
-/** The most a count repeats a command. */
-export const MAX_COUNT = 50
-
 /** How many times `command` runs for the count typed before it. */
 export function timesFor(command: string, count: number): number {
-  return COUNT_COMMANDS.has(command) ? Math.max(1, Math.min(MAX_COUNT, count)) : 1
-}
-
-/** Runs `run` `times` times: once now, the rest a beat apart each — what
- *  a command changes (the Sidebar's cursor, the active tab) is in place
- *  before it runs again. */
-export function runTimes(times: number, run: () => void): void {
-  run()
-  if (times > 1) setTimeout(() => runTimes(times - 1, run), 12)
-}
-
-export type KeymapMatch =
-  | { kind: 'command'; command: string }
-  | { kind: 'pending' }
-  | { kind: 'none' }
-
-/** Looks the pending tokens up: a full binding, the start of one, or nothing. */
-export function matchKeys(map: VimKeymap, tokens: readonly string[]): KeymapMatch {
-  const key = tokens.join(SEQUENCE_JOIN)
-  const command = map.get(key)
-  if (command) return { kind: 'command', command }
-  const prefix = key + SEQUENCE_JOIN
-  for (const seq of map.keys()) if (seq.startsWith(prefix)) return { kind: 'pending' }
-  return { kind: 'none' }
-}
-
-/**
- * Collects key tokens into sequences and resolves them against a keymap —
- * the framework-free core both sides drive. `feed` returns true when the key
- * belongs to Vim (a command ran or a sequence is pending), so the caller can
- * swallow it; `onPending` reports the unfinished sequence for a showcmd.
- * A pending sequence waits for its next key however long, as vim's does
- * with `notimeout`: a key that doesn't continue it, Esc, or the caller's
- * reset() (the keys going elsewhere) drops it.
- *
- * Digits typed before a sequence are its count (5j, 3x), as vim's — where
- * the keymap binds nothing that starts with that digit; 0 only after
- * another digit. `onCommand` gets it (1 without one); what it repeats is
- * the caller's to say ({@link timesFor}).
- */
-export class KeySequencer {
-  private tokens: string[] = []
-  private count = ''
-
-  constructor(
-    private keymap: () => VimKeymap,
-    private onCommand: (command: string, e: KeyEventLike & { repeat: boolean }, count: number) => void,
-    private onPending: (pending: string) => void = () => {},
-  ) {}
-
-  reset(): void {
-    if (this.tokens.length === 0 && !this.count) return
-    this.tokens = []
-    this.count = ''
-    this.onPending('')
-  }
-
-  feed(e: KeyEventLike & { repeat: boolean }): boolean {
-    const token = keyTokenFromEvent(e)
-    if (!token) return false
-    if (token === '<Esc>' && (this.tokens.length > 0 || this.count)) {
-      this.reset()
-      return true
-    }
-    // A count: digits ahead of the sequence, where no binding has them.
-    if (
-      this.tokens.length === 0 && /^[0-9]$/.test(token) && (this.count || token !== '0')
-      && matchKeys(this.keymap(), [token]).kind === 'none'
-    ) {
-      if (!e.repeat && this.count.length < 3) {
-        this.count += token
-        this.onPending(this.count)
-      }
-      return true
-    }
-    if (this.resolve([...this.tokens, token], e)) return true
-    // Not a continuation: drop what was pending and try the key on its own.
-    // A Ctrl chord nothing binds (Ctrl+C) still reaches whoever has the keys.
-    const hadPending = this.tokens.length > 0 || this.count !== ''
-    this.reset()
-    return this.resolve([token], e) || (hadPending && !isCtrlToken(token))
-  }
-
-  private resolve(tokens: string[], e: KeyEventLike & { repeat: boolean }): boolean {
-    const match = matchKeys(this.keymap(), tokens)
-    if (match.kind === 'command') {
-      const count = this.count ? Number(this.count) : 1
-      this.reset()
-      this.onCommand(match.command, e, count)
-      return true
-    }
-    if (match.kind === 'pending') {
-      if (e.repeat) return true
-      this.tokens = tokens
-      // The sequence alone: what's shown for it (which-key, the labels'
-      // typed part) goes by the keymap's own keys.
-      this.onPending(tokens.join(''))
-      return true
-    }
-    return false
-  }
+  return timesForIn(command, count, COUNT_COMMANDS)
 }

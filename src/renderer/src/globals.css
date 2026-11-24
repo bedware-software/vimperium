@@ -76,24 +76,10 @@
   }
 }
 
-/* A form with Vim's keys (lib/vim-form.ts, Settings). Its cursor: a ring
- * round the control under it — a row's fainter, and a brighter one round
- * the row's button it's on. Out of Vim mode the keyboard's focus gets the
- * same ring, as Tab goes round the form (text fields keep their own look).
- * More specific than the rule up top, which takes every focus ring away. */
-[data-vim-form] [data-vim-cursor] {
-  outline: 2px solid var(--color-ring) !important;
-  outline-offset: 2px;
-}
-/* Inside the row, as a list that clips what spills past it holds rows. */
-[data-vim-form] [data-vim-cursor][data-vim-kind="row"] {
-  outline: 1px solid color-mix(in oklab, var(--color-ring) 55%, transparent) !important;
-  outline-offset: -1px;
-}
-[data-vim-form] [data-vim-cell-cursor] {
-  outline: 2px solid var(--color-ring) !important;
-  outline-offset: 1px;
-}
+/* A form with Vim's keys (Settings): the cursor's ring is @bedware/ui's. Out
+ * of Vim mode the keyboard's focus gets the same ring, as Tab goes round the
+ * form (text fields keep their own look). More specific than the rule up top,
+ * which takes every focus ring away. */
 [data-vim-form] :is(button, a[href], [role="switch"], [role="radio"], [tabindex]:not([tabindex="-1"])):focus-visible {
   outline: 2px solid var(--color-ring) !important;
   outline-offset: 2px;
