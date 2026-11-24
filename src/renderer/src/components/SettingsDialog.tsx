@@ -3556,8 +3556,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
               {/* App identity + version + storage paths in one divided card. */}
               <section>
                 <div className="flex items-center gap-3 mb-3">
-                  {/* The orb's badge, live: it glitches as the pointer comes onto it. */}
-                  <BrandMark variant="full" size={48} glitchOnHover />
+                  <BrandMark size={48} glitchOnHover />
                   <div>
                     <h2 className="text-sm font-semibold text-foreground mb-1">
                       {appPaths?.appName || 'Vimperium'}
