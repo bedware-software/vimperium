@@ -1839,7 +1839,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
               <div>
                 <h3 className="text-sm font-semibold text-foreground mb-1">Vim mode indicator</h3>
                 <p className="text-[11px] text-muted-foreground mb-3">
-                  How the mode's label — CMD, INS — looks at the end of a field.
+                  How the mode's label — COMMAND, INSERT — looks at the end of a field.
                 </p>
                 <ChoiceCards
                   label="Vim mode indicator"

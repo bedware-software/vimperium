@@ -354,10 +354,13 @@ html[data-page-fullscreen] body {
 
 /* Vim's mode label (VimModeBadge), its look by Settings → Appearance
  * (data-indicator, lib/vim-indicator.ts): COMMAND quiet or outlined, INSERT
- * a plate in both. Monospace, so CMD and INS are one width and a switch
- * doesn't shift what's beside it. */
+ * a plate in both. As wide as COMMAND, the longer word, in either mode, so
+ * a switch doesn't shift what's beside it. */
 .vim-mode {
   flex: none;
+  /* 7 letters, each with its letter-spacing, and the padding. */
+  min-width: calc(7ch + 0.42em + 12px);
+  text-align: center;
   font: 700 10px var(--bw-font-mono);
   letter-spacing: 0.06em;
   padding: 3px 6px;

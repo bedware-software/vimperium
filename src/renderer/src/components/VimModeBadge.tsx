@@ -14,11 +14,11 @@ interface Props {
 }
 
 const MODE_STYLE: Record<VimMode, { label: string; title: string }> = {
-  command: { label: 'CMD', title: 'Vim: COMMAND mode — the page and the browser, driven by Vim keys' },
-  insert: { label: 'INS', title: 'Vim: INSERT mode — keys go where you type; Esc or Ctrl+[ to leave (in a popup Ctrl+C, where Esc closes it)' },
+  command: { label: 'COMMAND', title: 'Vim: COMMAND mode — the page and the browser, driven by Vim keys' },
+  insert: { label: 'INSERT', title: 'Vim: INSERT mode — keys go where you type; Esc or Ctrl+[ to leave (in a popup Ctrl+C, where Esc closes it)' },
 }
 
-/** Vim's mode as a label, CMD or INS, looking the way Settings →
+/** Vim's mode as a label, COMMAND or INSERT, looking the way Settings →
  *  Appearance says (.vim-mode in globals.css). The keys typed so far of an
  *  unfinished sequence show as a key cap to its left. */
 export function VimModeBadge({ mode, pending, size = 'sm', indicator }: Props) {

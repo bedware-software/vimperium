@@ -73,7 +73,7 @@ interface Settings {
   /** INSERT in a page hides the Sidebar and COMMAND brings it back —
    *  derived, the saved toggle stays as it is. */
   hideSidebarInInsert: boolean
-  /** How the mode's key cap shows its colour, see lib/vim-indicator.ts. */
+  /** How the mode's label looks, see lib/vim-indicator.ts. */
   vimIndicator: VimIndicator
   /** How a field's edge shows the mode, see lib/vim-edge.ts. */
   vimEdge: VimEdge

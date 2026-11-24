@@ -71,7 +71,7 @@ const STATIC: SettingsIndexEntry[] = [
   { section: 'appearance', item: 'appearance:theme', title: 'Theme', keywords: 'dark light system colours' },
   { section: 'appearance', item: 'appearance:light-variant', title: 'Light variant', keywords: 'theme brightness soft', fallback: 'appearance:theme' },
   { section: 'appearance', item: 'appearance:dark-variant', title: 'Dark variant', keywords: 'theme brightness soft', fallback: 'appearance:theme' },
-  { section: 'appearance', item: 'appearance:vim-indicator', title: 'Vim mode indicator', keywords: 'cmd ins key cap badge colour', fallback: 'appearance:theme' },
+  { section: 'appearance', item: 'appearance:vim-indicator', title: 'Vim mode indicator', keywords: 'command insert label badge colour', fallback: 'appearance:theme' },
   { section: 'appearance', item: 'appearance:vim-edge', title: 'Vim mode edge', keywords: 'address bar ring glint insert', fallback: 'appearance:theme' },
   { section: 'appearance', item: 'appearance:vim-edge-everywhere', title: 'Vim mode edge on every field', keywords: 'search find palette', fallback: 'appearance:theme' },
   { section: 'appearance', item: 'appearance:vim-edge-speed', title: 'Vim mode edge: pace', keywords: 'speed lap fast slow seconds glint', fallback: 'appearance:theme' },
