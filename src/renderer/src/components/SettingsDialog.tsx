@@ -1783,7 +1783,8 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
           </aside>
 
           {/* Content */}
-          <div ref={setContentEl} className="flex-1 min-h-0 overflow-y-auto px-6 py-5">
+          {/* relative: VimFormLabels draws the labels inside it. */}
+          <div ref={setContentEl} className="relative flex-1 min-h-0 overflow-y-auto px-6 py-5">
           {activeTab === 'appearance' && (
             <div className="space-y-8">
               {/* Theme */}
@@ -3823,7 +3824,6 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
             Save
           </Button>
         </div>
-        {/* Outside the form's root: drawing them isn't the form changing. */}
         {vimNav && <VimFormLabels form={form} labels={hints.labels} mode={vim.mode} pending={vim.pending} />}
       </div>
       </VimFormContext.Provider>

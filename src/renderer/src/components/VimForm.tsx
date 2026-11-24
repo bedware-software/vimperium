@@ -3,7 +3,8 @@
 // the ones it no longer fits faded — and the hints for the control under
 // the cursor, for the form's hint bar.
 
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { RowHint, vimKeyCaps } from './KeyHints'
 import { useVimFormSnapshot, type VimFormController } from '../lib/vim-form'
 import type { VimMode } from '../lib/vim-mode'
@@ -16,13 +17,22 @@ interface Spot {
   top: number
 }
 
-function sameSpots(a: readonly Spot[], b: readonly Spot[]): boolean {
+// `scrolled` are in the scroller's content coordinates, drawn in a layer inside it.
+interface Spots {
+  fixed: Spot[]
+  scrolled: Spot[]
+  scroller: HTMLElement | null
+}
+
+const NO_SPOTS: Spots = { fixed: [], scrolled: [], scroller: null }
+
+function sameList(a: readonly Spot[], b: readonly Spot[]): boolean {
   return a.length === b.length && a.every((s, i) => s.label === b[i].label && s.left === b[i].left && s.top === b[i].top)
 }
 
 /** The labels, over the form, in COMMAND — none while a list or the
- *  filter's results are open over it. Put it outside the form's root, so
- *  drawing them doesn't count as the form changing. */
+ *  filter's results are open over it. The scroller it portals into must be
+ *  positioned (`relative`). */
 export function VimFormLabels({ form, labels, mode, pending }: {
   form: VimFormController
   /** Label i for the form's labelled control i (usePopupHints). */
@@ -33,11 +43,11 @@ export function VimFormLabels({ form, labels, mode, pending }: {
   const snapshot = useVimFormSnapshot(form)
   const shown = mode === 'command' && !snapshot.overlayOpen && labels.length > 0
   const layerRef = useRef<HTMLDivElement>(null)
-  const [spots, setSpots] = useState<Spot[]>([])
+  const [spots, setSpots] = useState<Spots>(NO_SPOTS)
 
   useLayoutEffect(() => {
     if (!shown) {
-      setSpots((prev) => (prev.length === 0 ? prev : []))
+      setSpots(NO_SPOTS)
       return
     }
     const layer = layerRef.current
@@ -47,32 +57,40 @@ export function VimFormLabels({ form, labels, mode, pending }: {
     let frame: number | null = null
     const measure = (): void => {
       frame = null
-      const next: Spot[] = []
+      const next: Spots = { fixed: [], scrolled: [], scroller: null }
       form.labelTargets().forEach((el, i) => {
         const label = labels[i]
         if (!label || !el.isConnected) return
         const rect = el.getBoundingClientRect()
         if (rect.width === 0 && rect.height === 0) return
-        // Only where it shows: inside the part of the form that scrolls,
-        // for a control in it.
-        const clipEl = form.clipFor(el)
-        const clip = clipEl
-          ? clipEl.getBoundingClientRect()
-          : { top: 0, left: 0, bottom: win.innerHeight, right: win.innerWidth }
-        if (rect.bottom <= clip.top || rect.top >= clip.bottom || rect.right <= clip.left || rect.left >= clip.right) return
-        next.push({
-          label,
-          left: Math.round(Math.max(clip.left, rect.left - 6)),
-          top: Math.round(Math.max(clip.top, rect.top - 7)),
-        })
+        const scroller = form.clipFor(el) as HTMLElement | null
+        if (scroller) {
+          // Placed in the scrolling content, so scrolling moves it with its
+          // control: a label re-placed on scroll events trails a smooth
+          // scroll, which the compositor runs ahead of them.
+          const box = scroller.getBoundingClientRect()
+          next.scroller = scroller
+          next.scrolled.push({
+            label,
+            left: Math.round(rect.left - box.left - scroller.clientLeft + scroller.scrollLeft - 6),
+            top: Math.round(rect.top - box.top - scroller.clientTop + scroller.scrollTop - 7),
+          })
+          return
+        }
+        if (rect.bottom <= 0 || rect.top >= win.innerHeight || rect.right <= 0 || rect.left >= win.innerWidth) return
+        next.fixed.push({ label, left: Math.round(Math.max(0, rect.left - 6)), top: Math.round(Math.max(0, rect.top - 7)) })
       })
-      setSpots((prev) => (sameSpots(prev, next) ? prev : next))
+      setSpots((prev) => (
+        prev.scroller === next.scroller && sameList(prev.fixed, next.fixed) && sameList(prev.scrolled, next.scrolled) ? prev : next
+      ))
     }
     const schedule = (): void => {
       if (frame === null) frame = win.requestAnimationFrame(measure)
     }
     measure()
     const stopLayout = form.subscribeLayout(schedule)
+    // For a control in a scrolling box of its own inside the form; the
+    // form's own scrolling changes no spot.
     doc.addEventListener('scroll', schedule, true)
     win.addEventListener('resize', schedule)
     return () => {
@@ -83,14 +101,24 @@ export function VimFormLabels({ form, labels, mode, pending }: {
     }
   }, [form, shown, labels])
 
-  return (
-    <div ref={layerRef} aria-hidden="true" className="pointer-events-none fixed inset-0 z-40">
-      {shown && spots.map((spot) => (
-        <div key={spot.label} className="absolute" style={{ left: spot.left, top: spot.top }}>
-          <RowHint mode="command" label={spot.label} pending={pending} />
-        </div>
-      ))}
+  const draw = (list: readonly Spot[]): ReactNode => list.map((spot) => (
+    <div key={spot.label} className="absolute" style={{ left: spot.left, top: spot.top }}>
+      <RowHint mode="command" label={spot.label} pending={pending} />
     </div>
+  ))
+
+  return (
+    <>
+      <div ref={layerRef} aria-hidden="true" className="pointer-events-none fixed inset-0 z-40">
+        {shown && draw(spots.fixed)}
+      </div>
+      {shown && spots.scroller?.isConnected && createPortal(
+        <div aria-hidden="true" className="pointer-events-none absolute left-0 top-0 z-40 h-0 w-0">
+          {draw(spots.scrolled)}
+        </div>,
+        spots.scroller,
+      )}
+    </>
   )
 }
 
