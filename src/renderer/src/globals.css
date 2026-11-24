@@ -649,12 +649,53 @@ html[data-page-fullscreen] body {
 .mode-edge[data-edge="ember"] > span > i { background: var(--c1); }
 .mode-edge[data-edge="ember"] > span > i > i { display: none; }
 
+/* The toolbar's address bar: no frame, no fill — a line under it. In INSERT
+ * the line is .mode-line (ModeEdge shape="line"): 2px in the plate's
+ * colours with Glint's glint along it, fading in over the plain line. */
+.url-line::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 1px;
+  background: var(--bw-border-strong);
+  pointer-events: none;
+  transition: background-color var(--bw-duration-fast);
+}
+.url-line:hover::after { background: var(--bw-border-hover); }
+.mode-line {
+  position: absolute;
+  inset: auto 0 0 0;
+  z-index: 1;
+  height: 2px;
+  overflow: hidden;
+  pointer-events: none;
+  background: linear-gradient(90deg, var(--vim-edge-insert-1), var(--vim-edge-insert-2) 50%, var(--vim-edge-insert-3));
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 600ms ease, visibility 0s linear 600ms;
+}
+.mode-line[data-on] {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 600ms ease, visibility 0s;
+}
+.mode-line > i {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 24%;
+  height: 100%;
+  translate: -100% 0;
+  background: linear-gradient(100deg, transparent 15%, color-mix(in oklch, var(--vim-edge-insert-3) 35%, white) 50%, transparent 85%);
+  animation: mode-edge-glint calc(var(--speed, 10s) * 0.6) ease-in-out infinite;
+}
+
 /* Still while its window isn't the one in use (lib/vim-edge.ts), and
  * wherever the root says data-reduce-motion — Settings → Appearance →
  * Motion (lib/motion.ts): Never, or Follow system while the OS asks for
  * less. Not the media query itself, so Always moves it whatever the OS says. */
-[data-window-inactive] .mode-edge i { animation-play-state: paused; }
-[data-reduce-motion] .mode-edge i { animation-play-state: paused !important; }
+[data-window-inactive] :is(.mode-edge, .mode-line) i { animation-play-state: paused; }
+[data-reduce-motion] :is(.mode-edge, .mode-line) i { animation-play-state: paused !important; }
 
 /* The app's mark (BrandMark): three copies of the drawing. A glitch
  * (data-glitch, half a second) tears it: bands of the front copy jump

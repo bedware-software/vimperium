@@ -10,6 +10,9 @@ interface Props {
   /** The address bar's, shown by default; any other field's only while
    *  Settings asks for it on every field. */
   addressBar?: boolean
+  /** `line`: along the field's bottom instead of round it — the toolbar's
+   *  address bar, which has no frame (.mode-line in globals.css). */
+  shape?: 'ring' | 'line'
   /** Its own pace in seconds, when not Settings' (lib/vim-edge.ts's
    *  vimEdgePace); a constant object, or the pace is made anew each render. */
   pace?: { speed: number; rest: number }
@@ -21,7 +24,7 @@ interface Props {
  *  layer isn't drawn and the ring fades as the mode changes. No glow round
  *  the ring either: the glow's box isn't drawn. The field must be positioned
  *  and must not clip what spills past it. */
-export function ModeEdge({ mode, edge, addressBar = false, pace: ownPace }: Props) {
+export function ModeEdge({ mode, edge, addressBar = false, shape = 'ring', pace: ownPace }: Props) {
   const chosen = useVimEdge()
   const everywhere = useVimEdgeEverywhere()
   const timing = useVimEdgeTiming()
@@ -38,12 +41,15 @@ export function ModeEdge({ mode, edge, addressBar = false, pace: ownPace }: Prop
   useLayoutEffect(() => {
     const el = ref.current
     const field = el?.parentElement
-    if (!el || !field) return
+    if (!el || !field || shape === 'line') return
     const radius = parseFloat(getComputedStyle(field).borderTopLeftRadius) || 0
     el.style.setProperty('--r', `${radius}px`)
-  }, [look, shown])
+  }, [look, shown, shape])
 
   if (!shown) return null
+  if (shape === 'line') {
+    return <span className="mode-line" data-on={mode === 'insert' ? '' : undefined} style={pace} aria-hidden="true"><i /></span>
+  }
   // The ring, a clipping box. A turning look has one mover in it. A comet
   // resting at the sides (an old look) slides strips past instead: a window
   // with the top's and the bottom's in it, then the left end's and the right

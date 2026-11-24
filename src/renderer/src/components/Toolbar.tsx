@@ -1730,40 +1730,41 @@ export function Toolbar({ windowWorkspaceId, sidebarVisible, pageFullscreen, vim
           ref={urlBarRef}
           // The address editor lines up with it (UrlEditor.tsx).
           data-url-bar=""
-          // z-1: its edge's ring (ModeEdge) lies just outside it; without it
-          // the buttons after it in the bar paint over the ring's right end.
-          className="field relative z-[1] flex-[5] min-w-0 flex items-center h-8 rounded-lg"
+          // Not a .field: no frame or fill, a line under it (.url-line).
+          className="url-line relative flex-[5] min-w-0 flex items-center h-8"
           style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
         >
           {urlHint}
           {security !== 'internal' && (<>
-            <button
-              className={
-                security === 'warning'
-                  ? 'ml-1.5 h-6 px-2 flex items-center gap-1 rounded-md bg-destructive text-destructive-foreground cursor-pointer group relative hover:bg-destructive/90'
-                  : 'ml-1.5 h-6 w-6 flex items-center justify-center rounded-md bg-secondary cursor-pointer group relative'
-              }
-              onClick={() => setCertPopupOpen((v) => !v)}
-            >
-              {securityHint}
-              {security === 'secure' && <Lock size={13} className="text-secondary-foreground" />}
-              {security === 'insecure' && <Unlock size={13} className="text-muted-foreground" />}
-              {security === 'warning' && (
-                <>
-                  <ShieldAlert size={13} />
-                  <span className="text-xs font-semibold leading-none">Not secure</span>
-                </>
-              )}
-              {/* Tooltip centered under icon (hidden when popup is open) */}
-              {!certPopupOpen && (
-                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 hidden group-hover:block z-50 pointer-events-none">
-                  <div className="whitespace-nowrap px-3 py-1.5 rounded-md shadow-lg text-xs font-medium border bg-popover border-border text-popover-foreground">
-                    {certInfo}
-                  </div>
-                </div>
-              )}
-            </button>
-            <div className="w-px h-full ml-1.5 bg-border" />
+            {/* A native title, not the package's Tooltip: that one draws
+                below the bar, where the page's own view covers the window. */}
+            {security === 'warning' ? (
+              <Button
+                variant="danger"
+                size="sm"
+                icon={<ShieldAlert size={13} />}
+                className="relative shrink-0"
+                title={certPopupOpen ? '' : certInfo}
+                onClick={() => setCertPopupOpen((v) => !v)}
+              >
+                {securityHint}
+                Not secure
+              </Button>
+            ) : (
+              <IconButton
+                bare
+                size={24}
+                label="Site information"
+                title={certPopupOpen ? '' : certInfo || 'Site information'}
+                pressed={certPopupOpen ? true : undefined}
+                className="relative shrink-0"
+                onClick={() => setCertPopupOpen((v) => !v)}
+              >
+                {securityHint}
+                {security === 'secure' ? <Lock size={13} /> : <Unlock size={13} />}
+              </IconButton>
+            )}
+            <div className="ml-1.5 my-1.5 w-px self-stretch shrink-0 bg-border" />
           </>)}
           {/* The address editor (E) has the address: the bar shows stats. */}
           {urlEditorOpen
@@ -1773,8 +1774,7 @@ export function Toolbar({ windowWorkspaceId, sidebarVisible, pageFullscreen, vim
           {!urlEditorOpen && <DarkPagesButton url={activeTab?.url || ''} onOpenSettings={onOpenDarkPagesSettings} />}
           {/* Vim's mode at the bar's end, as in every text field. */}
           {vimMode && <VimModeBadge mode={vimMode} pending={vimPending} size="field" />}
-          {/* And as a light moving round its edge (Settings → Appearance). */}
-          <ModeEdge mode={vimMode ?? null} addressBar />
+          <ModeEdge mode={vimMode ?? null} addressBar shape="line" />
         </div>
 
         {/* Extensions cluster sits at the far right of the toolbar so it

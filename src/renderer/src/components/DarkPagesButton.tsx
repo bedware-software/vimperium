@@ -101,12 +101,13 @@ export function DarkPagesButton({ url, onOpenSettings }: { url: string; onOpenSe
   return (
     <>
       <IconButton
+        bare
         ref={buttonRef}
         size={24}
         onClick={(e) => toggleOpen(e.detail === 0)}
         title={title}
         label="Dark pages"
-        pressed={look.dark}
+        pressed={look.dark || placement !== null}
         className="mr-1"
       >
         {hint}
@@ -119,7 +120,7 @@ export function DarkPagesButton({ url, onOpenSettings }: { url: string; onOpenSe
         {look.rule && (
           <span
             className={cn(
-              'absolute bottom-[3px] right-[3px] h-[5px] w-[5px] ring-1 ring-[var(--color-field)]',
+              'absolute bottom-[3px] right-[3px] h-[5px] w-[5px] ring-1 ring-[var(--color-toolbar)]',
               look.rule === 'dark' ? 'bg-primary' : 'bg-muted-foreground',
             )}
           />
