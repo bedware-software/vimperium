@@ -100,3 +100,12 @@ jobs:
           files: artifacts/**/*
           generate_release_notes: true
           draft: true
+
+      # Pushing a v* tag is the release decision, so the draft is published
+      # here instead of by hand. This runs only after every platform build
+      # succeeded and uploaded its files. `gh release edit` finds a draft by
+      # its tag, whichever of the two steps above created it.
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release edit "${{ github.ref_name }}" --repo "${{ github.repository }}" --draft=false --latest
