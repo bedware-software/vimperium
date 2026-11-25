@@ -1281,21 +1281,27 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
               <span
                 aria-label="The tab you were on before"
                 title={`The tab you were on before${alternateKeys ? ` (${alternateKeys})` : ''}`}
-                className="font-mono text-xs font-semibold text-ink"
+                // Gone under the pointer: the close X, which has no fill of its own, takes its place.
+                className="font-mono text-xs font-semibold text-ink group-hover/tab:opacity-0"
               >
                 #
               </span>
             )}
-            <button
+            <IconButton
+              bare
+              danger
+              size={24}
+              label="Close tab"
+              tabIndex={-1}
               onMouseDown={(e) => e.stopPropagation()}
               onClick={(e) => {
                 e.stopPropagation()
                 closeTab(tab.id)
               }}
-              className="absolute inset-0 flex items-center justify-center rounded bg-card/85 backdrop-blur-sm hover:bg-destructive/20 text-muted-foreground hover:text-destructive opacity-0 group-hover/tab:opacity-100 pointer-events-none group-hover/tab:pointer-events-auto transition-opacity"
+              className="absolute inset-0 opacity-0 group-hover/tab:opacity-100 pointer-events-none group-hover/tab:pointer-events-auto transition-opacity"
             >
               <X size={14} />
-            </button>
+            </IconButton>
           </div>
         </div>
       </div>
@@ -1439,12 +1445,10 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
             }, undefined)}
           />
         )}
-        {/* Action overlay — absolute right, sits ON TOP of the pill on
-            hover so the pill underneath isn't squeezed by reserved button
-            space. Each button has a card-tone background so the icons
-            stay readable when they hover over the colored pill text. */}
+        {/* Over the pill's end while the row is hovered, so the pill isn't
+            squeezed by room kept for them. */}
         <div className="absolute right-1 top-0 bottom-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">
-          <IconButton size={24}
+          <IconButton bare size={24}
             onMouseDown={(e) => e.stopPropagation()}
             // A middle click on "Add tab" must not fall through and close the group.
             onAuxClick={(e) => e.stopPropagation()}
@@ -1456,7 +1460,7 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
           >
             <Plus size={14} />
           </IconButton>
-          <IconButton size={24} danger
+          <IconButton bare size={24} danger
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation()

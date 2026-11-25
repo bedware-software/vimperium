@@ -741,12 +741,11 @@ html[data-page-fullscreen] body {
 [data-theme-family="light"] .url-line:has(> .mode-line[data-on]) .bw-iconbtn--bare:hover { color: var(--bw-on-plate); }
 [data-theme-family="light"] .url-line:has(> .mode-line[data-on]) .bw-iconbtn--bare:hover::before { background: var(--bw-on-plate); }
 [data-theme-family="light"] .url-line:has(> .mode-line[data-on]) .bw-iconbtn--bare:hover::after { background: var(--bw-plate); box-shadow: none; }
-/* Light: the padlock is framed in both modes — the yellow bar starts flush
- * at it, and the frame is that end's edge. ::after is the bar's own colour
- * inside the frame; under the pointer in COMMAND the package's plate shows. */
-[data-theme-family="light"] .url-line .url-lock::before { background: var(--bw-accent); }
-[data-theme-family="light"] .url-line .url-lock:not(:hover)::after { background: var(--color-toolbar); box-shadow: none; }
-[data-theme-family="light"] .url-line:has(> .mode-line[data-on]) .url-lock:not(:hover)::after { background: var(--bw-plate); }
+/* Light: the padlock sits on a quiet plate in both modes — grey, and the
+ * yellow's darker step on the yellow bar, which starts flush at it: that
+ * end's edge. Under the pointer, or with its popup open, the package's looks. */
+[data-theme-family="light"] .url-line .url-lock:not(:hover, [aria-pressed="true"])::after { background: var(--bw-surface-3); }
+[data-theme-family="light"] .url-line:has(> .mode-line[data-on]) .url-lock:not(:hover, [aria-pressed="true"])::after { background: var(--bw-plate-edge); }
 [data-theme-family="light"] .url-line:has(> .mode-line[data-on])::after,
 [data-theme-family="light"] .url-line > .mode-line { display: none; }
 [data-theme-family="light"] .url-line:has(> .mode-line[data-on]) :is(input, textarea) {

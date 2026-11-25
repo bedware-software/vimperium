@@ -1,5 +1,5 @@
 import { Button, IconButton, Count } from '@bedware/ui'
-import { useState, useRef, useEffect, useMemo } from 'react'
+import { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react'
 import { useAppStore, saveStateNow, findWorkspaceCandidates, buildBookmarkHTML } from '../store/app-store'
 import { log } from '../lib/log'
 import { InputDialog } from './InputDialog'
@@ -1576,10 +1576,37 @@ export function Toolbar({ windowWorkspaceId, sidebarVisible, pageFullscreen, vim
   const urlHint = useHeaderHint('focus-url', !urlEditorOpen, undefined, headerHints)
   const securityHint = useHeaderHint('site-info', security !== 'internal', HEADER_HINT_BOTTOM_RIGHT, headerHints)
 
+  // The header's icon buttons land between pixels — half a pixel down (a 32px
+  // row centred in 47px) and wherever the text buttons before them end — and
+  // a plate's 1px frame then smears, thicker on two sides than on the other
+  // two. Each is nudged onto the device's pixel grid, on every render (what
+  // moves them re-renders the bar) and as the window is resized.
+  const toolbarRef = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => {
+    const root = toolbarRef.current
+    if (!root) return
+    const snap = (): void => {
+      const dpr = window.devicePixelRatio || 1
+      const buttons = root.querySelectorAll<HTMLElement>('.bw-iconbtn')
+      buttons.forEach((el) => { el.style.translate = '' })
+      const rects = [...buttons].map((el) => el.getBoundingClientRect())
+      buttons.forEach((el, i) => {
+        const dx = Math.round(rects[i].left * dpr) / dpr - rects[i].left
+        const dy = Math.round(rects[i].top * dpr) / dpr - rects[i].top
+        if (Math.abs(dx) > 0.001 || Math.abs(dy) > 0.001) el.style.translate = `${dx}px ${dy}px`
+      })
+    }
+    snap()
+    const observer = new ResizeObserver(snap)
+    observer.observe(root)
+    return () => observer.disconnect()
+  })
+
   return (
     <>
       <HeaderHintsContext.Provider value={headerHints}>
       <div
+        ref={toolbarRef}
         data-cinema={pageFullscreen ? '' : undefined}
         className="flex items-center gap-2 h-12 border-b border-border bg-toolbar shrink-0"
         style={{
