@@ -225,9 +225,9 @@ export function fixtures({ version }) {
     openWindows: [{ profileId: 'p1', workspaceId: 'w1' }],
     darkPages: undefined,
     cloudSync: {
-      enabled: false, folderPath: '', deviceId: 'sample-device',
+      enabled: true, folderPath: 'C:/Users/demo/Dropbox/Vimperium', deviceId: 'sample-device',
       categories: { state: true, bookshelf: true, settings: true, history: false, permissions: true, extensions: true, darkPages: true },
-      state: 'disabled', lastSync: 0, error: null, progress: null,
+      state: 'idle', lastSync: Date.UTC(2026, 10, 25, 12), error: null, progress: null,
     },
   }
 }

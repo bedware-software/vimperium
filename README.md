@@ -1,12 +1,60 @@
 # Vimperium
 
-A keyboard-first desktop browser that runs on Vim keys and nothing else. Tabs live in colour-coded groups, groups in workspaces, workspaces in isolated profiles — and all of it is driven without the mouse.
+A desktop browser for navigating pages and workspaces with Vim keys. Tabs live in colour-coded groups, groups in workspaces, workspaces in isolated profiles — and all of it is driven without the mouse.
 
-![Vimperium](docs/screenshot.png)
+## Highlights
+
+- Type a few letters to find a tab, open a link or run a browser command.
+- Keep each project in its own workspace and use profiles for separate sign-ins.
+- Carry tabs, bookmarks and key bindings between machines with a cloud folder you control.
+
+## Feature tour
+
+### Tab groups
+
+Open a group to see its tabs together. Filter by title in the address bar, then type a row’s label to switch to that tab.
+
+![A tab group open beside the workspace sidebar](docs/screenshots/page-group.png)
+
+### Go
+
+Press `Space` and type the words on a link or button. Move between matches with the arrow keys, then press `Enter` to activate one.
+
+![Go with a link query and its keyboard controls](docs/screenshots/popup-go-query.png)
+
+### Command Palette
+
+Press `Ctrl+p` and type part of an action’s name. The results include its shortcut, so you can learn the binding as you go.
+
+![Command Palette showing browser actions matching the search](docs/screenshots/popup-command-palette.png)
+
+### Passwords and passkeys
+
+Save sign-ins per profile, autofill forms and import passwords from CSV or Edge. On macOS, Vimperium can also act as a passkey authenticator.
+
+![Passwords settings showing autofill, the profile selector and CSV import](docs/screenshots/popup-settings-passwords.png)
+
+### Cloud Sync
+
+Choose a folder on your own cloud drive. Share workspaces, the Bookshelf and key bindings across machines, and choose which categories each device syncs.
+
+![Sync settings showing a configured cloud folder and category switches](docs/screenshots/popup-settings-sync.png)
+
+### Search Everything
+
+Press `f` to search tabs, groups and workspaces together. Press `Tab` to widen your search to other workspaces.
+
+![Search Everything with matching tabs and highlighted terms](docs/screenshots/page-search.png)
+
+### Bookshelf
+
+Save the current tab to your reading list with `nb`. Open the Bookshelf with `tb` to browse groups, find the next article or archive one you have finished.
+
+![Bookshelf with grouped readings and a folded archive](docs/screenshots/page-bookshelf.png)
 
 ## Features
 
-Each section below is one feature. This file is the source of the feature descriptions on bedware.software: a change to a feature updates its section here.
+The sections below document the full feature set. The introduction, Highlights and illustrated Feature tour above also supply the product page on bedware.software.
 
 ### Vim modes
 
@@ -140,19 +188,6 @@ Vimperium can be the system's default browser. A link another app hands over ope
 
 The app checks for a new version, shows a toast when one is ready and installs it on request.
 
-<details>
-<summary>More screenshots</summary>
-
-**Command Palette**
-
-![Vimperium - Command Palette](docs/screenshot-command-palette.png)
-
-**Settings dialog**
-
-![Vimperium - Settings](docs/screenshot-settings.png)
-
-</details>
-
 ## Tech stack
 
 Electron 41 · React 19 · TypeScript · Vite · Tailwind CSS · Zustand · dnd-kit · @bedware/ui
@@ -163,6 +198,8 @@ Electron 41 · React 19 · TypeScript · Vite · Tailwind CSS · Zustand · dnd-
 npm install
 npm run dev
 ```
+
+- `npm run screenshots -- --site` builds the renderer and refreshes the frames linked under Feature tour: dark in `docs/screenshots/`, light in `docs/screenshots/light/`. It opens the built renderer in headless Chromium (Playwright) with sample data; Vimperium itself is not started and no window appears. Commit those images with this README. bedware.software reads the introduction, Highlights bullets and Feature tour sections on its next build.
 
 ## Building
 

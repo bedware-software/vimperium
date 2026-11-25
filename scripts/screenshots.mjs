@@ -13,7 +13,13 @@
 // script (PLACEHOLDER below). Pages the app draws itself are the real ones.
 //
 // Output: release/screenshots-preview/*.png (the folder is git-ignored).
-import { existsSync, mkdirSync, readFileSync, rmSync, statSync } from 'node:fs'
+// Every frame the README's Feature tour links is taken in both themes: the
+// dark one as <frame>.png, the light one as <frame>-light.png. The README
+// shows the dark one from docs/screenshots/<frame>.png; bedware.software
+// shows the light one from docs/screenshots/light/<frame>.png in its light
+// theme.
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { dirname, extname, join, normalize, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright'
@@ -22,7 +28,11 @@ import { installStub } from './screenshots/stub.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const rendererDir = join(root, 'out', 'renderer')
-const outDir = join(root, 'release', 'screenshots-preview')
+const site = process.argv.includes('--site')
+const readme = readFileSync(join(root, 'README.md'), 'utf8')
+const siteFrames = new Set(Array.from(readme.matchAll(/!\[[^\]]*\]\(docs\/screenshots\/([\w-]+)\.png\)/g), (match) => match[1]))
+if (!siteFrames.size && (site || !process.argv[2])) throw new Error('README has no docs/screenshots frames')
+const outDir = site ? mkdtempSync(join(tmpdir(), 'vimperium-frames-')) : join(root, 'release', 'screenshots-preview')
 
 // main/index.ts DEFAULT_WINDOW_WIDTH / DEFAULT_WINDOW_HEIGHT. A popup's size
 // is the one the renderer asks window.open for (DetachedWindow.tsx).
@@ -76,14 +86,23 @@ const version = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).ver
 const browser = await chromium.launch({ headless: true })
 const taken = []
 // `node scripts/screenshots.mjs settings` takes only the frames named so.
-const only = process.argv[2]
+const only = site ? null : process.argv[2]
 
 /**
  * One frame: a fresh main window with the stand-in API installed; `drive`
  * brings it to the state to capture and returns the page to shoot — the
  * window itself, or a popup it opened.
  */
-async function frame(name, { url, theme = 'dark', settings = {}, placeholder = !url }, drive = async () => {}) {
+async function frame(name, options, drive = async () => {}) {
+  if (site && !siteFrames.has(name)) return
+  await shoot(name, options, drive)
+  // A tour frame: the same picture in the light theme, as the site shows it.
+  if (siteFrames.has(name) && (options.theme ?? 'dark') === 'dark') {
+    await shoot(`${name}-light`, { ...options, theme: 'light' }, drive)
+  }
+}
+
+async function shoot(name, { url, theme = 'dark', settings = {}, placeholder = !url }, drive) {
   if (only && !name.includes(only)) return
   const context = await browser.newContext({
     viewport: WINDOW,
@@ -167,7 +186,7 @@ const inPopup = (open, ...then) => async (page, popup) => {
   await keys(...then)(page)
 }
 
-if (!only) rmSync(outDir, { recursive: true, force: true })
+if (!site && !only) rmSync(outDir, { recursive: true, force: true })
 mkdirSync(outDir, { recursive: true })
 console.log(`Vimperium ${version} → ${outDir}`)
 
@@ -213,18 +232,44 @@ await frame('page-bookshelf', { url: 'vimperium://bookshelf' })
 // Popups: each a window of its own.
 await frame('popup-command-palette', {}, inPopup(['Control+p'], 'g', 'r'))
 await frame('popup-command-palette-labels', {}, inPopup(['Control+p'], 'Control+c'))
-await frame('popup-command-palette-light', { theme: 'light' }, inPopup(['Control+p'], 'g', 'r'))
 await frame('popup-go', {}, inPopup(['Space']))
+await frame('popup-go-query', {}, inPopup(['Space'], 'd', 'o', 'c', 's'))
 await frame('popup-address-editor', {}, inPopup(['Shift+E']))
 // Settings: a frame a page, in the navigation's order (J steps on to the next).
 const SETTINGS_PAGES = ['general', 'search', 'appearance', 'dark-pages', 'passwords', 'network', 'enterprise', 'shortcuts', 'extensions', 'permissions', 'sync', 'about']
 const settingsPage = (name) => inPopup([','], ...Array(SETTINGS_PAGES.indexOf(name)).fill('Shift+J'))
 for (const name of SETTINGS_PAGES) await frame(`popup-settings-${name}`, {}, settingsPage(name))
-for (const name of ['general', 'appearance', 'passwords']) await frame(`popup-settings-${name}-light`, { theme: 'light' }, settingsPage(name))
+for (const name of ['general', 'appearance']) await frame(`popup-settings-${name}-light`, { theme: 'light' }, settingsPage(name))
 await frame('popup-settings-keys-table', {}, inPopup([','], 'Shift+Slash'))
 
 await browser.close()
 
 const failed = taken.filter((t) => t.problems.length)
 console.log(`${taken.length} frames, ${failed.length} with page errors`)
-process.exit(failed.length ? 1 : 0)
+if (!only) {
+  try {
+    if (failed.length) throw new Error('Renderer errors while capturing README screenshots')
+    for (const name of siteFrames) {
+      for (const file of [name, name + '-light']) {
+        if (!existsSync(join(outDir, file + '.png'))) throw new Error('Unknown README frame: ' + file)
+      }
+    }
+    // The dark frame where the README links it, the light one under light/.
+    const destination = join(root, 'docs', 'screenshots')
+    const light = join(destination, 'light')
+    mkdirSync(light, { recursive: true })
+    // A frame the tour no longer links goes, so a rename leaves nothing behind.
+    for (const dir of [destination, light]) {
+      for (const file of readdirSync(dir)) {
+        if (file.endsWith('.png') && !siteFrames.has(file.slice(0, -4))) rmSync(join(dir, file))
+      }
+    }
+    for (const name of siteFrames) {
+      copyFileSync(join(outDir, name + '.png'), join(destination, name + '.png'))
+      copyFileSync(join(outDir, name + '-light.png'), join(light, name + '.png'))
+    }
+  } finally {
+    if (site) rmSync(outDir, { recursive: true, force: true })
+  }
+}
+process.exitCode = failed.length ? 1 : 0

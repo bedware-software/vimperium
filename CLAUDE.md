@@ -27,3 +27,11 @@ All three must be clean before a change is done — a type error is fixed, never
 - `npx tsc --noEmit -p tsconfig.node.json`
 - `npx tsc --noEmit -p tsconfig.web.json`
 - `npx electron-vite build`
+
+## Website content
+
+bedware.software reads the README intro, the bullets under `## Highlights`, and the `###` sections under `## Feature tour`. Each tour section has a short paragraph and one Markdown image at `docs/screenshots/<frame>.png`. Keep those sections current when changing a featured workflow. The filename matches a frame in `scripts/screenshots.mjs`.
+
+Run `npm run screenshots -- --site` to regenerate the README images from the current renderer and its sample data. Include the refreshed PNGs with the README change.
+
+The tour is taken in both themes. The dark frame stays at `docs/screenshots/<frame>.png`: the README links it and GitHub shows it. The same frame in the light theme (`@bedware/ui` default, white background) goes to `docs/screenshots/light/<frame>.png`, and bedware.software shows it in its light theme. Link only the dark path in the README; the script takes the light twin of every linked frame by itself and removes PNGs the tour no longer links.
