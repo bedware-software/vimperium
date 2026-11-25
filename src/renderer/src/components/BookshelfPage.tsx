@@ -39,7 +39,7 @@ import { keyTokenFromEvent } from '../lib/vim-keymap'
 import { log } from '../lib/log'
 import type { VimKeymap } from '../lib/vim-keymap'
 import type { VimMode } from '../lib/vim-mode'
-import { Button, GroupTitle, IconButton, Kbd } from '@bedware/ui'
+import { Button, Count, GroupTitle, IconButton, Kbd } from '@bedware/ui'
 
 export interface BookshelfPageProps {
   /** The profile this window belongs to: its shelf is the one shown. */
@@ -1122,6 +1122,8 @@ export function BookshelfPage({ profileId, vimKeymap, vimMode, vimPending, hints
               onClick={() => { if (hasOffline) openReading(r, true); else void saveOffline(r.id) }}
             >
               {hasOffline ? <WifiOff size={13} /> : <Download size={13} />}
+              {/* A copy is there: the system's green mark on the button's corner. */}
+              {hasOffline && <Count tone="success">✓</Count>}
             </RowBtn>
           )}
           {isArchived ? (

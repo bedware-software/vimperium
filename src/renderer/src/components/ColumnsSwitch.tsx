@@ -78,7 +78,8 @@ export function ColumnsSwitch({ columns, onChange, keyFree, vimMode, many = fals
   vimMode: VimMode | null
   /** The wide layout is as many columns as fit, not two. */
   many?: boolean
-  /** One column and no other: the switch shows, dimmed, and does nothing. */
+  /** One column and no other: the switch shows, its one cell chosen and
+   *  hatched (a disabled Segmented), and does nothing. */
   locked?: boolean
   className?: string
 }) {
@@ -87,13 +88,13 @@ export function ColumnsSwitch({ columns, onChange, keyFree, vimMode, many = fals
   if (locked) {
     return (
       <div
-        className={cn('flex shrink-0 cursor-not-allowed items-center gap-2 opacity-40', className)}
+        className={cn('flex shrink-0 cursor-not-allowed items-center gap-2', className)}
         title="Always one column here"
         aria-disabled="true"
       >
         {vimMode === 'command' && keyFree && <Kbd className="shrink-0">{COLUMNS_KEY}</Kbd>}
         {/* pointer-events-none: the hover is the wrapper's, for its title and cursor. */}
-        <Segmented size="sm" tabbable={false} label="Layout" value="" options={[{ ...one, title: undefined }]} onChange={() => {}} className="pointer-events-none shrink-0" />
+        <Segmented size="sm" tabbable={false} disabled label="Layout" value="1" options={[{ ...one, title: undefined }]} onChange={() => {}} className="pointer-events-none shrink-0" />
       </div>
     )
   }

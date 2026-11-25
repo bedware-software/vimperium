@@ -10,7 +10,7 @@ import { darkPagesActions, useDarkPages } from '../lib/dark-pages'
 import { actionHint, type HintSettings } from '../lib/shortcut-hints'
 import { ComfortSliders, DarkPagePreview, DarkPagesModeSwitch, acceleratorCaps } from './DarkPagesControls'
 import { darkPagesGloballyOn, normalizeSiteKey, type DarkPagesRule, type DarkPagesStyle } from '../../../shared/dark-pages'
-import { Badge, Button, ChoiceCards, Kbd, Panel, PanelRow, InputField as TextField, IconButton, Segmented, SectionTitle } from '@bedware/ui'
+import { Button, ChoiceCards, Kbd, Panel, PanelRow, InputField as TextField, IconButton, Segmented, SectionTitle, Tag } from '@bedware/ui'
 
 const STYLES: { id: DarkPagesStyle; title: string; icon: typeof Sparkles; body: string }[] = [
   {
@@ -110,7 +110,7 @@ export function DarkPagesSettings({ hintSettings }: { hintSettings: HintSettings
           options={STYLES.map(({ id, title, icon: Icon, body }) => ({
             value: id,
             icon: <Icon size={13} />,
-            title: id === 'smart' ? <span className="flex items-center gap-1.5">{title}<Badge tone="accent">Recommended</Badge></span> : title,
+            title: id === 'smart' ? <span className="flex items-center gap-2">{title}<Tag>Recommended</Tag></span> : title,
             description: body,
           }))}
         />

@@ -722,9 +722,11 @@ export function BangsPage() {
         {/* Whether !words fire; what the filter (the address bar) narrowed
             it to; the sort. */}
         <div className="mx-auto flex max-w-4xl items-center gap-3 px-6 pb-4">
+          {/* On, a plate; off, a plain button (owner's choice, 2026-11-26). */}
           <Button
             role="switch"
             aria-checked={bangsOn}
+            variant={bangsOn ? 'primary' : 'secondary'}
             icon={bangsOn ? <Power size={14} /> : <PowerOff size={14} />}
             keys={keyOf('bangs')}
             onClick={toggleBangs}
