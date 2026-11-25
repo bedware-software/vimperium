@@ -723,10 +723,12 @@ html[data-page-fullscreen] body {
   background: var(--bw-on-plate);
   color: var(--bw-plate);
 }
+/* INSERT's label there: the dark theme's plate turned inside out. No edge
+ * of its own — the bar's runs under it. */
 [data-theme-family="light"] .url-line:has(> .mode-line[data-on]) .vim-mode {
-  background: transparent;
+  background: var(--bw-on-plate);
   box-shadow: none;
-  color: var(--bw-on-plate);
+  color: var(--bw-plate);
 }
 
 /* Still while its window isn't the one in use (lib/vim-edge.ts), and
