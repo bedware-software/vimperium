@@ -180,11 +180,12 @@ html[data-page-fullscreen] body {
  * there, lettered only while COMMAND's labels are up (Sidebar's rowHint), so
  * no row moves as the mode changes.
  *
- * The column is each row's own left border, see-through (--row-inset wide):
- * the row is as wide as the Sidebar to the pointer, while its fill — hover,
- * active, selected — starts past the rule, and its cap sits in that border.
- * The rule is the list's background, so it runs the list's whole height and
- * stays put as the rows scroll. --hint-w is every cap's width, lettered or
+ * The column is each row's own left border (--row-inset wide): the row is
+ * as wide as the Sidebar, and so is its fill — hover, cursor, selected,
+ * shown — which runs under the border to the Sidebar's edge; its cap sits
+ * in that border. The rule is the list's background, so it runs the list's
+ * whole height and stays put as the rows scroll; a row draws it again over
+ * its own fill. --hint-w is every cap's width, lettered or
  * not: one that holds a label of three letters (the longest there is), so
  * the column is never wider or narrower for what the labels are. */
 [data-sidebar-list] {
@@ -199,19 +200,20 @@ html[data-page-fullscreen] body {
 [data-sidebar-list] [data-sidebar-row] {
   --row-inset: var(--gutter);
   border-left: var(--row-inset) solid transparent;
-  background-clip: padding-box;
-}
-/* The row shown (data-row-current: the active tab, the group parked on or
- * holding it): its fill runs under the label column to the Sidebar's edge,
- * the accent's bar at that edge, as a selected row of the Command Palette.
- * The column's rule, which the fill would cover, is drawn again over it. */
-[data-sidebar-list] [data-sidebar-row][data-row-current] {
   background-clip: border-box;
   background-origin: border-box;
+  background-image: linear-gradient(var(--color-border), var(--color-border));
+  background-size: 1px 100%;
+  background-position: calc(var(--gutter) - 1px) 0;
+  background-repeat: no-repeat;
+}
+/* The row shown (data-row-current: the active tab, the group parked on or
+ * holding it): the accent's bar at the Sidebar's edge too, as a selected
+ * row of the Command Palette. */
+[data-sidebar-list] [data-sidebar-row][data-row-current] {
   background-image: linear-gradient(var(--bw-accent), var(--bw-accent)), linear-gradient(var(--color-border), var(--color-border));
   background-size: 3px 100%, 1px 100%;
   background-position: 0 0, calc(var(--gutter) - 1px) 0;
-  background-repeat: no-repeat;
 }
 /* Its cap, on that fill. */
 [data-row-current] > [data-sidebar-hint] > span {
