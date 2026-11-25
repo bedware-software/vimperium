@@ -35,3 +35,5 @@ bedware.software reads the README intro, the bullets under `## Highlights`, and 
 Run `npm run screenshots -- --site` to regenerate the README images from the current renderer and its sample data. Include the refreshed PNGs with the README change.
 
 The tour is taken in both themes. The dark frame stays at `docs/screenshots/<frame>.png`: the README links it and GitHub shows it. The same frame in the light theme (`@bedware/ui` default, white background) goes to `docs/screenshots/light/<frame>.png`, and bedware.software shows it in its light theme. Link only the dark path in the README; the script takes the light twin of every linked frame by itself and removes PNGs the tour no longer links.
+
+`npm run release` takes the screenshots again before tagging (`npm run screenshots -- --site`). If `docs/screenshots/` changed in either theme, it commits only those files, pushes `main` and tags that commit, so a release always carries current images. `--dry-run` takes none.

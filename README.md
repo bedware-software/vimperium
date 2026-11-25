@@ -208,3 +208,16 @@ npm run dist:win    # Windows installer
 npm run dist:mac    # macOS dmg
 npm run dist:linux  # Linux AppImage
 ```
+
+## Releasing
+
+A release is a `v<version>` tag on `main`; GitHub Actions builds the installers from the tag and publishes the GitHub release that installed copies update from.
+
+```bash
+npm run release              # tag the pushed tip of main and push the tag
+npm run release -- --dry-run # show what would be tagged, change nothing
+```
+
+- The version is not chosen by hand: a pre-commit hook bumps the patch version on every commit.
+- The commit must already be pushed to `origin/main`, and its tag must not exist yet.
+- Before tagging, the script runs `npm run screenshots -- --site`. If the Feature tour images in `docs/screenshots/` (either theme) changed, it commits only those files, pushes `main` and tags that commit. A dry run takes no screenshots.
