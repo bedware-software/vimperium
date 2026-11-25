@@ -20,7 +20,7 @@ import {
   BANG_CATEGORIES, DEFAULT_BANGS, bangProblem, expandBang, normalizeLabels, normalizeTrigger, type Bang,
 } from '../../../shared/bangs'
 import { SEARCH_ENGINES, searchEngineProblem } from '../../../shared/search-engines'
-import { isEscapeKey, keepsChromeKeyboard, usePageKeys } from '../lib/vim-mode'
+import { keepsChromeKeyboard } from '../lib/vim-mode'
 import { closePage } from '../lib/page-nav'
 import {
   CONTEXT_MENU_KEYS, LIST_MOVES, cmd, helpKeys, titleWithKey, useInternalPageKeys, windowKeysNote,
@@ -502,17 +502,14 @@ export function BangsPage() {
   }
 
   // ── keyboard ──
-  // BANGS_KEYS through lib/internal-page-keys.ts, while the page has the
-  // keyboard (INSERT): its own keys, and the window's commands it has a
-  // meaning for on the window's keymap.
-  /** Back into the bang form, from keys outside it (Ctrl+[ left it). */
+  // BANGS_KEYS through lib/internal-page-keys.ts: COMMAND's keys.
+  /** Back into the bang form, from keys outside it (Ctrl+C left it). */
   const focusEditor = (): void => {
     rootRef.current?.querySelector<HTMLInputElement>('[role="dialog"] input')?.focus()
   }
-  /** Esc, wherever it's typed — on the page with the keys (INSERT), in its
-   *  filter, in COMMAND: what's up over the page closes first (the bang
-   *  form, the keys' help), then the page does, back to where you were.
-   *  Ctrl+C is what leaves for COMMAND (lib/vim-mode.ts). */
+  /** Esc, on the page or in its filter: what's up over the page closes
+   *  first (the bang form, the keys' help), then the page does, back to
+   *  where you were. */
   const escapePage = (): boolean => {
     if (editor) {
       setEditor(null)
@@ -524,8 +521,6 @@ export function BangsPage() {
     }
     return closePage('bangs')
   }
-  // In COMMAND, ahead of the keymap.
-  usePageKeys({ intercept: (e) => isEscapeKey(e) && escapePage(), command: () => false })
   const runKey: PageKeyRunner<BangsAction> = (action) => {
     if (action !== 'reset') resetArmedRef.current = 0
     if (editor) {
@@ -563,8 +558,7 @@ export function BangsPage() {
     }
     if (!selected) {
       // dd with nothing to delete does nothing — it never closes the tab
-      // here. The rest do nothing either: the window's own keys are
-      // COMMAND's.
+      // here.
       return action === 'remove'
     }
     switch (action) {
@@ -578,18 +572,15 @@ export function BangsPage() {
   const pageKeys = useInternalPageKeys({
     table: BANGS_KEYS,
     run: runKey,
-    // The keys are the page's while the focus is in it (INSERT) and not in
-    // a field; on nothing at all it's COMMAND, the browser's keys. The bang
-    // form keeps its own; with it up and the focus outside it, runKey's
-    // editor branch has them (i or Enter back in, Esc closes it). A focused
-    // control (Tab onto a header button) keeps its own Enter / Space.
+    // Not a key typed in a field, nor Enter / Space on one of the page's
+    // own focused controls (Tab onto a header button). The bang form's
+    // controls are INSERT's and never get here; with it up and the focus
+    // outside it, runKey's editor branch has the keys.
     ownsKeyboard: (e) => {
       const root = rootRef.current
       const target = e.target
       if (!root || isEditable(target)) return false
-      if (!(target instanceof Node && root.contains(target))) return false
-      if (editor && target instanceof Element && target.closest('[role="dialog"]')) return false
-      return !((e.key === 'Enter' || e.key === ' ') && target instanceof HTMLElement && target.closest('button, a, [role="radio"]'))
+      return !((e.key === 'Enter' || e.key === ' ') && target instanceof HTMLElement && root.contains(target) && target.closest('button, a, [role="radio"]'))
     },
   })
   const keyOf = pageKeys.key
@@ -641,21 +632,19 @@ export function BangsPage() {
   const currentEngine = search ? engineName(search.searchEngine) : null
   const customActive = customDraft !== null || (!!search && !currentEngine)
   const bangsOn = search?.bangsEnabled !== false
-  const helpNote = pageKeys.keymap ? windowKeysNote(pageKeys.keymap) : null
+  const helpNote = windowKeysNote()
 
   return (
     <div
       ref={rootRef}
       tabIndex={-1}
-      // The focus in it is INSERT, as in a web page: its own keys run
-      // (lib/internal-page-keys.ts); Ctrl+C lets go of it for COMMAND, Esc
-      // closes the page. The bang
-      // form inside is data-vim-page too: a form keeps its own keys.
+      // Focused to keep the keyboard in this window; its keys are COMMAND's
+      // (lib/internal-page-keys.ts).
       data-vim-page=""
-      // i lands on the page: with the bang form up, it goes back into it.
+      // The focus landing on the page with the bang form up goes back into it.
       onFocus={(e) => { if (editor && e.target === e.currentTarget) focusEditor() }}
-      // The keys leaving the page (Ctrl+C for COMMAND, a click on the chrome)
-      // take its help along: nothing but its own keys would close it.
+      // The focus leaving the page (its filter, a click on the chrome) takes
+      // its help along.
       onBlur={(e) => { if (!(e.relatedTarget instanceof Node && e.currentTarget.contains(e.relatedTarget))) setHelpOpen(false) }}
       className="absolute inset-0 z-50 flex flex-col bg-background text-foreground outline-none"
       role="region"
@@ -940,9 +929,9 @@ function BangEditor({
 
   return (
     <div
-      // To Vim mode a form keeps its own keys (INSERT): Tab moves on
-      // through it, Enter saves, Esc cancels, Space flips the switch.
-      data-vim-page=""
+      // To Vim mode a form keeps its own keys (INSERT, lib/vim-mode.ts): Tab
+      // moves on through it, Enter saves, Esc cancels, Space flips the switch.
+      data-vim-own-keys=""
       className="absolute inset-0 z-20 flex items-center justify-center bg-background/70 backdrop-blur-[1px]"
       onMouseDown={(e) => { if (e.target === e.currentTarget) onCancel() }}
     >

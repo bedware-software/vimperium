@@ -18,7 +18,7 @@ import {
 } from 'lucide-react'
 import type { DownloadEntry } from '../App'
 import { useAppStore } from '../store/app-store'
-import { isEscapeKey, keepsChromeKeyboard, usePageKeys } from '../lib/vim-mode'
+import { keepsChromeKeyboard } from '../lib/vim-mode'
 import { closePage } from '../lib/page-nav'
 import {
   CONTEXT_MENU_KEYS, LIST_MOVES, cmd, helpKeys, titleWithKey, useInternalPageKeys, windowKeysNote,
@@ -597,12 +597,9 @@ export function DownloadsPage() {
   }
 
   // ── keyboard ──
-  // DOWNLOADS_KEYS through lib/internal-page-keys.ts, while the page has
-  // the keyboard (INSERT): its own keys, and the window's commands it has a
-  // meaning for on the window's keymap.
-  /** Esc, wherever it's typed — on the page with the keys (INSERT), in its
-   *  filter, in COMMAND: the keys' help closes, then the page does, back to
-   *  where you were. Ctrl+C is what leaves for COMMAND (lib/vim-mode.ts). */
+  // DOWNLOADS_KEYS through lib/internal-page-keys.ts: COMMAND's keys.
+  /** Esc, on the page or in its filter: the keys' help closes, then the
+   *  page does, back to where you were. */
   const escapePage = (): boolean => {
     if (helpOpen) {
       setHelpOpen(false)
@@ -610,8 +607,6 @@ export function DownloadsPage() {
     }
     return closePage('downloads')
   }
-  // In COMMAND, ahead of the keymap.
-  usePageKeys({ intercept: (e) => isEscapeKey(e) && escapePage(), command: () => false })
   const runKey: PageKeyRunner<DownloadsAction> = (action) => {
     switch (action) {
       case 'escape': return escapePage()
@@ -634,8 +629,7 @@ export function DownloadsPage() {
     }
     if (!selected || (action === 'retry' && !canRetry(selected))) {
       // r reloads the list unless there's a download to retry; dd with
-      // nothing to remove does nothing — it never closes the tab here. The
-      // rest do nothing either: the window's own keys are COMMAND's.
+      // nothing to remove does nothing — it never closes the tab here.
       if (action === 'retry') {
         window.dispatchEvent(new Event(DOWNLOADS_RELOAD_EVENT))
         return true
@@ -655,15 +649,13 @@ export function DownloadsPage() {
   const pageKeys = useInternalPageKeys({
     table: DOWNLOADS_KEYS,
     run: runKey,
-    // The keys are the page's while the focus is in it (INSERT) and not in
-    // a field (its search box); on nothing at all it's COMMAND, the browser's keys. A
-    // focused control (Tab onto a header button) keeps its own Enter / Space.
+    // Not a key typed in a field, nor Enter / Space on one of the page's
+    // own focused controls (Tab onto a header button).
     ownsKeyboard: (e) => {
       const root = rootRef.current
       const target = e.target
       if (!root || isEditable(target)) return false
-      if (!(target instanceof Node && root.contains(target))) return false
-      return !((e.key === 'Enter' || e.key === ' ') && target instanceof HTMLElement && target.closest('button, a, [role="radio"]'))
+      return !((e.key === 'Enter' || e.key === ' ') && target instanceof HTMLElement && root.contains(target) && target.closest('button, a, [role="radio"]'))
     },
   })
   const keyOf = pageKeys.key
@@ -690,18 +682,17 @@ export function DownloadsPage() {
   const summary = shown.length === 0
     ? ''
     : `${shown.length} ${shown.length === 1 ? 'download' : 'downloads'}${activeCount > 0 ? ` · ${activeCount} active` : ''}`
-  const helpNote = pageKeys.keymap ? windowKeysNote(pageKeys.keymap) : null
+  const helpNote = windowKeysNote()
 
   return (
     <div
       ref={rootRef}
       tabIndex={-1}
-      // The focus in it is INSERT, as in a web page: its own keys run
-      // (lib/internal-page-keys.ts); Ctrl+C lets go of it for COMMAND, Esc
-      // closes the page.
+      // Focused to keep the keyboard in this window; its keys are COMMAND's
+      // (lib/internal-page-keys.ts).
       data-vim-page=""
-      // The keys leaving the page (Ctrl+C for COMMAND, a click on the chrome)
-      // take its help along: nothing but its own keys would close it.
+      // The focus leaving the page (its filter, a click on the chrome) takes
+      // its help along.
       onBlur={(e) => { if (!(e.relatedTarget instanceof Node && e.currentTarget.contains(e.relatedTarget))) setHelpOpen(false) }}
       className="absolute inset-0 z-50 flex flex-col bg-background text-foreground outline-none"
       role="region"

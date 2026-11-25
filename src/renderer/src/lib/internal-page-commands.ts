@@ -18,15 +18,14 @@ export function runInternalPageCommand(command: string): boolean {
   if (command === 'focus-input') {
     // A web page's gi picks one of its fields; these pages have one to type
     // in — their filter, the address bar — so it goes straight there:
-    // INSERT. A form open over the page (the bang form, a data-vim-page of
-    // its own inside it) has its own fields first.
-    const pages = document.querySelectorAll<HTMLElement>('[data-vim-page]')
-    const top = pages[pages.length - 1] ?? page
+    // INSERT. A form open over the page (the bang form) has its own fields
+    // first.
+    const form = page.querySelector<HTMLElement>('[data-vim-own-keys]')
     const fieldIn = (root: HTMLElement): HTMLInputElement | null =>
       root.querySelector<HTMLInputElement>('[data-vim-search]') ??
       root.querySelector<HTMLInputElement>('input[type="text"], input[type="search"], input:not([type])')
-    if (top !== page) {
-      const field = fieldIn(top)
+    if (form) {
+      const field = fieldIn(form)
       if (field) {
         field.focus()
         field.select()

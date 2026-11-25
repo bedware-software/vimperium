@@ -1669,18 +1669,18 @@ export default function App() {
   const focusActivePage = (mode: VimMode = 'insert'): boolean => {
     const s = useAppStore.getState()
     if (!s.activeTabId) return false
-    // Internal pages are drawn by this renderer (data-vim-page). Focused,
-    // their own keys run, which is INSERT (lib/internal-page-keys.ts); in
-    // COMMAND they let go, and the window keeps the keys for COMMAND's.
+    // Internal pages are drawn by this renderer (data-vim-page): the window
+    // keeps the keyboard and their keys are COMMAND's
+    // (lib/internal-page-keys.ts); INSERT is typing in their filter.
     if (isInternalUrl(s.getActiveTab()?.url)) {
       const page = document.querySelector<HTMLElement>('[data-vim-page]')
       if (!page) return false
-      if (mode === 'insert') {
+      if (mode === 'insert') return focusAddressFilter()
+      // A home for the focus — not while a form over the page would take it
+      // straight back (Bangs' onFocus), nor from one of the page's controls.
+      if (page.hasAttribute('tabindex') && !page.querySelector('[data-vim-own-keys]') && !page.contains(document.activeElement)) {
         page.focus({ preventScroll: true })
-        return true
       }
-      const focused = document.activeElement
-      if (focused instanceof HTMLElement && page.contains(focused)) focused.blur()
       return false
     }
     // A blank tab has no page to type in — its view is off screen behind the

@@ -67,19 +67,34 @@ function isEditable(target: EventTarget | null): boolean {
   return target.isContentEditable || target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT'
 }
 
-/** A page this renderer draws in the page area, which keeps its own keys
- *  as a web page does in INSERT (marked `data-vim-page`: Downloads, Bangs,
- *  the bang form) — lib/internal-page-keys.ts. */
+/** Inside a page this renderer draws in the page area (marked
+ *  `data-vim-page`: Downloads, Bangs, the Keys). */
 function isInternalPage(target: EventTarget | null): boolean {
   return target instanceof HTMLElement && target.closest('[data-vim-page]') !== null
 }
 
-/** The mode keyboard focus on `target` in this renderer stands for: a text
- *  field is INSERT, and so is a page this renderer draws (Downloads, Bangs)
- *  — its own keys (j/k through its rows, dd) are the page's, as a web
- *  page's are in INSERT; the rest COMMAND. */
+/** Inside a form up over such a page (the bang form, `data-vim-own-keys`):
+ *  its controls keep Tab, Enter and Space, so the focus anywhere in it is
+ *  INSERT. */
+function isOwnKeysForm(target: EventTarget | null): boolean {
+  return target instanceof HTMLElement && target.closest('[data-vim-own-keys]') !== null
+}
+
+/** The mode keyboard focus on `target` in this renderer stands for: INSERT
+ *  is a text field (or the bang form), the rest COMMAND. A page this
+ *  renderer draws is COMMAND too — the mode shown must be what the keys do:
+ *  its rows' keys run through usePageKeys, typing is its filter's. */
 function modeForRendererFocus(target: EventTarget | null): VimMode {
-  return isEditable(target) || isInternalPage(target) ? 'insert' : 'command'
+  return isEditable(target) || isOwnKeysForm(target) ? 'insert' : 'command'
+}
+
+/** Tab, and Enter / Space on a focused control, inside a page this renderer
+ *  draws: the control's own, not COMMAND's to swallow. */
+function isPageControlKey(e: KeyboardEvent): boolean {
+  const target = e.target
+  if (!isInternalPage(target)) return false
+  if (e.key === 'Tab') return true
+  return (e.key === 'Enter' || e.key === ' ') && (target as HTMLElement).closest('button, a, [role="radio"], [role="switch"]') !== null
 }
 
 /** INSERT in the chrome (a URL bar, a rename) rather than in a page. */
@@ -256,12 +271,10 @@ function isCtrlChord(e: KeyboardEvent, code: string): boolean {
 }
 
 /** Ctrl+C that leaves for COMMAND, as it leaves a popup's field: typed in
- *  the address bar — a page's address or a page's filter — or on a page
- *  this window draws while it has the keys (Downloads, Bangs), where Esc
- *  closes the page instead, from either mode. A field of the page's own
- *  (the bang form's) keeps its Ctrl+C. Off the Mac, with part of the bar's
- *  text selected, Ctrl+C copies it — the whole of it selected is what going
- *  into the bar does, not a selection to copy. */
+ *  the address bar — a page's address or a page's filter — or on a control
+ *  of the bang form; its fields keep their Ctrl+C. Off the Mac, with part
+ *  of the bar's text selected, Ctrl+C copies it — the whole of it selected
+ *  is what going into the bar does, not a selection to copy. */
 function leavesPageInsert(e: KeyboardEvent): boolean {
   if (!isCtrlChord(e, 'KeyC')) return false
   const target = e.target
@@ -272,7 +285,7 @@ function leavesPageInsert(e: KeyboardEvent): boolean {
     const part = to > from && to - from < target.value.length
     return isMac || !part
   }
-  return isInternalPage(target) && !isEditable(target)
+  return isOwnKeysForm(target) && !isEditable(target)
 }
 
 // ── The main window's mode ──
@@ -285,8 +298,7 @@ interface Options {
   onCommand: (command: string) => void
   /** Hand the keyboard to the active tab's page, for `mode`. False when there
    *  is no page to go to, e.g. while parked on a group — or, in COMMAND, a
-   *  page this renderer draws, which lets go of the keys: the window keeps
-   *  them for COMMAND's. */
+   *  page this renderer draws: the window keeps the keys. */
   focusPage: (mode: VimMode) => boolean
   isActiveTab: (tabId: string) => boolean
 }
@@ -470,7 +482,7 @@ export function useVimMode({ enabled, keymap, onCommand, focusPage, isActiveTab 
     if (!enabled) return
 
     const onKeyDown = (e: KeyboardEvent): void => {
-      // Ctrl+C on a page this window draws, or in its filter: COMMAND.
+      // Ctrl+C in the address bar or on the bang form: COMMAND.
       if (modeRef.current === 'insert' && leavesPageInsert(e)) {
         e.preventDefault()
         e.stopPropagation()
@@ -491,8 +503,6 @@ export function useVimMode({ enabled, keymap, onCommand, focusPage, isActiveTab 
         }
         return
       }
-      // A page this renderer draws keeps its own plain keys.
-      if (isInternalPage(e.target)) return
       // One drawn in the page's place takes some ahead of the keymap.
       // Not Enter while the Sidebar's cursor is off the row shown: that
       // Enter shows the cursor's row (the keymap's, below).
@@ -505,6 +515,7 @@ export function useVimMode({ enabled, keymap, onCommand, focusPage, isActiveTab 
         e.stopPropagation()
         return
       }
+      if (!rowGo && isPageControlKey(e)) return
       // COMMAND mode owns every plain key in the chrome — an unbound one
       // must not reach a focused toolbar button (Enter/Space) or move focus
       // (Tab) either. Capture phase on window, so App's global Escape
@@ -526,14 +537,14 @@ export function useVimMode({ enabled, keymap, onCommand, focusPage, isActiveTab 
     const onWindowFocus = (): void => { setTimeout(syncWithFocus, 0) }
     const onFocusIn = (e: FocusEvent): void => {
       if (isEditable(e.target)) setMode('insert', 'field focus', isChromeField(e.target))
-      else if (isInternalPage(e.target)) setMode('insert', 'page focus', false)
+      else if (isOwnKeysForm(e.target)) setMode('insert', 'form focus', false)
       else syncWithFocus()
     }
-    // Leaving a text field, or a page this renderer draws, for nothing (Esc,
-    // Enter in a rename) is COMMAND; leaving it for the page is the page's
-    // focus event's to decide.
+    // Leaving a text field, or the bang form, for nothing (Esc, Enter in a
+    // rename) is COMMAND; leaving it for the page is the page's focus
+    // event's to decide.
     const onFocusOut = (e: FocusEvent): void => {
-      if (!(isEditable(e.target) || isInternalPage(e.target)) || e.relatedTarget) return
+      if (!(isEditable(e.target) || isOwnKeysForm(e.target)) || e.relatedTarget) return
       setTimeout(syncWithFocus, 0)
     }
 

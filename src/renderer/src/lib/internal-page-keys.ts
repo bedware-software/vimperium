@@ -1,22 +1,20 @@
 // The keys of a page this window draws in the page area: Downloads, Bangs.
 //
-// Such a page is INSERT's while it has the keyboard, as a web page is: its
-// own keys run — the scroll keys move its cursor, dd deletes the row, u
-// undoes that, y copies, m is the row's menu, i and / go to its filter (the
-// address bar, lib/address-filter.ts), Enter, Space, s for the sort… The window's commands it has a meaning for
-// come on the window's keymap (a rebind carries over, and the page's hints
-// show what's bound); the rest of the window's keys don't run here. Ctrl+C (or
-// Ctrl+[) lets go of the page for COMMAND, where the keys are the browser's
-// as on any page — dd closes the tab, Ctrl+J/K step through the Sidebar —
-// and i comes back in; Esc closes the page, from either mode, as it closes
-// a popup (lib/vim-mode.ts: a focus inside data-vim-page is
-// INSERT).
+// Such a page is COMMAND's, and the mode shown is what the keys do: the
+// window's commands it has a meaning for come on the window's keymap (dd
+// deletes the row rather than closing the tab; a rebind carries over, and
+// the page's hints show what's bound), its own keys (s the sort, Enter,
+// Space…) go ahead of the keymap, and every other key is the window's as on
+// any page. i and / type in its filter — the address bar
+// (lib/address-filter.ts), the only INSERT here; Esc closes the page. Both
+// ride lib/vim-mode.ts usePageKeys, as the group page's keys do.
 
-import { useEffect, useMemo, useRef } from 'react'
-import { KeySequencer, SEQUENCE_JOIN, keyTokenFromEvent, type VimKeymap } from '../../../shared/vim-keys'
+import { useMemo } from 'react'
+import { SEQUENCE_JOIN, keyTokenFromEvent, type VimKeymap } from '../../../shared/vim-keys'
 import { DEFAULT_VIM_KEYMAP } from '../../../shared/vim-default-keymap'
+import { useReservedHintKeys } from './hint-labels'
 import { displayKeySequence, keysFor, parseVimKeymap } from './vim-keymap'
-import { keepsChromeKeyboard } from './vim-mode'
+import { usePageKeys } from './vim-mode'
 import { useWindowVimKeymap } from './window-vim-keymap'
 
 /** A window command the page has a meaning of its own for: `cmd('close-tab')`
@@ -141,44 +139,6 @@ export interface PageKeySource {
  *  nothing more (r retries only a failed download). */
 export type PageKeyRunner<A extends string> = (action: A, source: PageKeySource) => boolean
 
-/** The page's keys: its table's commands on `keymap` (pageKeymap),
- *  sequences (dd, gg) and all, and its own keys while nothing is pending.
- *  `onKey` is true when the page took the key; `reset` drops a pending
- *  one. */
-export function pageKeyRouter<A extends string>(
-  keymap: () => VimKeymap,
-  resolved: () => ResolvedPageKeys<A>,
-  run: PageKeyRunner<A>,
-): {
-  onKey: (e: KeyboardEvent) => boolean
-  reset: () => void
-} {
-  let pending = false
-  const sequencer = new KeySequencer(
-    keymap,
-    (command, e) => {
-      const action = resolved().byCommand.get(command)
-      if (action === undefined || (e.repeat && !REPEATING.has(action))) return
-      run(action, { command })
-    },
-    (typed) => { pending = typed !== '' },
-  )
-  return {
-    onKey: (e) => {
-      if (!pending) {
-        const token = pageKeyToken(e)
-        const action = token ? resolved().byToken.get(token) : undefined
-        if (action !== undefined) {
-          if (e.repeat && !REPEATING.has(action)) return true
-          if (run(action, { event: e })) return true
-        }
-      }
-      return sequencer.feed(e)
-    },
-    reset: () => sequencer.reset(),
-  }
-}
-
 /** A help row's keys: one action's (`dd, Del`), or two side by side
  *  (`j / k, ↓ / ↑`). */
 export function helpKeys<A extends string>(caps: Readonly<Record<A, readonly string[]>>, actions: readonly A[]): string {
@@ -194,31 +154,16 @@ export function titleWithKey(label: string, key: string | undefined): string {
   return key ? `${label} (${key})` : label
 }
 
-/** The help's last line: Esc closes the page; Ctrl+C gives the keys back to
- *  the browser, whose own keys then work as on any page. */
-export function windowKeysNote(keymap: VimKeymap): string | null {
-  const first = (command: string): string | null => {
-    const key = keysFor(keymap, command)[0]
-    return key ? displayKeySequence(key) : null
-  }
-  const parts: string[] = []
-  const close = first('close-tab')
-  if (close) parts.push(`${close} closes the tab`)
-  const down = first('row-move-down')
-  const up = first('row-move-up')
-  if (down && up) parts.push(`${down} / ${up} move the tab up and down`)
-  const sidebar = first('toggle-sidebar')
-  if (sidebar) parts.push(`${sidebar} shows or hides the Sidebar`)
-  const back = first('insert-mode')
-  if (back) parts.push(`${back} comes back here`)
-  return `Esc closes the page. ${displayKeySequence('<C-c>')} gives the keys back to the browser (COMMAND), as on a web page${parts.length > 0 ? `: ${parts.join(', ')}` : ''}.`
+/** The help's last line. */
+export function windowKeysNote(): string {
+  return "Esc closes the page. Every other key is the browser's, as on any page."
 }
 
 /**
- * Hooks a page drawn in the page area up to the keyboard: while
- * `ownsKeyboard` says a key is its — the focus inside it, not in a field —
- * the page runs its table on the window's keymap (INSERT, see the top of
- * the file). `table` must be a module constant.
+ * Hooks a page drawn in the page area up to COMMAND's keys while it's
+ * mounted. `ownsKeyboard` is false for a key that isn't the page's (typed
+ * in a field, Enter on one of its own buttons). `table` must be a module
+ * constant.
  */
 export function useInternalPageKeys<A extends string>({ table, run, ownsKeyboard }: {
   table: PageKeyTable<A>
@@ -236,57 +181,29 @@ export function useInternalPageKeys<A extends string>({ table, run, ownsKeyboard
   const keymap = useMemo(() => pageKeymap(main ?? defaultMainKeymap(), table), [main, table])
   const resolved = useMemo(() => resolvePageKeys(keymap, table), [keymap, table])
 
-  const runRef = useRef(run)
-  runRef.current = run
-  const ownsRef = useRef(ownsKeyboard)
-  ownsRef.current = ownsKeyboard
-  const keymapRef = useRef(keymap)
-  keymapRef.current = keymap
-  const resolvedRef = useRef(resolved)
-  resolvedRef.current = resolved
+  // The page's own letters go ahead of the keymap: no Sidebar label may
+  // start with one.
+  const letters = useMemo(() => [...resolved.byToken.keys()].filter((t) => /^[a-z]$/i.test(t)), [resolved])
+  useReservedHintKeys(letters)
 
-  useEffect(() => {
-    const router = pageKeyRouter(
-      () => keymapRef.current,
-      () => resolvedRef.current,
-      (action, source) => runRef.current(action, source),
-    )
-    const onKeyDown = (e: KeyboardEvent): void => {
-      // A key the page doesn't own — COMMAND's, after Ctrl+C or Ctrl+[ (which
-      // main takes, so the page never sees it), or Ctrl walking the Sidebar
-      // — drops a pending prefix, or the first d of a dd left behind would
-      // make the next d back in delete. Before the defaultPrevented check:
-      // COMMAND's own listener has already taken its keys.
-      if (keepsChromeKeyboard() || !ownsRef.current(e)) {
-        router.reset()
-        return
-      }
-      if (e.defaultPrevented || e.metaKey || e.altKey) return
-      if (!router.onKey(e)) return
-      e.preventDefault()
-      // Ahead of App's global Escape and the page's own handlers.
-      e.stopPropagation()
-    }
-    // A pending key (the first d of dd) waits however long, as COMMAND's
-    // does: a click, or the window losing the keys, drops it.
-    const dropPending = (): void => router.reset()
-    // So does the focus leaving the page (Ctrl+[ blurs it for COMMAND).
-    const onFocusOut = (e: FocusEvent): void => {
-      const next = e.relatedTarget
-      if (!(next instanceof Element && next.closest('[data-vim-page]'))) router.reset()
-    }
-    window.addEventListener('keydown', onKeyDown, true)
-    window.addEventListener('blur', dropPending)
-    window.addEventListener('mousedown', dropPending, true)
-    document.addEventListener('focusout', onFocusOut)
-    return () => {
-      window.removeEventListener('keydown', onKeyDown, true)
-      window.removeEventListener('blur', dropPending)
-      window.removeEventListener('mousedown', dropPending, true)
-      document.removeEventListener('focusout', onFocusOut)
-      router.reset()
-    }
-  }, [table])
+  usePageKeys({
+    intercept: (e) => {
+      if (!ownsKeyboard(e)) return false
+      const token = pageKeyToken(e)
+      const action = token ? resolved.byToken.get(token) : undefined
+      if (action === undefined) return false
+      if (e.repeat && !REPEATING.has(action)) return true
+      return run(action, { event: e })
+    },
+    // Taken even when it does nothing now: dd with no row to delete must
+    // not go on to close the tab.
+    command: (command) => {
+      const action = resolved.byCommand.get(command)
+      if (action === undefined) return false
+      run(action, { command })
+      return true
+    },
+  })
 
   return {
     keymap: main,
