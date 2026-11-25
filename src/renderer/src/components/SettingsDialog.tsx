@@ -1,4 +1,4 @@
-import { Badge, Button, ChoiceCards, GroupTitle, Hint, HintBar, HotkeyButton, LinkButton, ListRow, Nav, NavItem, Panel, PanelRow, Segmented, Switch, Textarea, InputField as TextField, IconButton, Slider } from '@bedware/ui'
+import { Badge, Button, ChoiceCards, Hint, HintBar, HotkeyButton, LinkButton, ListRow, Nav, NavItem, Panel, PanelRow, Segmented, Switch, Textarea, InputField as TextField, IconButton, Slider, PageHeader, SectionTitle } from '@bedware/ui'
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { X, RotateCcw, Sun, Moon, Monitor, AlertTriangle, Trash2, Download, Bell, CheckCircle2, Loader2, Puzzle, ExternalLink, Plus, Globe, Pin, PinOff, SlidersHorizontal, Palette, Keyboard, Info, Compass, ShieldCheck, Cloud, FolderOpen, RefreshCw, Wifi, Building2, KeyRound, Search, FileUp, Pencil, Copy, Check, Eye, EyeOff, ChevronDown, ChevronRight, UserRound, FingerprintPattern } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -491,6 +491,22 @@ function normalizeKnownKeybindings(
     next[key] = list
   }
   return next
+}
+
+/** What each page is about: its header's second line. */
+const PAGE_DESCRIPTIONS: Record<SettingsSection, string> = {
+  general: 'What a new tab opens and where the keyboard goes, the search engine and bangs, the default browser, and wiping everything.',
+  search: 'Which fields Search Everything looks through for tabs, groups and workspaces.',
+  appearance: 'The theme and its background, how Vim\'s mode is shown, and whether the interface moves.',
+  darkPages: 'Vimperium\'s own dark mode for web pages — done by Chromium as the page paints, so it\'s instant on every page, its frames included, and never slows a page down. Changes apply right away.',
+  passwords: 'Fill website sign-ins and offer to save changes. Passwords are encrypted with Windows DPAPI or macOS Keychain and stay on this device.',
+  network: 'How Vimperium reaches the internet: the proxy and DNS-over-HTTPS.',
+  enterprise: 'Single sign-on for corporate sites, and the sign-ins saved for them.',
+  shortcuts: 'Vim\'s keys: every binding as a line of text, and whether the Sidebar hides while you type.',
+  extensions: 'Install Chrome extensions from the Chrome Web Store or Edge Add-ons, and manage the ones installed.',
+  permissions: 'What sites may use — camera, microphone, location and the rest — by default and site by site.',
+  sync: 'Sync your data across devices through a folder that OneDrive, Dropbox, Google Drive or iCloud Drive already keeps in the cloud. No account needed — Vimperium just reads and writes JSON files directly in the folder you pick.',
+  about: 'The version, updates, where Vimperium keeps its data, and who made it.',
 }
 
 export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePreview, tabRequest, vimKeymap }: Props) {
@@ -1786,14 +1802,17 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
           {/* Content */}
           {/* relative: VimFormLabels draws the labels inside it. */}
           <div ref={setContentEl} className="relative flex-1 min-h-0 overflow-y-auto px-6 py-5">
+          {/* Every page starts with it; the number is the page's place in the navigation. */}
+          <PageHeader
+            number={String(SETTINGS_SECTIONS.findIndex((s) => s.id === activeTab) + 1).padStart(2, '0')}
+            title={settingsSectionLabel(activeTab)}
+            description={PAGE_DESCRIPTIONS[activeTab]}
+          />
           {activeTab === 'appearance' && (
             <div className="space-y-8">
               {/* Theme */}
               <div>
-                <h3 className="text-sm font-semibold text-foreground mb-1">Theme</h3>
-                <p className="text-[11px] text-muted-foreground mb-3">
-                  Choose the overall family, then pick a brightness variant for each family.
-                </p>
+                <SectionTitle title="Theme" description="Choose the overall family, then pick a brightness variant for each family." />
                 <Segmented
                   label="Theme"
                   data-vim-item="appearance:theme"
@@ -1811,10 +1830,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                     user can tune each OS state independently. */}
                 {(theme === 'light' || theme === 'system') && (
                   <div className="mt-3">
-                    <div className="text-[11px] font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
-                      <Sun size={11} />
-                      Light background
-                    </div>
+                    <SectionTitle level={2} title="Light background" />
                     <Segmented
                       label="Light background"
                       data-vim-item="appearance:light-variant"
@@ -1828,10 +1844,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
 
                 {(theme === 'dark' || theme === 'system') && (
                   <div className="mt-3">
-                    <div className="text-[11px] font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
-                      <Moon size={11} />
-                      Dark variant
-                    </div>
+                    <SectionTitle level={2} title="Dark variant" />
                     <Segmented
                       label="Dark variant"
                       data-vim-item="appearance:dark-variant"
@@ -1845,10 +1858,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
               </div>
 
               <div>
-                <h3 className="text-sm font-semibold text-foreground mb-1">Vim mode indicator</h3>
-                <p className="text-[11px] text-muted-foreground mb-3">
-                  How the mode's label — COMMAND, INSERT — looks at the end of a field.
-                </p>
+                <SectionTitle title="Vim mode indicator" description="How the mode's label — COMMAND, INSERT — looks at the end of a field." />
                 <ChoiceCards
                   label="Vim mode indicator"
                   data-vim-item="appearance:vim-indicator"
@@ -1869,11 +1879,10 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
               </div>
 
               <div>
-                <h3 className="text-sm font-semibold text-foreground mb-1">Vim mode edge</h3>
-                <p className="text-[11px] text-muted-foreground mb-3">
+                <SectionTitle title="Vim mode edge" description={<>
                   A yellow ring round the address bar while it types (INSERT), fading as the mode
                   changes. In COMMAND the bar is a plain field.
-                </p>
+                </>} />
                 <ChoiceCards
                   label="Vim mode edge"
                   data-vim-item="appearance:vim-edge"
@@ -1930,12 +1939,11 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
 
               {/* Whether the edge's light and the mark's glitch move. */}
               <div>
-                <h3 className="text-sm font-semibold text-foreground mb-1">Motion</h3>
-                <p className="text-[11px] text-muted-foreground mb-3">
+                <SectionTitle title="Motion" description={<>
                   Whether the light round the edge and the logo's glitch move. Follow system keeps
                   them still while the OS asks for less motion — Reduce motion on macOS, "Animation
                   effects" turned off on Windows.
-                </p>
+                </>} />
                 <Segmented
                   label="Motion"
                   data-vim-item="appearance:motion"
@@ -1954,12 +1962,6 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
           {activeTab === 'passwords' && (
             <div className="space-y-7">
               <div>
-                <h3 className="text-sm font-semibold text-foreground mb-1">Password manager</h3>
-                <p className="text-[11px] text-muted-foreground mb-4 leading-relaxed">
-                  Fill website sign-ins and offer to save changes. Passwords are encrypted with
-                  Windows DPAPI or macOS Keychain and stay on this device.
-                </p>
-
                 <div className="divide-y divide-border border-y border-border">
                   <label className="flex items-center justify-between gap-4 py-3 cursor-pointer">
                     <span>
@@ -2000,8 +2002,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
               <div>
                 <div className="flex items-end justify-between gap-4 mb-3">
                   <div>
-                    <h3 className="text-sm font-semibold text-foreground mb-1">Saved passwords</h3>
-                    <p className="text-[11px] text-muted-foreground">Each browser profile has its own password vault. Open an entry to see or copy its password.</p>
+                    <SectionTitle title="Saved passwords" description="Each browser profile has its own password vault. Open an entry to see or copy its password." />
                   </div>
                   <VimSelect
                     label="Profile"
@@ -2066,7 +2067,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                   <div className="mb-3 rounded-md border border-input bg-secondary/40 p-3">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="text-xs font-semibold text-foreground">Move Edge-protected passwords</p>
+                        <SectionTitle level={2} flush title="Move Edge-protected passwords" />
                         <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
                           Edge's app-bound encryption only lets Edge unlock these passwords. Export each profile below, then import each CSV into {profileNameForPartition(passwordPartition)}. Exported CSV files contain plaintext passwords.
                         </p>
@@ -2159,9 +2160,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                 {passwordEditor && (
                   <div className="mb-4 border-y border-border py-4">
                     <div className="flex items-center justify-between mb-3">
-                      <p className="text-xs font-semibold text-foreground">
-                        {passwordEditor.id ? 'Edit password entry' : 'Add password entry'}
-                      </p>
+                      <SectionTitle level={2} flush title={passwordEditor.id ? 'Edit password entry' : 'Add password entry'} />
                       <IconButton size={24}
                         data-vim-item="pw:editor-close"
                         onClick={() => setPasswordEditor(null)}
@@ -2424,13 +2423,12 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
 
               {passkeysSupported && (
                 <div>
-                  <h3 className="text-sm font-semibold text-foreground mb-1">Passkeys</h3>
-                  <p className="text-[11px] text-muted-foreground mb-3 leading-relaxed">
+                  <SectionTitle title="Passkeys" description={<>
                     Saved when a website offers to create a passkey. Signing in with one asks for Touch ID.
                     They stay on this Mac and aren&apos;t included in Cloud Sync. For a passkey from iCloud Keychain
                     (Safari, the Passwords app), choose Use iPhone when signing in, or sign in to a site with no
                     passkey here: Vimperium shows a QR code to scan with your iPhone.
-                  </p>
+                  </>} />
                   {passkeys.length === 0 ? (
                     <div className="py-8 text-center border-y border-border">
                       <FingerprintPattern size={21} className="mx-auto mb-2 text-muted-foreground" />
@@ -2473,13 +2471,6 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
           {activeTab === 'sync' && (
             <div className="space-y-8">
               <div>
-                <h3 className="text-sm font-semibold text-foreground mb-1">Cloud Sync</h3>
-                <p className="text-[11px] text-muted-foreground mb-3">
-                  Sync your data across devices through a folder that OneDrive, Dropbox, Google
-                  Drive or iCloud Drive already keeps in the cloud. No account needed — Vimperium just
-                  reads and writes JSON files directly in the folder you pick.
-                </p>
-
                 {/* Enable toggle */}
                 <label className="flex items-center gap-2.5 mb-4 cursor-pointer">
                   <Switch
@@ -2521,10 +2512,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
 
               {/* What to sync */}
               <div>
-                <h3 className="text-sm font-semibold text-foreground mb-1">What to sync</h3>
-                <p className="text-[11px] text-muted-foreground mb-3">
-                  Window positions, logins / cookies, and offline saved pages stay on each device.
-                </p>
+                <SectionTitle title="What to sync" description="Window positions, logins / cookies, and offline saved pages stay on each device." />
                 <div className="space-y-2">
                   {SYNC_CATEGORY_LABELS.map(({ id, label, hint }) => (
                     <label key={id} className="flex items-start gap-2.5 cursor-pointer">
@@ -2562,11 +2550,10 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
 
               {/* Restart setup */}
               <div className="pt-4 border-t border-border">
-                <h3 className="text-sm font-semibold text-foreground mb-1">Setup</h3>
-                <p className="text-[11px] text-muted-foreground mb-3">
+                <SectionTitle title="Setup" description={<>
                   Restart setup to choose a fresh sync folder. Local data and files already in the
                   sync folder are left untouched.
-                </p>
+                </>} />
                 <Button variant="secondary"
                   data-vim-item="sync:restart"
                   onClick={() => setSyncRestartConfirmOpen(true)}
@@ -2589,7 +2576,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
             <div className="space-y-6">
               {/* Default page URL */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Default New Tab URL</label>
+                <SectionTitle title="Default New Tab URL" />
                 <TextField
                   data-vim-item="general:default-url"
                   type="text"
@@ -2604,7 +2591,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
 
               {/* New-tab focus target */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Focus on New Tab</label>
+                <SectionTitle title="Focus on New Tab" />
                 <Segmented
                   label="Focus on New Tab"
                   data-vim-item="general:new-tab-focus"
@@ -2621,7 +2608,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">A Page Focusing Its Own Field</label>
+                <SectionTitle title="A Page Focusing Its Own Field" />
                 <Segmented
                   label="A Page Focusing Its Own Field"
                   data-vim-item="general:page-focus"
@@ -2640,7 +2627,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
               {/* The address editor (E): the mode it opens in. The address
                   bar (e, a click, a new tab) is the address in place. */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Address Editor Opens In</label>
+                <SectionTitle title="Address Editor Opens In" />
                 <div className="flex flex-col gap-2">
                   {([
                     ['The address editor (E)', 'general:url-editor-edit', urlEditorEditMode, setUrlEditorEditMode],
@@ -2667,7 +2654,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
 
               {/* Search engine */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Default Search Engine</label>
+                <SectionTitle title="Default Search Engine" />
                 <Segmented
                   label="Default Search Engine"
                   data-vim-item="general:search-engine"
@@ -2739,7 +2726,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
 
               {/* Default browser */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Default browser</label>
+                <SectionTitle title="Default browser" />
                 <Panel className="flex items-start gap-4 px-4 py-3">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
@@ -2808,13 +2795,12 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
               {otherBrowserSupported && (
                 <div className="flex items-start gap-4">
                   <div className="flex-1 min-w-0">
-                    <label className="block text-sm font-medium text-foreground">Open links in another browser</label>
-                    <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                    <SectionTitle title="Open links in another browser" description={<>
                       When a link from another app asks where to open, {passOnKeys} sends it to this browser instead
                       {otherBrowserOnMac
                         ? ' — say, for a site whose passkey is in iCloud Keychain, to sign in with Touch ID there.'
                         : ' — say, for a site that works better there.'}
-                    </p>
+                    </>} />
                   </div>
                   <VimSelect
                     label="Open links in another browser"
@@ -2837,10 +2823,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                   kind extensions (Claude's "needs your attention") send. */}
               <div className="flex items-start gap-4">
                 <div className="flex-1 min-w-0">
-                  <label className="block text-sm font-medium text-foreground">Notifications</label>
-                  <p className="text-[11px] text-muted-foreground mt-1">
-                    Send a test notification — the same kind extensions such as Claude use to ask for your attention.
-                  </p>
+                  <SectionTitle title="Notifications" description="Send a test notification — the same kind extensions such as Claude use to ask for your attention." />
                   {testNotice && (
                     <p className={`text-[11px] mt-1 ${testNotice.ok ? 'text-foreground' : 'text-destructive'}`}>
                       {testNotice.text}
@@ -2859,10 +2842,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
 
               {/* Danger Zone */}
               <div className="pt-4 mt-2 border-t border-destructive/30">
-                <div className="flex items-center gap-2 mb-3">
-                  <AlertTriangle size={14} className="text-destructive" />
-                  <h3 className="text-sm font-semibold text-destructive">Danger Zone</h3>
-                </div>
+                <SectionTitle danger title="Danger Zone" />
                 <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 flex items-start gap-4">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground">Wipe all data</p>
@@ -2891,10 +2871,9 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
             <div className="space-y-6">
               {/* Search Everything: what its filter goes by. */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Search Everything Goes By</label>
-                <p className="text-[11px] text-muted-foreground mb-2">
+                <SectionTitle title="Search Everything Goes By" description={<>
                   What the filter of Search Everything looks through, for each kind of thing, in the order it goes by them: a match in an earlier one comes up higher. <span className="font-mono">&gt;</span> first in the filter looks through all of it whatever is picked here; <span className="font-mono">=</span> first finds only what&apos;s typed as it is, not its letters spread about.
-                </p>
+                </>} />
                 <div className="flex flex-col gap-2">
                   {SEARCH_FIELD_KINDS.map(({ kind, label }) => (
                     <div key={kind} className="flex items-center gap-3">
@@ -2943,7 +2922,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
             <div className="space-y-6">
               {/* Proxy */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Proxy</label>
+                <SectionTitle title="Proxy" />
                 <Segmented
                   label="Proxy"
                   data-vim-item="network:proxy"
@@ -2991,7 +2970,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
 
               {/* DNS-over-HTTPS */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">DNS-over-HTTPS</label>
+                <SectionTitle title="DNS-over-HTTPS" />
                 <VimSelect
                   label="DNS-over-HTTPS"
                   vimItem="network:doh"
@@ -3025,7 +3004,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
             <div className="space-y-6">
               {/* Integrated Windows Authentication (SSO) */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Integrated Windows Authentication (SSO)</label>
+                <SectionTitle title="Integrated Windows Authentication (SSO)" />
                 <Textarea
                   mono
                   data-vim-item="enterprise:sso"
@@ -3052,12 +3031,11 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
 
               {/* Saved sign-ins (remembered HTTP-auth credentials) */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Saved sign-ins</label>
-                <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
+                <SectionTitle title="Saved sign-ins" description={<>
                   Corporate credentials you asked Vimperium to remember from the sign-in prompt. Vimperium answers
                   that site&apos;s password challenge automatically so you don&apos;t retype it on every launch. Passwords
                   are encrypted on this device and never leave it — they are not cloud-synced.
-                </p>
+                </>} />
                 {savedCredentials.length === 0 ? (
                   <p className="text-[11px] text-muted-foreground italic">
                     No saved sign-ins yet. When a site prompts you to sign in, tick “Remember on this device”.
@@ -3100,17 +3078,13 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
           {activeTab === 'extensions' && (
             <div className="space-y-5">
               <div>
-                <h3 className="text-sm font-semibold text-foreground mb-1 flex items-center gap-2">
-                  <Puzzle size={14} />
-                  Chrome Web Store extensions
-                </h3>
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                <SectionTitle title="Chrome Web Store extensions" description={<>
                   Paste a Chrome Web Store URL or a 32-character extension ID.
                   Vimperium downloads the .crx, unpacks it locally, and loads it
                   into every profile. Manifest V3 extensions work best; some
                   Manifest V2 features (notably blocking webRequest) are not
                   supported by Electron.
-                </p>
+                </>} />
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
@@ -3233,7 +3207,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                                   />
                                   {commands.length > 0 && (
                                     <div>
-                                      <GroupTitle className="mb-1">Keyboard shortcuts</GroupTitle>
+                                      <SectionTitle level={2} title="Keyboard shortcuts" />
                                       <div className="flex flex-col gap-1">
                                         {commands.map((c) => {
                                           const recording =
@@ -3333,8 +3307,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
               {/* Vim is Vimperium's only mode: no switch, and no regular
                   shortcuts to record — the keymap below is all the keys. */}
               <div>
-                <h3 className="text-lg font-semibold text-foreground">Vim Mode</h3>
-                <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
+                <SectionTitle title="Vim Mode" description={<>
                   Vimperium runs on two modes, shown in the address bar. COMMAND: plain keys drive the
                   page and the browser, the way Vimium does — scrolling, history, tabs, app commands;
                   keys not bound reach the page. INSERT: keys go to the page or the field you're typing in.
@@ -3345,7 +3318,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                   up, a row's label shows it, Ctrl+H/L fold and unfold, Tab shows or hides the Sidebar.
                   ? lists every key. The system's own shortcuts — copy, paste, undo, quit — work as
                   everywhere else.
-                </p>
+                </>} />
               </div>
 
               <div className="mt-4 flex items-start justify-between gap-4">
@@ -3411,12 +3384,11 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
             <div className="space-y-8 max-w-2xl">
               {/* Default behavior per capability */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Default behavior</label>
-                <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
+                <SectionTitle title="Default behavior" description={<>
                   What happens when a site asks to use a capability and you haven&apos;t
                   already chosen for that site. &ldquo;Ask first&rdquo; shows a prompt; your
                   per-site choices are remembered under Exceptions below.
-                </p>
+                </>} />
                 <Panel>
                   {PERMISSION_KINDS.map((kind) => (
                     <PanelRow key={kind} title={PERMISSION_LABEL[kind]}>
@@ -3439,7 +3411,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
               {/* Per-site exceptions */}
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="block text-sm font-medium text-foreground">Exceptions</label>
+                  <SectionTitle title="Exceptions" />
                   {permissionGrants.length > 0 && (
                     <Button variant="quiet-danger" size="sm"
                       data-vim-item="perm:clear-all"
@@ -3549,9 +3521,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                 <div className="flex items-center gap-3 mb-3">
                   <BrandMark size={48} glitchOnHover />
                   <div>
-                    <h2 className="text-sm font-semibold text-foreground mb-1">
-                      {appPaths?.appName || 'Vimperium'}
-                    </h2>
+                    <SectionTitle level={2} flush title={appPaths?.appName || 'Vimperium'} />
                     <p className="text-xs text-muted-foreground">
                       Workspace-based browser with profiles and tab groups.
                     </p>
@@ -3607,18 +3577,17 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
               </section>
               {/* How much is open: here, in this profile, everywhere. */}
               <section>
-                <h3 className="text-sm font-semibold text-foreground mb-3">What's Open</h3>
+                <SectionTitle title="What's Open" />
                 <WorkspaceStatsCard />
               </section>
 
               {/* Updates — same card pattern as the identity block; the
                   status line on the left, action button on the right. */}
               <section>
-                <h2 className="text-sm font-semibold text-foreground mb-1">Updates</h2>
-                <p className="text-xs text-muted-foreground mb-3">
+                <SectionTitle title="Updates" description={<>
                   Vimperium checks GitHub for new releases on launch and every few hours.
                   The button below triggers a manual check.
-                </p>
+                </>} />
                 <Panel className="flex items-start gap-4 px-4 py-3">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
@@ -3735,8 +3704,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                   row a project: a row opens its site in a tab. The cards pad
                   rather than clip, so the cursor's ring round a row shows. */}
               <section>
-                <h2 className="text-sm font-semibold text-foreground mb-1">Open source</h2>
-                <p className="text-xs text-muted-foreground mb-3">
+                <SectionTitle title="Open source" description={<>
                   Vimperium is built on these projects — thanks to everyone who makes them. Its keys
                   come from{' '}
                   {INSPIRATIONS.map((link, i) => (
@@ -3748,11 +3716,11 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                     </React.Fragment>
                   ))}
                   .
-                </p>
+                </>} />
                 <div className="flex flex-col gap-4">
                   {CREDIT_GROUPS.map((group) => (
                     <div key={group.id}>
-                      <GroupTitle className="mb-1.5">{group.label}</GroupTitle>
+                      <SectionTitle level={2} title={group.label} />
                       <Panel className="flex flex-col p-1">
                         {group.credits.map((credit) => (
                           <button

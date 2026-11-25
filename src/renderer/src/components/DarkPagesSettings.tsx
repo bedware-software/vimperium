@@ -10,7 +10,7 @@ import { darkPagesActions, useDarkPages } from '../lib/dark-pages'
 import { actionHint, type HintSettings } from '../lib/shortcut-hints'
 import { ComfortSliders, DarkPagePreview, DarkPagesModeSwitch, acceleratorCaps } from './DarkPagesControls'
 import { darkPagesGloballyOn, normalizeSiteKey, type DarkPagesRule, type DarkPagesStyle } from '../../../shared/dark-pages'
-import { Badge, Button, ChoiceCards, Kbd, Panel, PanelRow, InputField as TextField, IconButton, Segmented } from '@bedware/ui'
+import { Badge, Button, ChoiceCards, Kbd, Panel, PanelRow, InputField as TextField, IconButton, Segmented, SectionTitle } from '@bedware/ui'
 
 const STYLES: { id: DarkPagesStyle; title: string; icon: typeof Sparkles; body: string }[] = [
   {
@@ -96,23 +96,12 @@ export function DarkPagesSettings({ hintSettings }: { hintSettings: HintSettings
   return (
     <div className="space-y-8">
       <div>
-        <div className="mb-1 flex items-center gap-2">
-          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/15 text-ink">
-            <Moon size={13} fill="currentColor" />
-          </span>
-          <h3 className="text-sm font-semibold text-foreground">Dark pages</h3>
-        </div>
-        <p className="mb-3 text-[11px] text-muted-foreground">
-          Vimperium's own dark mode for web pages — done by Chromium as the page paints, so it's instant on every
-          page, its frames included, and never slows a page down. Changes apply right away.
-        </p>
         <DarkPagesModeSwitch vimItem="dark:mode" />
         <p className="mt-2 text-[11px] text-muted-foreground">{status}</p>
       </div>
 
       <div>
-        <h3 className="mb-1 text-sm font-semibold text-foreground">Style</h3>
-        <p className="mb-3 text-[11px] text-muted-foreground">How a page turns dark.</p>
+        <SectionTitle title="Style" description="How a page turns dark." />
         <ChoiceCards
           label="Style"
           data-vim-item="dark:style"
@@ -128,10 +117,7 @@ export function DarkPagesSettings({ hintSettings }: { hintSettings: HintSettings
       </div>
 
       <div>
-        <h3 className="mb-1 text-sm font-semibold text-foreground">Comfort</h3>
-        <p className="mb-3 text-[11px] text-muted-foreground">
-          Tone dark pages down — brightness, contrast, a warm tint for the night. Double-click a slider to put it back.
-        </p>
+        <SectionTitle title="Comfort" description="Tone dark pages down — brightness, contrast, a warm tint for the night. Double-click a slider to put it back." />
         <div className="flex items-start gap-5">
           <DarkPagePreview className="w-[248px] shrink-0" />
           <div className="min-w-0 flex-1 pt-1">
@@ -142,7 +128,7 @@ export function DarkPagesSettings({ hintSettings }: { hintSettings: HintSettings
 
       <div>
         <div className="mb-1 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-foreground">Sites</h3>
+          <SectionTitle flush title="Sites" />
           {sites.length > 0 && (
             <Button
               variant="quiet-danger"
@@ -205,7 +191,7 @@ export function DarkPagesSettings({ hintSettings }: { hintSettings: HintSettings
       </div>
 
       <div>
-        <h3 className="mb-2 text-sm font-semibold text-foreground">Keys</h3>
+        <SectionTitle title="Keys" />
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
           <span className="flex items-center gap-2">On / off everywhere <Caps keys={keysFor('dark-pages', 'Alt+Shift+D')} /></span>
           <span className="flex items-center gap-2">This site <Caps keys={keysFor('dark-pages-site', 'Alt+Shift+A')} /></span>
