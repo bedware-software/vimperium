@@ -1086,7 +1086,7 @@ function BangRow({
         selected ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/40'
       }`}
     >
-      {selected && <span className="pointer-events-none absolute bottom-2 left-1 top-2 w-[3px] bg-primary" />}
+      {selected && <span className="pointer-events-none absolute bottom-2 left-1 top-2 w-[3px] bg-ink" />}
       <span
         className={`w-24 shrink-0 truncate rounded-md px-2 py-1 font-mono text-[13px] font-semibold ${
           bang.enabled ? 'bg-primary/10 text-ink' : 'bg-secondary text-muted-foreground line-through'

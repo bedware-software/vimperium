@@ -154,7 +154,7 @@ export function SidePanel({ suppressed }: { suppressed: boolean }) {
   return (
     <div style={{ width }} className="flex shrink-0 overflow-hidden border-l border-border bg-toolbar">
       <div
-        className="w-1.5 shrink-0 cursor-col-resize transition-colors hover:bg-primary/30 active:bg-primary/50"
+        className="w-1.5 shrink-0 cursor-col-resize transition-colors hover:bg-ink/30 active:bg-ink/50"
         onMouseDown={onResizeStart}
       />
       <div className="flex min-w-0 flex-1 flex-col">

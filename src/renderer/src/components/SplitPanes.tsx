@@ -97,7 +97,7 @@ export function SplitFrames({ split, ratio, focusedTabId, dragging, onDividerMou
     <>
       <div className={frame(split.first)} style={firstStyle} />
       <div
-        className={`absolute z-10 bg-border hover:bg-primary/50 ${dragging ? 'bg-primary/60' : ''} ${right ? 'cursor-col-resize' : 'cursor-row-resize'}`}
+        className={`absolute z-10 bg-border hover:bg-ink/50 ${dragging ? 'bg-ink/60' : ''} ${right ? 'cursor-col-resize' : 'cursor-row-resize'}`}
         style={dividerStyle}
         onMouseDown={onDividerMouseDown}
         title="Drag to resize the panes"

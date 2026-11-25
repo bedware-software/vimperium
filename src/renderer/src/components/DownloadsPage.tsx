@@ -897,7 +897,7 @@ function DownloadRow({
         selected ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/40'
       }`}
     >
-      {selected && <span className="pointer-events-none absolute bottom-2 left-1 top-2 w-[3px] bg-primary" />}
+      {selected && <span className="pointer-events-none absolute bottom-2 left-1 top-2 w-[3px] bg-ink" />}
       <FileTypeIcon entry={entry} osIcon={osIcon} />
 
       <div className="min-w-0 flex-1">
