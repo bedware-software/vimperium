@@ -1620,11 +1620,17 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
       if (!form.getSnapshot().overlayOpen) form.pickLabel(hinted)
       return
     }
+    if (command === 'help') {
+      setShowAllKeys((shown) => !shown)
+      return
+    }
+    // The keys' table is up: nothing moves under it (? or Esc closes it),
+    // as the package's useVimFormKeys has it.
+    if (showAllKeys) return
     switch (command) {
       case 'save': handleSave(); return
       case 'discard': handleCancel(); return
       case 'close': requestClose(); return
-      case 'help': setShowAllKeys((shown) => !shown); return
       case 'filter': openFilter(); return
       case 'section-next':
       case 'section-prev':
