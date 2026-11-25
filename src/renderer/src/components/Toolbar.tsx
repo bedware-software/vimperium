@@ -1757,7 +1757,8 @@ export function Toolbar({ windowWorkspaceId, sidebarVisible, pageFullscreen, vim
                 label="Site information"
                 title={certPopupOpen ? '' : certInfo || 'Site information'}
                 pressed={certPopupOpen ? true : undefined}
-                className="relative shrink-0"
+                // url-lock: framed in the light theme (globals.css).
+                className="url-lock relative shrink-0"
                 onClick={() => setCertPopupOpen((v) => !v)}
               >
                 {securityHint}

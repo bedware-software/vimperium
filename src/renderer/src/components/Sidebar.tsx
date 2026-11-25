@@ -1213,6 +1213,7 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
         data-drop-tab-id={tab.id}
         data-drop-container={containerAttr}
         data-drop-index={index}
+        {...(active && !selected ? { 'data-row-current': '' } : {})}
         {...(containerId === null ? { 'data-sidebar-block': index } : {})}
         className={`relative flex items-center gap-1 px-1 py-1 cursor-pointer group/tab transition-colors ${
           selected ? 'bg-primary/20 text-foreground'
@@ -1333,6 +1334,7 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
         data-drop-group-header={group.id}
         data-sidebar-index={sidebarIdx}
         {...(expanded ? { 'data-group-expanded': '' } : {})}
+        {...(!isDraggingTab && !selected && (containsActive || parked) ? { 'data-row-current': '' } : {})}
         className={`relative flex items-center gap-1 px-1 py-1 cursor-pointer group ${
           isBeingDragged ? 'opacity-30' : ''
         } ${

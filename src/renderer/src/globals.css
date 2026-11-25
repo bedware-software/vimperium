@@ -201,6 +201,22 @@ html[data-page-fullscreen] body {
   border-left: var(--row-inset) solid transparent;
   background-clip: padding-box;
 }
+/* The row shown (data-row-current: the active tab, the group parked on or
+ * holding it): its fill runs under the label column to the Sidebar's edge,
+ * the accent's bar at that edge, as a selected row of the Command Palette.
+ * The column's rule, which the fill would cover, is drawn again over it. */
+[data-sidebar-list] [data-sidebar-row][data-row-current] {
+  background-clip: border-box;
+  background-origin: border-box;
+  background-image: linear-gradient(var(--bw-accent), var(--bw-accent)), linear-gradient(var(--color-border), var(--color-border));
+  background-size: 3px 100%, 1px 100%;
+  background-position: 0 0, calc(var(--gutter) - 1px) 0;
+  background-repeat: no-repeat;
+}
+/* Its cap, on that fill. */
+[data-row-current] > [data-sidebar-hint] > span {
+  border-color: var(--bw-accent);
+}
 /* The row's cap (or, on New Tab, its key while the keys' help is open). */
 [data-sidebar-hint] {
   position: absolute;
@@ -718,6 +734,17 @@ html[data-page-fullscreen] body {
   color: var(--bw-on-plate);
   box-shadow: inset 0 -3px 0 var(--bw-plate-edge);
 }
+/* A bare icon button under the pointer there: the plate's outline alone —
+ * its yellow fill is the bar's own. */
+[data-theme-family="light"] .url-line:has(> .mode-line[data-on]) .bw-iconbtn--bare:hover { color: var(--bw-on-plate); }
+[data-theme-family="light"] .url-line:has(> .mode-line[data-on]) .bw-iconbtn--bare:hover::before { background: var(--bw-on-plate); }
+[data-theme-family="light"] .url-line:has(> .mode-line[data-on]) .bw-iconbtn--bare:hover::after { background: var(--bw-plate); box-shadow: none; }
+/* Light: the padlock is framed in both modes — the yellow bar starts flush
+ * at it, and the frame is that end's edge. ::after is the bar's own colour
+ * inside the frame; under the pointer in COMMAND the package's plate shows. */
+[data-theme-family="light"] .url-line .url-lock::before { background: var(--bw-accent); }
+[data-theme-family="light"] .url-line .url-lock:not(:hover)::after { background: var(--color-toolbar); box-shadow: none; }
+[data-theme-family="light"] .url-line:has(> .mode-line[data-on]) .url-lock:not(:hover)::after { background: var(--bw-plate); }
 [data-theme-family="light"] .url-line:has(> .mode-line[data-on])::after,
 [data-theme-family="light"] .url-line > .mode-line { display: none; }
 [data-theme-family="light"] .url-line:has(> .mode-line[data-on]) :is(input, textarea) {
