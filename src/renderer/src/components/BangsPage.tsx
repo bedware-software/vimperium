@@ -685,8 +685,9 @@ export function BangsPage() {
             >
               Add
             </Button>
+            {/* Framed: the row's last button, its edge over the sort track's. */}
             <Button
-              variant="ghost"
+              variant="secondary"
               icon={<RotateCcw size={14} />}
               keys={keyOf('reset')}
               onClick={reset}

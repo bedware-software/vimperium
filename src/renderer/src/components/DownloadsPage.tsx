@@ -714,8 +714,9 @@ export function DownloadsPage() {
             >
               Open folder
             </Button>
+            {/* Framed: the row's last button, its edge over the sort track's. */}
             <Button
-              variant="ghost"
+              variant="secondary"
               icon={<Trash2 size={14} />}
               keys={keyOf('clear')}
               onClick={clearFinished}
