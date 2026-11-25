@@ -147,6 +147,30 @@ function pageBackgroundHex(): string | null {
   }
 }
 
+const sheetSources = new Map<string, string | null>()
+
+/** A stylesheet's own text, read once (synchronously: the popup must be
+ *  styled before it shows). Not its cssRules' cssText: Chromium writes a
+ *  shorthand holding a var() with one of its longhands set after it
+ *  (`font: … var(--mono); font-variant-numeric: …`) as empty longhands, and
+ *  the rule loses its font in the popup. */
+function sheetSource(href: string): string | null {
+  const known = sheetSources.get(href)
+  if (known !== undefined) return known
+  let text: string | null = null
+  try {
+    const xhr = new XMLHttpRequest()
+    xhr.open('GET', href, false)
+    xhr.send()
+    // A file:// answer has status 0 or 200.
+    if ((xhr.status === 200 || xhr.status === 0) && xhr.responseText) text = xhr.responseText
+  } catch (err) {
+    log.warn('detached-window: stylesheet text unreadable, copying its rules', { href, err: String(err) })
+  }
+  sheetSources.set(href, text)
+  return text
+}
+
 /** Copy the app's styles into the popup as inline text. Cloning the
  *  <link rel="stylesheet"> tags made the popup fetch the stylesheet again,
  *  asynchronously: the popup was revealed before it arrived and showed
@@ -158,8 +182,8 @@ function copyStylesToPopup(popupDoc: Document): void {
     if (sheet) {
       try {
         const style = popupDoc.createElement('style')
-        style.textContent = Array.from(sheet.cssRules, (rule) => rule.cssText)
-          .join('\n')
+        const source = sheet.href ? sheetSource(sheet.href) : null
+        style.textContent = (source ?? Array.from(sheet.cssRules, (rule) => rule.cssText).join('\n'))
           // Relative url()s resolved against the stylesheet; keep them so.
           .replace(/url\((['"]?)(?![a-z][a-z0-9+.-]*:|\/|#)([^'")]+)\1\)/gi, (_m, q: string, path: string) =>
             `url(${q}${new URL(path, sheet.href ?? document.baseURI).href}${q})`,
