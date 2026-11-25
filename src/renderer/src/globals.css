@@ -15,7 +15,13 @@
  * white can't be seen. Yellow itself (primary) is for fills only. */
 @theme inline {
   --color-ink: var(--bw-accent);
+  --color-selected: var(--row-selected);
 }
+/* bg-selected: the row a list's cursor is on, drawn by the app's own classes
+ * (the Sidebar, the list pages, the pickers). Light: the design system's pale
+ * yellow; dark: the fill these rows always had, a step under the system's. */
+:root { --row-selected: var(--color-accent); }
+[data-theme-family="light"] { --row-selected: var(--bw-selected-bg); }
 
 /* Suppress Chromium's default :focus-visible ring everywhere. The default
  * outline shows up most visibly on right-click context menus and

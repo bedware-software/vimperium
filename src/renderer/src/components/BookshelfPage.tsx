@@ -1049,7 +1049,7 @@ export function BookshelfPage({ profileId, vimKeymap, vimMode, vimPending, hints
   const isDropAtEnd = (container: string): boolean =>
     drop?.type === 'reading' && !drop.into && drop.container === container && drop.beforeId === null
 
-  const cursorClass = 'bg-accent text-accent-foreground'
+  const cursorClass = 'bg-selected text-accent-foreground'
 
   const renderRow = (r: Reading, container: string) => {
     const row: ShelfRow = { kind: 'reading', id: r.id, reading: r, container }

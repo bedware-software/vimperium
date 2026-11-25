@@ -303,7 +303,7 @@ export function GroupPage({ group, vimMode, vimPending, hintsOn }: Props) {
                   className={cn(
                     LIST_ROW_SCROLL,
                     'flex min-w-0 cursor-pointer items-center gap-2 rounded-lg px-2 py-2',
-                    idx === selected ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50',
+                    idx === selected ? 'bg-selected text-accent-foreground' : 'hover:bg-accent/50',
                   )}
                 >
                   {/* Its label in COMMAND, its number in INSERT: the column

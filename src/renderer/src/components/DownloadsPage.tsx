@@ -894,7 +894,7 @@ function DownloadRow({
       onDoubleClick={onPrimary}
       onContextMenu={(e) => { e.preventDefault(); onContextMenu({ x: e.clientX, y: e.clientY }) }}
       className={`group relative flex items-center gap-3 rounded-lg py-2.5 pl-4 pr-2 transition-colors ${
-        selected ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/40'
+        selected ? 'bg-selected text-accent-foreground' : 'hover:bg-accent/40'
       }`}
     >
       {selected && <span className="pointer-events-none absolute bottom-2 left-1 top-2 w-[3px] bg-ink" />}

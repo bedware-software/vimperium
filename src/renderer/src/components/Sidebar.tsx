@@ -1216,7 +1216,7 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
         {...(containerId === null ? { 'data-sidebar-block': index } : {})}
         className={`relative flex items-center gap-1 px-1 py-1 cursor-pointer group/tab transition-colors ${
           selected ? 'bg-primary/20 text-foreground'
-          : active ? 'bg-accent text-accent-foreground'
+          : active ? 'bg-selected text-accent-foreground'
           : splitVisible ? 'bg-accent/60 text-foreground'
           : 'hover:bg-accent/50 text-muted-foreground hover:text-foreground'
         } ${isBeingDragged ? 'opacity-30' : ''}`}
@@ -1347,7 +1347,7 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
             : selected
               ? 'bg-primary/20'
               : containsActive || parked
-                ? 'bg-accent text-accent-foreground'
+                ? 'bg-selected text-accent-foreground'
                 : 'hover:bg-accent'
         }`}
         onMouseDown={(e) => {

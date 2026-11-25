@@ -210,7 +210,7 @@ export function SplitPicker({ split, paneRef, vimKeymap, focusTick }: Props) {
                 data-index={idx}
                 onClick={() => pick(row)}
                 className={`relative flex items-center gap-2 pl-2 pr-4 py-2 cursor-pointer ${
-                  idx === selected ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50'
+                  idx === selected ? 'bg-selected text-accent-foreground' : 'hover:bg-accent/50'
                 } ${isNew ? 'border-t border-border' : ''}`}
               >
                 <RowCap mode={vim.mode} label={hints.labels[idx]} pending={vim.pending} index={idx} />

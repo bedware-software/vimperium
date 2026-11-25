@@ -431,7 +431,7 @@ export function PickerDialog({
                       data-group-container={item.color ? '' : undefined}
                       style={item.color ? { ['--gc' as string]: item.color } : undefined}
                       className={`relative flex items-center gap-2 pl-2 pr-4 py-1.5 cursor-pointer text-sm ${
-                        isSelected ? 'bg-accent text-accent-foreground' : 'text-foreground hover:bg-accent/50'
+                        isSelected ? 'bg-selected text-accent-foreground' : 'text-foreground hover:bg-accent/50'
                       }`}
                       onClick={(e) => onConfirm(item.id, { background: e.shiftKey })}
                       onMouseEnter={() => setSelectedIndex(idx)}

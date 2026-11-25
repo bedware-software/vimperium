@@ -656,7 +656,7 @@ export function PlacePage({ page, tabId, windowWorkspaceId, vimMode, vimPending,
               onClick={(e) => { void place(row, page === 'move' && e.shiftKey) }}
               onMouseMove={() => { if (selected !== idx) setSelected(idx) }}
               className={`relative flex min-w-0 cursor-pointer items-center gap-2 rounded-lg px-2 py-2 ${LIST_ROW_SCROLL} ${
-                idx === selected ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50'
+                idx === selected ? 'bg-selected text-accent-foreground' : 'hover:bg-accent/50'
               }`}
             >
               <RowCap mode={vimMode} label={hintsOn ? hintLabels.get(`place:${row.id}`) : undefined} pending={vimPending} index={idx} />

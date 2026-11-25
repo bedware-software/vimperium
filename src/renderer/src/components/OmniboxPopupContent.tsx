@@ -108,7 +108,7 @@ export function OmniboxPopupContent({
               })
             }}
             className={`group flex h-9 cursor-default items-center gap-3 px-3 text-sm ${
-              selected ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50'
+              selected ? 'bg-selected text-accent-foreground' : 'hover:bg-accent/50'
             }`}
           >
             <RowIcon row={row} />
