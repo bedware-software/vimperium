@@ -560,7 +560,7 @@ export function PlacePage({ page, tabId, windowWorkspaceId, vimMode, vimPending,
         columns={columns}
         title={(
           <>
-            <HeadIcon size={18} className="shrink-0 text-primary" />
+            <HeadIcon size={18} className="shrink-0 text-ink" />
             <h1 className="min-w-0 truncate text-lg font-semibold tracking-tight">{heading}</h1>
             {/* What's being placed. */}
             <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">{subject}</span>

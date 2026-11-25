@@ -91,7 +91,7 @@ export function SplitFrames({ split, ratio, focusedTabId, dragging, onDividerMou
     ? { left: secondStart, top: 0, bottom: 0, right: 0 }
     : { top: secondStart, left: 0, right: 0, bottom: 0 }
   const frame = (tabId: string | null): string =>
-    `absolute box-border border-2 ${tabId !== null && tabId === focusedTabId ? 'border-primary/70' : 'border-border'} ${dragging ? 'bg-muted/40' : ''}`
+    `absolute box-border border-2 ${tabId !== null && tabId === focusedTabId ? 'border-ink/70' : 'border-border'} ${dragging ? 'bg-muted/40' : ''}`
 
   return (
     <>

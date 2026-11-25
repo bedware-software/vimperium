@@ -665,7 +665,7 @@ export function SearchPage({ tabId, windowWorkspaceId, vimMode, vimPending, hint
         columns={columns}
         title={(
           <>
-            <Search size={18} className="shrink-0 text-primary" />
+            <Search size={18} className="shrink-0 text-ink" />
             <h1 className="min-w-0 truncate text-lg font-semibold tracking-tight">{pageTitle}</h1>
           </>
         )}

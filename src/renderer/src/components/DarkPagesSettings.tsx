@@ -97,7 +97,7 @@ export function DarkPagesSettings({ hintSettings }: { hintSettings: HintSettings
     <div className="space-y-8">
       <div>
         <div className="mb-1 flex items-center gap-2">
-          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/15 text-primary">
+          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/15 text-ink">
             <Moon size={13} fill="currentColor" />
           </span>
           <h3 className="text-sm font-semibold text-foreground">Dark pages</h3>

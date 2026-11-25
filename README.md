@@ -110,7 +110,7 @@ A built-in dark mode for web pages: Chromium darkens each page as it paints — 
 
 ### Themes
 
-Dark, light or the system's, each with a soft variant. Animations can be reduced. Colours, fonts and controls come from the bedware design system.
+Dark, light or the system's. The light theme is white, with yellow plates as in the dark one, and has a choice of backgrounds: White, Paper, Paper soft, Steel, Stone; the dark theme has a softer step. Typing in the address bar turns the whole bar yellow in the light theme, and lights a yellow line under it in the dark one. Animations can be reduced. Colours, fonts and controls come from the bedware design system.
 
 ### Passwords and passkeys
 

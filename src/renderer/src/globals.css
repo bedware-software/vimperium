@@ -9,6 +9,14 @@
 /* In the components layer, so a Tailwind utility on a bw-* element still wins. */
 @import "@bedware/ui/styles.css" layer(components);
 
+/* text-ink / border-ink / ring-ink: the design system's accent for text, an
+ * icon, a frame or a line thinner than 3px drawn straight on the background
+ * — yellow in the dark theme, black in the light one, where thin yellow on
+ * white can't be seen. Yellow itself (primary) is for fills only. */
+@theme inline {
+  --color-ink: var(--bw-accent);
+}
+
 /* Suppress Chromium's default :focus-visible ring everywhere. The default
  * outline shows up most visibly on right-click context menus and
  * dropdown rows, and the controls that need focus shown show it their own
@@ -103,6 +111,13 @@
   --vim-edge-insert-1: var(--bw-plate);
   --vim-edge-insert-2: var(--bw-plate-edge);
   --vim-edge-insert-3: var(--bw-plate-pressed);
+}
+/* Light: a ring is a thin line, so the accent's, not the plate's
+ * (data-theme-family: the theme on screen, App.tsx applyTheme). */
+[data-theme-family="light"] {
+  --vim-edge-insert-1: var(--bw-accent);
+  --vim-edge-insert-2: var(--bw-accent);
+  --vim-edge-insert-3: var(--bw-accent);
 }
 
 
@@ -354,8 +369,8 @@ html[data-page-fullscreen] body {
   background: var(--bw-surface-3);
 }
 .vim-mode[data-indicator="outline"][data-mode="command"] {
-  color: var(--bw-plate);
-  box-shadow: inset 0 0 0 1.5px var(--bw-plate);
+  color: var(--bw-accent);
+  box-shadow: inset 0 0 0 1.5px var(--bw-accent);
 }
 .vim-mode[data-mode="insert"] {
   color: var(--bw-on-plate);
@@ -674,6 +689,44 @@ html[data-page-fullscreen] body {
   translate: -100% 0;
   background: linear-gradient(100deg, transparent 15%, color-mix(in oklch, var(--vim-edge-insert-3) 35%, white) 50%, transparent 85%);
   animation: mode-edge-glint calc(var(--speed, 10s) * 0.6) ease-in-out infinite;
+}
+
+/* Light theme, INSERT: the whole address bar is the plate — yellow fill,
+ * what's in it the plate's text colour, a 3px edge under it; no line and no
+ * glint, which thin yellow on white wouldn't show. With the edge Off
+ * (ModeEdge draws no .mode-line) the bar stays plain, as in the dark theme.
+ * The variables re-colour everything inside: text, icons, the divider. */
+[data-theme-family="light"] .url-line:has(> .mode-line[data-on]) {
+  --bw-text: var(--bw-on-plate);
+  --bw-text-strong: var(--bw-on-plate);
+  --bw-text-muted: var(--bw-on-plate);
+  --bw-text-dim: var(--bw-on-plate);
+  --bw-accent: var(--bw-on-plate);
+  --bw-surface-3: color-mix(in srgb, var(--bw-on-plate) 12%, transparent);
+  --bw-surface-4: color-mix(in srgb, var(--bw-on-plate) 20%, transparent);
+  --color-foreground: var(--bw-on-plate);
+  --color-muted-foreground: var(--bw-on-plate);
+  --color-border: color-mix(in srgb, var(--bw-on-plate) 35%, transparent);
+  --color-ink: var(--bw-on-plate);
+  background: var(--bw-plate);
+  color: var(--bw-on-plate);
+  box-shadow: inset 0 -3px 0 var(--bw-plate-edge);
+}
+[data-theme-family="light"] .url-line:has(> .mode-line[data-on])::after,
+[data-theme-family="light"] .url-line > .mode-line { display: none; }
+[data-theme-family="light"] .url-line:has(> .mode-line[data-on]) :is(input, textarea) {
+  color: var(--bw-on-plate);
+  caret-color: var(--bw-on-plate);
+}
+/* Inverted, or the selection wouldn't show on the yellow. */
+[data-theme-family="light"] .url-line:has(> .mode-line[data-on]) :is(input, textarea)::selection {
+  background: var(--bw-on-plate);
+  color: var(--bw-plate);
+}
+[data-theme-family="light"] .url-line:has(> .mode-line[data-on]) .vim-mode {
+  background: transparent;
+  box-shadow: none;
+  color: var(--bw-on-plate);
 }
 
 /* Still while its window isn't the one in use (lib/vim-edge.ts), and

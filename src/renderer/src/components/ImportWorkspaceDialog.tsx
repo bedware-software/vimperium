@@ -160,7 +160,7 @@ export function ImportWorkspaceDialog({ open, candidates, onConfirm, onCancel }:
                   data-row-index={index}
                   className={`flex items-center gap-2 px-2 py-2 rounded-md cursor-pointer ${
                     isSelected ? 'bg-accent/40' : 'hover:bg-accent/30'
-                  } ${keys.shown && keys.cursor === index ? 'ring-1 ring-inset ring-primary' : ''}`}
+                  } ${keys.shown && keys.cursor === index ? 'ring-1 ring-inset ring-ink' : ''}`}
                   onMouseDown={() => keys.setCursor(index)}
                   onClick={() => toggleExpand(c.id)}
                 >

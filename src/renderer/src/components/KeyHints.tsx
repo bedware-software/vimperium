@@ -85,7 +85,7 @@ export function WhichKeyHints({ pending, entries }: { pending: string; entries: 
   return (
     <>
       <span className="flex items-center gap-1 whitespace-nowrap text-foreground">
-        <Kbd className="text-primary">{displayKeySequence(pending)}</Kbd>
+        <Kbd className="text-ink">{displayKeySequence(pending)}</Kbd>
         <span aria-hidden="true">→</span>
       </span>
       {entries.map((entry) => (

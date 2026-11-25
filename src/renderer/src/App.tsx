@@ -41,7 +41,7 @@ import { DOWNLOADS_FIND_EVENT, DOWNLOADS_RELOAD_EVENT } from './components/Downl
 import { BANGS_FIND_EVENT, BANGS_RELOAD_EVENT } from './components/BangsPage'
 import { BANGS_URL, BOOKSHELF_URL, DOWNLOADS_URL, internalPageOf, isInternalUrl } from './lib/internal-pages'
 import { runInternalPageCommand } from './lib/internal-page-commands'
-import { resolveVariantId, normalizeLightVariant, normalizeDarkVariant, normalizeDensity, applyDensity, type ThemeChoice, type Density } from './lib/theme'
+import { resolveFamily, resolveVariantId, normalizeLightVariant, normalizeDarkVariant, normalizeDensity, applyDensity, type ThemeChoice, type Density } from './lib/theme'
 import { applyVimIndicator, normalizeVimIndicator, type VimIndicator } from './lib/vim-indicator'
 import { applyVimEdge, normalizeVimEdge, type VimEdge } from './lib/vim-edge'
 import { applyMotion, normalizeMotion, type MotionChoice } from './lib/motion'
@@ -598,6 +598,9 @@ function applyTheme(theme: ThemeChoice, lightVariant: string, darkVariant: strin
   const variant = resolveVariantId(theme, lightVariant, darkVariant)
   document.documentElement.setAttribute('data-theme', theme)
   document.documentElement.setAttribute('data-theme-variant', variant)
+  // For the rules that differ by the theme on screen (globals.css): with
+  // 'system' data-theme doesn't say which one that is.
+  document.documentElement.setAttribute('data-theme-family', resolveFamily(theme))
   window.electronAPI.setTitleBarOverlay(getOverlayColors(theme))
   log.info('theme applied:', theme, variant)
 }

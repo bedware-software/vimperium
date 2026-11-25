@@ -44,7 +44,7 @@ export function BottomBar({ keymap, pending, hidden }: {
   return (
     <HintBar>
       <span className="flex min-w-0 items-center gap-1.5 text-foreground">
-        <Check size={13} className="shrink-0 text-primary" />
+        <Check size={13} className="shrink-0 text-ink" />
         <span className="shrink-0">{notice.text}</span>
         {notice.detail && <span className="min-w-0 truncate text-muted-foreground">{notice.detail}</span>}
       </span>

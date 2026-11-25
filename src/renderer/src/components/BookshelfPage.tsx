@@ -1163,7 +1163,7 @@ export function BookshelfPage({ profileId, vimKeymap, vimMode, vimPending, hints
           aria-selected={isCursor}
           aria-expanded={open}
           className={`group/gh relative flex cursor-pointer items-center gap-2 rounded-lg py-1.5 pl-3 pr-4 ${
-            isDropInto(g.id) ? 'bg-primary/30 ring-1 ring-inset ring-primary/40' : isCursor ? cursorClass : 'hover:bg-accent/50'
+            isDropInto(g.id) ? 'bg-primary/30 ring-1 ring-inset ring-ink/40' : isCursor ? cursorClass : 'hover:bg-accent/50'
           }`}
           onMouseDown={(e) => { if (editingGroupId !== g.id) startDrag({ type: 'group', id: g.id }, e) }}
           onMouseMove={() => hoverRow(g.id)}
@@ -1243,7 +1243,7 @@ export function BookshelfPage({ profileId, vimKeymap, vimMode, vimPending, hints
       {/* Header: title, counts and the shelf's actions. */}
       <div className="shrink-0 border-b border-border">
         <div className="mx-auto flex max-w-2xl items-center gap-3 px-6 py-4">
-          <BookOpen size={18} className="shrink-0 text-primary" />
+          <BookOpen size={18} className="shrink-0 text-ink" />
           <h1 className="text-lg font-semibold tracking-tight">Bookshelf</h1>
           {!isEmpty && (
             <span className="text-xs text-muted-foreground tabular-nums">
@@ -1314,7 +1314,7 @@ export function BookshelfPage({ profileId, vimKeymap, vimMode, vimPending, hints
                 <div className="flex items-center justify-between pr-3">
                   <GroupTitle>To Read{view.ungrouped.length > 0 ? ` · ${view.ungrouped.length}` : ''}</GroupTitle>
                   {selectedIds.size > 0 && (
-                    <span className="text-[11px] font-semibold tracking-wider text-primary">{selectedIds.size} selected · ⇧/⌃-click</span>
+                    <span className="text-[11px] font-semibold tracking-wider text-ink">{selectedIds.size} selected · ⇧/⌃-click</span>
                   )}
                 </div>
               )}
@@ -1322,7 +1322,7 @@ export function BookshelfPage({ profileId, vimKeymap, vimMode, vimPending, hints
               <div
                 // Once it's empty, the whole strip takes a drop back into To Read.
                 {...(view.ungrouped.length === 0 && !q ? { 'data-drop-into': UNGROUPED } : {})}
-                className={`rounded-lg transition-colors ${isDropInto(UNGROUPED) ? 'ring-1 ring-inset ring-primary/50 bg-primary/5' : ''}`}
+                className={`rounded-lg transition-colors ${isDropInto(UNGROUPED) ? 'ring-1 ring-inset ring-ink/50 bg-primary/5' : ''}`}
               >
                 {view.ungrouped.length === 0 && !q && (
                   <div className="px-3 py-2 text-xs text-muted-foreground/60">
@@ -1348,7 +1348,7 @@ export function BookshelfPage({ profileId, vimKeymap, vimMode, vimPending, hints
                     onClick={() => { setCursorId(ARCHIVE_ROW_ID); if (!q) setArchiveCollapsed((v) => !v) }}
                     className={`relative flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider ${
                       isDropInto(ARCHIVE_ROW_ID)
-                        ? 'bg-primary/30 ring-1 ring-inset ring-primary/40 text-foreground'
+                        ? 'bg-primary/30 ring-1 ring-inset ring-ink/40 text-foreground'
                         : archiveIsCursor ? cursorClass : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
                     }`}
                   >

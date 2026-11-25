@@ -36,7 +36,7 @@ function TabMarks({ audible, muted = false, onToggleMute, reloadSeconds, inGroup
 }) {
   if (!audible && !muted && !reloadSeconds) return null
   return (
-    <span className={`shrink-0 flex items-center gap-1 text-primary ${className}`}>
+    <span className={`shrink-0 flex items-center gap-1 text-ink ${className}`}>
       {onToggleMute && (audible || muted) ? (
         <IconButton
           size={20}
@@ -1253,7 +1253,7 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
             <SplitGlyph
               direction={split.direction}
               pane={splitPane}
-              className={active && splitOnScreen ? 'text-primary' : 'text-muted-foreground'}
+              className={active && splitOnScreen ? 'text-ink' : 'text-muted-foreground'}
             />
           </span>
         )}
@@ -1280,7 +1280,7 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
               <span
                 aria-label="The tab you were on before"
                 title={`The tab you were on before${alternateKeys ? ` (${alternateKeys})` : ''}`}
-                className="font-mono text-xs font-semibold text-primary"
+                className="font-mono text-xs font-semibold text-ink"
               >
                 #
               </span>
@@ -1342,7 +1342,7 @@ export function Sidebar({ visible, vimActive, vimKeymap, vimMode, vimPending, hi
           // lit, and the rest get the standard hover treatment.
           isDraggingTab
             ? isDropIntoTarget
-              ? 'bg-primary/30 ring-1 ring-inset ring-primary/40'
+              ? 'bg-primary/30 ring-1 ring-inset ring-ink/40'
               : ''
             : selected
               ? 'bg-primary/20'

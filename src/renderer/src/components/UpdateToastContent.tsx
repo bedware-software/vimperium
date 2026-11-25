@@ -35,7 +35,7 @@ export function UpdateToastContent({
   if (status.phase === 'not-available') {
     return (
       <Shell onClose={onClose} onMeasured={onMeasured}>
-        <CheckCircle2 size={16} className="text-primary shrink-0" />
+        <CheckCircle2 size={16} className="text-ink shrink-0" />
         <div className="flex-1 min-w-0">
           <div className="text-sm font-medium text-foreground">You're up to date</div>
           <div className="text-[11px] text-muted-foreground">Running v{status.version}</div>
@@ -61,7 +61,7 @@ export function UpdateToastContent({
   if (status.phase === 'available') {
     return (
       <Shell onClose={onClose} onMeasured={onMeasured}>
-        <Download size={16} className="text-primary shrink-0" />
+        <Download size={16} className="text-ink shrink-0" />
         <div className="flex-1 min-w-0">
           <div className="text-sm font-medium text-foreground">Update available</div>
           <div className="text-[11px] text-muted-foreground">
@@ -75,7 +75,7 @@ export function UpdateToastContent({
   if (status.phase === 'downloading') {
     return (
       <Shell onClose={onClose} onMeasured={onMeasured}>
-        <Download size={16} className="text-primary shrink-0" />
+        <Download size={16} className="text-ink shrink-0" />
         <div className="flex-1 min-w-0">
           <div className="text-sm font-medium text-foreground">Downloading update</div>
           <Progress label="Downloading update" value={status.percent} className="mt-1 w-full" />
@@ -89,7 +89,7 @@ export function UpdateToastContent({
 
   return (
     <Shell onClose={onClose} onMeasured={onMeasured}>
-      <CheckCircle2 size={16} className="text-primary shrink-0" />
+      <CheckCircle2 size={16} className="text-ink shrink-0" />
       <div className="flex-1 min-w-0">
         <div className="text-sm font-medium text-foreground">Update ready</div>
         <div className="text-[11px] text-muted-foreground">

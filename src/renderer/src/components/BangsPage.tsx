@@ -655,7 +655,7 @@ export function BangsPage() {
             at the row's end; then whether !words fire, the filter and the
             sort — the rows a list page's header has (ListPage.tsx). */}
         <div className="mx-auto flex max-w-4xl items-center gap-3 px-6 pt-5 pb-3">
-          <Zap size={18} className="text-primary shrink-0" />
+          <Zap size={18} className="text-ink shrink-0" />
           <h1 className="text-lg font-semibold tracking-tight">Bangs</h1>
           {summary && <span className="text-xs text-muted-foreground tabular-nums">{summary}</span>}
         </div>
@@ -943,7 +943,7 @@ function BangEditor({
         aria-label={state.mode === 'add' ? 'Add a bang' : 'Edit bang'}
       >
         <div className="mb-4 flex items-center gap-2">
-          <Zap size={15} className="text-primary" />
+          <Zap size={15} className="text-ink" />
           <h2 className="text-sm font-semibold">{state.mode === 'add' ? 'Add a bang' : `Edit !${state.draft.trigger}`}</h2>
           <IconButton size={24}
             onClick={onCancel}
@@ -1089,7 +1089,7 @@ function BangRow({
       {selected && <span className="pointer-events-none absolute bottom-2 left-1 top-2 w-[3px] bg-primary" />}
       <span
         className={`w-24 shrink-0 truncate rounded-md px-2 py-1 font-mono text-[13px] font-semibold ${
-          bang.enabled ? 'bg-primary/10 text-primary' : 'bg-secondary text-muted-foreground line-through'
+          bang.enabled ? 'bg-primary/10 text-ink' : 'bg-secondary text-muted-foreground line-through'
         }`}
         title={`!${bang.trigger}`}
       >

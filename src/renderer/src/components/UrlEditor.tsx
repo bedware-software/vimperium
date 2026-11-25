@@ -704,7 +704,7 @@ export function UrlEditor({ anchorRef, vimKeymap }: Props) {
                   className="col-start-1 row-start-1 flex flex-col items-center"
                   style={{ marginLeft: left, width }}
                 >
-                  <div className={`h-1.5 w-full rounded-b border-x border-b ${intent ? 'border-primary/70' : 'border-muted-foreground/40'}`} />
+                  <div className={`h-1.5 w-full rounded-b border-x border-b ${intent ? 'border-ink/70' : 'border-muted-foreground/40'}`} />
                   {/* A label wider than its block would run into the next one. */}
                   <span className={`mt-0.5 whitespace-nowrap text-[10px] uppercase tracking-wider text-muted-foreground ${width < block.label.length * 7 + 4 ? 'invisible' : ''}`}>
                     {block.label}

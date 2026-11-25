@@ -289,7 +289,7 @@ export function KeysPage({ keymap, vimPending, vimMode = null }: KeysPageProps) 
       <div ref={scrollRef} data-vim-scroll="" className="absolute inset-0 overflow-y-auto [scrollbar-gutter:stable]">
         <div className="sticky top-0 z-20 border-b border-border bg-background">
           <div className="mx-auto flex h-16 w-full min-w-0 max-w-5xl items-center gap-3 px-8">
-            <Keyboard size={20} className="shrink-0 text-primary" />
+            <Keyboard size={20} className="shrink-0 text-ink" />
             <h1 className="text-2xl font-semibold tracking-tight">Keys</h1>
             <span className="shrink-0 text-sm tabular-nums text-muted-foreground">
               {query ? `${found} of ${total}` : total}

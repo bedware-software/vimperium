@@ -251,7 +251,7 @@ function DarkPagesPopover({ url, placement, byKeys, onClose, onOpenSettings }: {
     >
       <div data-key-ring className="flex h-full flex-col overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground">
         <div className="flex items-center gap-2 px-3.5 pt-3 pb-2.5">
-          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/15 text-primary">
+          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/15 text-ink">
             <Moon size={14} fill="currentColor" />
           </span>
           <span className="text-sm font-semibold text-foreground">Dark pages</span>

@@ -6,7 +6,7 @@ import { PERMISSION_KINDS, type PermissionKind, type PermissionPolicy } from './
 
 export interface Settings {
   theme: 'light' | 'dark' | 'system'
-  /** Selected variant within the Light family ('light-default' | 'light-soft'). */
+  /** The light theme's background (KNOWN_LIGHT_VARIANTS; lib/theme.ts LIGHT_VARIANTS). */
   lightVariant: string
   /** Selected variant within the Dark family ('dark-default' | 'dark-soft'). */
   darkVariant: string
@@ -121,7 +121,7 @@ export interface PasswordManagerSettings {
 
 export const MAX_BINDINGS_PER_ACTION = 2
 
-const KNOWN_LIGHT_VARIANTS = new Set(['light-default', 'light-soft'])
+const KNOWN_LIGHT_VARIANTS = new Set(['light-default', 'light-paper', 'light-soft', 'light-steel', 'light-stone'])
 const KNOWN_DARK_VARIANTS = new Set(['dark-default', 'dark-soft'])
 const KNOWN_DENSITIES = new Set(['compact', 'normal'])
 // A saved look that's gone reads as the default: any indicator of before as

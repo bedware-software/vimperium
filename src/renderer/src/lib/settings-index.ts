@@ -69,7 +69,7 @@ const STATIC: SettingsIndexEntry[] = [
   { section: 'search', item: 'search:fields:tab:name', title: 'Search Everything goes by', keywords: 'filter fields tabs groups workspaces title comment address path' },
   // Appearance
   { section: 'appearance', item: 'appearance:theme', title: 'Theme', keywords: 'dark light system colours' },
-  { section: 'appearance', item: 'appearance:light-variant', title: 'Light variant', keywords: 'theme brightness soft', fallback: 'appearance:theme' },
+  { section: 'appearance', item: 'appearance:light-variant', title: 'Light background', keywords: 'theme white paper soft steel stone variant brightness', fallback: 'appearance:theme' },
   { section: 'appearance', item: 'appearance:dark-variant', title: 'Dark variant', keywords: 'theme brightness soft', fallback: 'appearance:theme' },
   { section: 'appearance', item: 'appearance:vim-indicator', title: 'Vim mode indicator', keywords: 'command insert label badge colour', fallback: 'appearance:theme' },
   { section: 'appearance', item: 'appearance:vim-edge', title: 'Vim mode edge', keywords: 'address bar ring glint insert', fallback: 'appearance:theme' },

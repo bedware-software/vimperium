@@ -36,7 +36,7 @@ function highlight(text: string, terms: string[]): ReactNode {
 function RowIcon({ row }: { row: OmniboxPopupRow }) {
   const [broken, setBroken] = useState(false)
   useEffect(() => { setBroken(false) }, [row.favicon])
-  if (row.kind === 'bang') return <Zap size={15} className="shrink-0 text-primary" />
+  if (row.kind === 'bang') return <Zap size={15} className="shrink-0 text-ink" />
   if (row.kind === 'search' || row.kind === 'suggest') return <Search size={15} className="shrink-0 text-muted-foreground" />
   if (row.kind === 'search-history') return <History size={15} className="shrink-0 text-muted-foreground" />
   if (row.favicon && !broken) {
@@ -118,7 +118,7 @@ export function OmniboxPopupContent({
                   <>
                     <span className="truncate text-foreground">{highlight(title, spec.terms)}</span>
                     <span className="shrink-0 text-muted-foreground">–</span>
-                    <span className="truncate text-primary">{highlight(row.contents, spec.terms)}</span>
+                    <span className="truncate text-ink">{highlight(row.contents, spec.terms)}</span>
                   </>
                 ) : (
                   <span className="truncate text-foreground">{highlight(row.contents, spec.terms)}</span>

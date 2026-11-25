@@ -1813,10 +1813,10 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                   <div className="mt-3">
                     <div className="text-[11px] font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
                       <Sun size={11} />
-                      Light variant
+                      Light background
                     </div>
                     <Segmented
-                      label="Light variant"
+                      label="Light background"
                       data-vim-item="appearance:light-variant"
                       wrap
                       value={lightVariant}
@@ -2357,7 +2357,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                                         type="button"
                                         onClick={() => togglePasswordReveal(entry.id)}
                                         disabled={busy}
-                                        className="font-mono text-sm tracking-[0.2em] text-foreground hover:text-primary disabled:opacity-60"
+                                        className="font-mono text-sm tracking-[0.2em] text-foreground hover:text-ink disabled:opacity-60"
                                         title="Show password"
                                       >
                                         ••••••••••
@@ -2745,7 +2745,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                     <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
                       {defaultBrowserStatus?.isDefault ? (
                         <>
-                          <CheckCircle2 size={12} className="text-primary shrink-0" />
+                          <CheckCircle2 size={12} className="text-ink shrink-0" />
                           Vimperium is your default browser
                         </>
                       ) : (
@@ -3623,7 +3623,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
                       {updateStatus.phase === 'not-available' && (
-                        <CheckCircle2 size={12} className="text-primary shrink-0" />
+                        <CheckCircle2 size={12} className="text-ink shrink-0" />
                       )}
                       {updateStatus.phase === 'error' && (
                         <AlertTriangle size={12} className="text-destructive shrink-0" />

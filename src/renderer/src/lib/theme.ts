@@ -1,8 +1,10 @@
-// A theme's brightness steps: the theme itself and a softer one, whose
-// colours are the bedware design system's (@bedware/ui: the
+// A theme's steps — the light theme's backgrounds, the dark one's softer
+// step — whose colours are the bedware design system's (@bedware/ui: the
 // [data-theme-variant] blocks of tokens.css and tailwind-theme.css). The
-// ids are those blocks' names; the attribute must name a step of the family
-// on screen, which resolveVariantId sees to.
+// ids are those blocks' names (light-default has none: the plain theme);
+// the attribute must name a step of the family on screen, which
+// resolveVariantId sees to. main/settings-store.ts keeps its own list of
+// the ids it lets through (KNOWN_LIGHT_VARIANTS).
 
 export type ThemeFamily = 'light' | 'dark'
 export type ThemeChoice = 'light' | 'dark' | 'system'
@@ -13,8 +15,11 @@ export interface ThemeVariant {
 }
 
 export const LIGHT_VARIANTS: readonly ThemeVariant[] = [
-  { id: 'light-default', label: 'Default' },
-  { id: 'light-soft', label: 'Soft' },
+  { id: 'light-default', label: 'White' },
+  { id: 'light-paper', label: 'Paper' },
+  { id: 'light-soft', label: 'Paper soft' },
+  { id: 'light-steel', label: 'Steel' },
+  { id: 'light-stone', label: 'Stone' },
 ] as const
 
 export const DARK_VARIANTS: readonly ThemeVariant[] = [

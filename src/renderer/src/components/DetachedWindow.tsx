@@ -121,9 +121,11 @@ function syncThemeToPopup(popupDoc: Document): void {
   const theme = document.documentElement.getAttribute('data-theme')
   if (theme) popupDoc.documentElement.setAttribute('data-theme', theme)
   else popupDoc.documentElement.removeAttribute('data-theme')
-  const variant = document.documentElement.getAttribute('data-theme-variant')
-  if (variant) popupDoc.documentElement.setAttribute('data-theme-variant', variant)
-  else popupDoc.documentElement.removeAttribute('data-theme-variant')
+  for (const name of ['data-theme-variant', 'data-theme-family']) {
+    const value = document.documentElement.getAttribute(name)
+    if (value) popupDoc.documentElement.setAttribute(name, value)
+    else popupDoc.documentElement.removeAttribute(name)
+  }
   // Whether the edge's light and the mark's glitch move there too.
   syncMotionTo(popupDoc)
 }

@@ -701,7 +701,7 @@ export function DownloadsPage() {
       {/* Header: title + global actions, then search and sort. */}
       <div className="shrink-0 border-b border-border">
         <div className="mx-auto flex max-w-4xl items-center gap-3 px-6 pt-5 pb-3">
-          <DownloadIcon size={18} className="text-primary shrink-0" />
+          <DownloadIcon size={18} className="text-ink shrink-0" />
           <h1 className="text-lg font-semibold tracking-tight">Downloads</h1>
           {summary && <span className="text-xs text-muted-foreground tabular-nums">{summary}</span>}
           <div className="ml-auto flex items-center gap-1.5">
