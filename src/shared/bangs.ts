@@ -26,6 +26,9 @@ export interface Bang {
   /** Labels it wears, lowercase: `!label` searches every enabled bang that
    *  wears it. */
   labels?: string[]
+  /** With no query, open `url` with the placeholder left empty instead of the
+   *  site's home page: `…/repositories?q=%s` alone keeps its path. */
+  keepAddress?: boolean
 }
 
 /** The query placeholder in a bang's URL — the same as the search engine's. */
@@ -152,6 +155,7 @@ export function sanitizeBang(raw: unknown): Bang | null {
   }
   const labels = normalizeLabels(r.labels)
   if (labels.length > 0) bang.labels = labels
+  if (r.keepAddress === true) bang.keepAddress = true
   if (!bang.id) return null
   return bangProblem(bang, []) ? null : bang
 }
@@ -177,10 +181,11 @@ export function normalizeLabels(raw: unknown): string[] {
   return out
 }
 
-/** Where a bang goes for `query`; its site's home page for no query. */
-export function expandBang(bang: Pick<Bang, 'url'>, query: string): string {
+/** Where a bang goes for `query`; for no query its site's home page, or the
+ *  address with the placeholder empty when the bang keeps its address. */
+export function expandBang(bang: Pick<Bang, 'url' | 'keepAddress'>, query: string): string {
   const q = query.trim()
-  if (!q) return bangHome(bang)
+  if (!q && !bang.keepAddress) return bangHome(bang)
   return bang.url.replace(PLACEHOLDERS, () => encodeURIComponent(q))
 }
 

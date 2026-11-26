@@ -846,7 +846,7 @@ export function BangsPage() {
           <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
             In the address bar a <span className="font-mono">!trigger</span> anywhere in what you type fires its bang:
             <span className="font-mono"> !w vim</span> and <span className="font-mono">vim !w</span> both open Wikipedia's search for “vim”;
-            <span className="font-mono"> !w</span> alone opens Wikipedia.
+            <span className="font-mono"> !w</span> alone opens Wikipedia — or, for a bang set to keep its address, that address with an empty query.
           </p>
         </KeysHelp>
       )}
@@ -869,6 +869,7 @@ export function BangsPage() {
             const labels = normalizeLabels(draft.labels ?? [])
             if (labels.length > 0) clean.labels = labels
             else delete clean.labels
+            if (!clean.keepAddress) delete clean.keepAddress
             const next = editor.mode === 'add'
               ? [...bangs, clean]
               : bangs.map((b) => (b.id === clean.id ? clean : b))
@@ -904,7 +905,8 @@ function BangEditor({
   const firstRef = useRef<HTMLInputElement>(null)
   const problem = bangProblem(draft, others)
   const trigger = normalizeTrigger(draft.trigger) || 'trigger'
-  const example = draft.url.includes('%s') || /\{\{\{s\}\}\}|\{\{query\}\}/.test(draft.url) ? 'example' : ''
+  const hasPlaceholder = draft.url.includes('%s') || /\{\{\{s\}\}\}|\{\{query\}\}/.test(draft.url)
+  const example = hasPlaceholder ? 'example' : ''
 
   useEffect(() => {
     const input = firstRef.current
@@ -965,6 +967,16 @@ function BangEditor({
           >
             <Switch size="md" label="Turned on" checked={draft.enabled} onChange={(enabled) => setDraft({ ...draft, enabled })} />
           </PanelRow>
+          {hasPlaceholder && (
+            <PanelRow
+              title="Keep the address with no query"
+              description={/^https?:\/\//i.test(draft.url)
+                ? `!${trigger} alone opens ${expandBang({ ...draft, keepAddress: !!draft.keepAddress }, '')}`
+                : `!${trigger} alone opens the address with %s left empty, not the site's home page.`}
+            >
+              <Switch size="md" label="Keep the address with no query" checked={!!draft.keepAddress} onChange={(keepAddress) => setDraft({ ...draft, keepAddress })} />
+            </PanelRow>
+          )}
         </Panel>
         <div className="grid grid-cols-[140px_1fr] gap-3">
           <label className="block">
