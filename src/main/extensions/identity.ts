@@ -14,6 +14,7 @@
 import { BrowserWindow } from 'electron'
 import { log } from '../log'
 import { registerExtensionApiHandler, type ExtensionApiCaller } from './api-ipc'
+import { removeWindowBorder } from '../window-border'
 
 // Chrome's own error strings — extensions pattern-match on them.
 const ERR_INTERACTION_REQUIRED = 'User interaction required.'
@@ -45,6 +46,7 @@ function launchWebAuthFlow(caller: ExtensionApiCaller, payload: unknown): Promis
     autoHideMenuBar: true,
     webPreferences: { partition: caller.partition, contextIsolation: true, sandbox: true },
   })
+  removeWindowBorder(win)
   const wc = win.webContents
   log.info('identity: launchWebAuthFlow', { extensionId: caller.extensionId, interactive, abortOnLoad, timeoutMs })
 

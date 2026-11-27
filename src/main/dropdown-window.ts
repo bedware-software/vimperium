@@ -14,6 +14,7 @@ import { app, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
 import { log } from './log'
+import { removeWindowBorder } from './window-border'
 
 interface DropdownAnchor {
   x: number
@@ -149,6 +150,7 @@ function getOrCreatePopup(parent: BrowserWindow): PopupRecord {
       sandbox: false,
     },
   })
+  removeWindowBorder(win)
   // Float above other always-on-top windows so the popup is visible even when
   // the parent is in fullscreen on macOS.
   win.setAlwaysOnTop(true, 'pop-up-menu')

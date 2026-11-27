@@ -18,6 +18,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { log } from './log'
 import { notifyCloudChange } from './cloud-sync'
+import { removeWindowBorder } from './window-border'
 
 export type ReadingStatus = 'toread' | 'archived'
 
@@ -439,6 +440,7 @@ async function saveOffline(profileId: string, id: string, partition: string): Pr
     show: false,
     webPreferences: { partition: partition || undefined },
   })
+  removeWindowBorder(win)
   try {
     await win.webContents.loadURL(r.url)
     // Give late async resources a beat to settle before snapshotting.

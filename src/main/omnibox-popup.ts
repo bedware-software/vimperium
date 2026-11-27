@@ -8,6 +8,7 @@ import { app, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
 import { log } from './log'
+import { removeWindowBorder } from './window-border'
 
 interface Anchor {
   x: number
@@ -86,6 +87,7 @@ function getOrCreate(parent: BrowserWindow): PopupRecord {
       sandbox: false,
     },
   })
+  removeWindowBorder(win)
   // Above a macOS fullscreen parent too, like the dropdown menus.
   win.setAlwaysOnTop(true, 'pop-up-menu')
 

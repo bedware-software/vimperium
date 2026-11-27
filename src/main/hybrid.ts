@@ -32,6 +32,7 @@ import { createInterface } from 'readline'
 import { cborGet, decodeCbor, encodeCbor } from './cbor'
 import type { CborValue } from './cbor'
 import { log } from './log'
+import { removeWindowBorder } from './window-border'
 
 export type HybridFailure = 'cancelled' | 'denied' | 'no-credentials' | 'ended' | 'failed'
 
@@ -480,6 +481,7 @@ class PhoneWindow {
       title: 'Use a passkey from your iPhone',
       webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false },
     })
+    removeWindowBorder(this.win)
     this.closed = new Promise((resolve) => this.win.once('closed', () => {
       if (openPhoneWindow === this) openPhoneWindow = null
       resolve()
