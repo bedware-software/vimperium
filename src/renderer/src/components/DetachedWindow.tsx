@@ -142,11 +142,16 @@ function syncThemeToPopup(popupDoc: Document): void {
 }
 
 /** A CSS color as RRGGBB, null when transparent. The canvas round trip turns
- *  any CSS color syntax (the theme tokens are oklch) into sRGB. */
-function cssColorHex(color: string): string | null {
+ *  any CSS color syntax (the theme tokens are oklch) into sRGB; `over` is what
+ *  a translucent color is blended onto. */
+function cssColorHex(color: string, over?: string): string | null {
   try {
     const ctx = document.createElement('canvas').getContext('2d', { willReadFrequently: true })
     if (!ctx) return null
+    if (over) {
+      ctx.fillStyle = over
+      ctx.fillRect(0, 0, 1, 1)
+    }
     ctx.fillStyle = color
     ctx.fillRect(0, 0, 1, 1)
     const [r, g, b, a] = ctx.getImageData(0, 0, 1, 1).data
@@ -164,13 +169,19 @@ function pageBackgroundHex(): string | null {
   return cssColorHex(getComputedStyle(document.body).backgroundColor)
 }
 
+/** The popups' own frame color (`border-border` on `bg-popover`), read off an
+ *  element with those classes: the token is --color-border, and in some themes
+ *  a color-mix with transparent, so it's blended onto the popover. */
 function themeBorderHex(): string | null {
   const probe = document.createElement('div')
-  probe.style.color = 'var(--border)'
+  probe.className = 'border border-border bg-popover'
+  probe.style.position = 'absolute'
+  probe.style.visibility = 'hidden'
   document.body.appendChild(probe)
-  const color = getComputedStyle(probe).color
+  const style = getComputedStyle(probe)
+  const hex = cssColorHex(style.borderTopColor, style.backgroundColor)
   probe.remove()
-  return cssColorHex(color)
+  return hex
 }
 
 const sheetSources = new Map<string, string | null>()
