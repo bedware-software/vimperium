@@ -5,7 +5,7 @@
 // store grabs the default name during the import cascade and we never
 // get a separate dev folder. Keep this as the FIRST internal import.
 import { APP_NAME } from './branding'
-import { removeBorderFromAllWindows } from './window-border'
+import { removeBorderFromAllWindows, setWindowBorderColor } from './window-border'
 // Patches `node_modules/electron-chrome-extensions/dist/cjs/index.js` BEFORE
 // the lib is imported anywhere. ES module imports are statically hoisted, so
 // the side-effect of this module runs prior to any `require('electron-
@@ -3285,10 +3285,13 @@ export function createWorkspaceWindow(profileId: string, workspaceId: string, wo
   let pendingPopupId: string | null = null
   // Whether it's modal to this window (DetachedWindow `modal`).
   let pendingPopupModal = false
+  // Its theme border color, RRGGBB (DetachedWindow `vimperium-border`, Windows only).
+  let pendingPopupBorder: string | null = null
   win.webContents.setWindowOpenHandler(({ url, features }) => {
     pendingPopupBounds = null
     pendingPopupId = null
     pendingPopupModal = false
+    pendingPopupBorder = null
     // Accept both `'about:blank'` and the empty string. `window.open('')`
     // and `window.open(undefined)` can surface here as either, depending on
     // the Chromium / Electron version, and treating only the literal
@@ -3301,6 +3304,7 @@ export function createWorkspaceWindow(profileId: string, workspaceId: string, wo
       if (wantsRunwaPaletteGeometry(features)) pendingPopupBounds = runwaPaletteBounds()
       pendingPopupId = /(?:^|,)\s*vimperium-popup-id=([\w-]{1,64})\s*(?:,|$)/.exec(features)?.[1] ?? null
       pendingPopupModal = /(?:^|,)\s*vimperium-modal=yes\s*(?:,|$)/.test(features)
+      pendingPopupBorder = /(?:^|,)\s*vimperium-border=([0-9a-f]{6})\s*(?:,|$)/i.exec(features)?.[1] ?? null
       // The renderer passes its themed page background (vimperium-bg=RRGGBB in
       // DetachedWindow) so the native window never shows default white.
       const background = /(?:^|,)\s*vimperium-bg=([0-9a-f]{6})\s*(?:,|$)/i.exec(features)?.[1]
@@ -3366,6 +3370,8 @@ export function createWorkspaceWindow(profileId: string, workspaceId: string, wo
   // setWindowOpenHandler callback returns `allow`, and this event fires.
   win.webContents.on('did-create-window', (childWindow) => {
     registerDetachedPopup(childWindow, pendingPopupId, pendingPopupModal ? win : null, win)
+    if (pendingPopupBorder) setWindowBorderColor(childWindow, pendingPopupBorder)
+    pendingPopupBorder = null
     // Windows: setParentWindow on a window already shown activates it, taking
     // the keyboard from the page (which-key's strip dropped the pending
     // prefix). A pinned popup (it has an id) is parented while still hidden;

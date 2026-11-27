@@ -10,6 +10,10 @@ const WM_SETTINGCHANGE = 0x001a
 const WM_DWMCOLORIZATIONCOLORCHANGED = 0x0320
 
 let setAttr: SetAttr | null | undefined
+// COLORREF (0x00BBGGRR) per window; absent = DWMWA_COLOR_NONE. NONE leaves the 1px frame
+// strip (left, right, bottom; Chromium extends the client over the top) in the system's light
+// frame grey, so a popup gets a real color instead (DetachedWindow's theme border).
+const borderColors = new WeakMap<BrowserWindow, number>()
 
 // Lazy require: koffi is only loaded on Windows, and a failure to load it must not
 // take a window down with it — the border is cosmetic.
@@ -36,7 +40,7 @@ function apply(win: BrowserWindow): void {
   const handle = win.getNativeWindowHandle()
   const hwnd = handle.length >= 8 ? handle.readBigUInt64LE(0) : BigInt(handle.readUInt32LE(0))
   const color = Buffer.alloc(4)
-  color.writeUInt32LE(DWMWA_COLOR_NONE)
+  color.writeUInt32LE(borderColors.get(win) ?? DWMWA_COLOR_NONE)
   fn(hwnd, DWMWA_BORDER_COLOR, color, 4)
 }
 
@@ -61,6 +65,15 @@ function removeWindowBorder(win: BrowserWindow): void {
 // Via browser-window-created, not at each `new BrowserWindow`: window.open popups (Command
 // Palette, Go, pickers, sites' OAuth popups) are built by Electron in did-create-window and
 // were missed. Nothing else may hookWindowMessage 0x001A/0x0320 — a second hook replaces this one.
+/** `rrggbb`: hex without '#'. */
+export function setWindowBorderColor(win: BrowserWindow, rrggbb: string): void {
+  if (process.platform !== 'win32') return
+  const rgb = parseInt(rrggbb, 16)
+  if (!/^[0-9a-f]{6}$/i.test(rrggbb)) return
+  borderColors.set(win, ((rgb & 0xff) << 16) | (rgb & 0xff00) | ((rgb >> 16) & 0xff))
+  apply(win)
+}
+
 export function removeBorderFromAllWindows(): void {
   if (process.platform !== 'win32') return
   app.on('browser-window-created', (_e, win) => removeWindowBorder(win))

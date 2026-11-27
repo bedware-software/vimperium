@@ -19,6 +19,17 @@ const POPUP_ID_FEATURE = 'vimperium-popup-id'
 /** Features-string token making the popup modal to its opener window.
  *  Mirrored in src/main/index.ts (setWindowOpenHandler). */
 const MODAL_FEATURE = 'vimperium-modal'
+/** Windows: the theme's border color as RRGGBB, which main gives the window's
+ *  DWM border (src/main/window-border.ts). Mirrored in src/main/index.ts. */
+const BORDER_FEATURE = 'vimperium-border'
+/** Windows draws the popup's edge itself: a DWM border on all four sides (it
+ *  also covers the 1px frame strip left, right and bottom, light grey with no
+ *  border color) and DWM's rounded corners. The content's own frame would sit
+ *  beside it as a second line with a second curve, so the outer block drops it. */
+const isWindows = navigator.platform.startsWith('Win')
+const NATIVE_FRAME_ATTRIBUTE = 'data-native-frame'
+const NATIVE_FRAME_CSS =
+  `html[${NATIVE_FRAME_ATTRIBUTE}] body > div > * { border-width: 0 !important; border-radius: 0 !important; }`
 
 /** A spot in the opener window's content area, in CSS pixels. */
 export interface PopupPlacement {
@@ -130,12 +141,10 @@ function syncThemeToPopup(popupDoc: Document): void {
   syncMotionTo(popupDoc)
 }
 
-/** The page background as RRGGBB, for the popup's native window background,
- *  which shows wherever the page hasn't painted yet. The canvas round trip
- *  turns any CSS color syntax (the theme tokens are oklch) into sRGB. */
-function pageBackgroundHex(): string | null {
+/** A CSS color as RRGGBB, null when transparent. The canvas round trip turns
+ *  any CSS color syntax (the theme tokens are oklch) into sRGB. */
+function cssColorHex(color: string): string | null {
   try {
-    const color = getComputedStyle(document.body).backgroundColor
     const ctx = document.createElement('canvas').getContext('2d', { willReadFrequently: true })
     if (!ctx) return null
     ctx.fillStyle = color
@@ -144,9 +153,24 @@ function pageBackgroundHex(): string | null {
     if (a === 0) return null
     return [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('')
   } catch (err) {
-    log.warn('detached-window: page background unreadable', String(err))
+    log.warn('detached-window: color unreadable', { color, err: String(err) })
     return null
   }
+}
+
+/** The page background, for the popup's native window background, which
+ *  shows wherever the page hasn't painted yet. */
+function pageBackgroundHex(): string | null {
+  return cssColorHex(getComputedStyle(document.body).backgroundColor)
+}
+
+function themeBorderHex(): string | null {
+  const probe = document.createElement('div')
+  probe.style.color = 'var(--border)'
+  document.body.appendChild(probe)
+  const color = getComputedStyle(probe).color
+  probe.remove()
+  return cssColorHex(color)
 }
 
 const sheetSources = new Map<string, string | null>()
@@ -262,6 +286,7 @@ export function DetachedWindow({
       ? window.screenY + Math.round(spot.top)
       : saved?.top ?? Math.max(0, window.screenY + Math.round((window.outerHeight - finalHeight) / 2))
     const background = pageBackgroundHex()
+    const border = isWindows ? themeBorderHex() : null
 
     const popup = window.open(
       '',
@@ -280,6 +305,7 @@ export function DetachedWindow({
         'menubar=no',
         ...(matchRunwaPalette ? [`${RUNWA_PALETTE_FEATURE}=yes`] : []),
         ...(background ? [`${BACKGROUND_FEATURE}=${background}`] : []),
+        ...(border ? [`${BORDER_FEATURE}=${border}`] : []),
         ...(popupId ? [`${POPUP_ID_FEATURE}=${popupId}`] : []),
         ...(modal ? [`${MODAL_FEATURE}=yes`] : []),
       ].join(','),
@@ -310,6 +336,12 @@ export function DetachedWindow({
 
     syncThemeToPopup(popup.document)
     copyStylesToPopup(popup.document)
+    if (border) {
+      popup.document.documentElement.setAttribute(NATIVE_FRAME_ATTRIBUTE, '')
+      const nativeFrame = popup.document.createElement('style')
+      nativeFrame.textContent = NATIVE_FRAME_CSS
+      popup.document.head.appendChild(nativeFrame)
+    }
 
     const root = popup.document.createElement('div')
     root.style.height = '100%'
