@@ -6,6 +6,8 @@ type SetAttr = (hwnd: bigint, attr: number, value: Buffer, size: number) => numb
 
 const DWMWA_BORDER_COLOR = 34
 const DWMWA_COLOR_NONE = 0xfffffffe
+const WM_SETTINGCHANGE = 0x001a
+const WM_DWMCOLORIZATIONCOLORCHANGED = 0x0320
 
 let setAttr: SetAttr | null | undefined
 
@@ -27,10 +29,8 @@ function dwmSetWindowAttribute(): SetAttr | null {
   return setAttr
 }
 
-// Windows 10 ignores attribute 34 (returns an error HRESULT) — harmless.
-// Don't swap this for thickFrame: false: that also drops the shadow, rounded corners and Snap.
-export function removeWindowBorder(win: BrowserWindow): void {
-  if (process.platform !== 'win32' || win.isDestroyed()) return
+function apply(win: BrowserWindow): void {
+  if (win.isDestroyed()) return
   const fn = dwmSetWindowAttribute()
   if (!fn) return
   const handle = win.getNativeWindowHandle()
@@ -38,4 +38,23 @@ export function removeWindowBorder(win: BrowserWindow): void {
   const color = Buffer.alloc(4)
   color.writeUInt32LE(DWMWA_COLOR_NONE)
   fn(hwnd, DWMWA_BORDER_COLOR, color, 4)
+}
+
+// Setting it once is not enough: Electron (>= 37, NativeWindowViews::UpdateWindowAccentColor)
+// rewrites DWMWA_BORDER_COLOR on every activation change and on accent/theme setting changes,
+// right after emitting 'focus'/'blur'. So re-apply on those, deferred past Electron's write.
+// accentColor: false doesn't help — it sets DWMWA_COLOR_DEFAULT, which is the accent border
+// when the setting is on. Don't swap this for thickFrame: false: that also drops the shadow,
+// rounded corners and Snap. Windows 10 ignores attribute 34 — harmless.
+export function removeWindowBorder(win: BrowserWindow): void {
+  if (process.platform !== 'win32') return
+  const later = (): void => {
+    setImmediate(() => apply(win))
+  }
+  apply(win)
+  win.on('show', later)
+  win.on('focus', later)
+  win.on('blur', later)
+  win.hookWindowMessage(WM_DWMCOLORIZATIONCOLORCHANGED, later)
+  win.hookWindowMessage(WM_SETTINGCHANGE, later)
 }
