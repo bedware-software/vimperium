@@ -5,7 +5,7 @@
 // store grabs the default name during the import cascade and we never
 // get a separate dev folder. Keep this as the FIRST internal import.
 import { APP_NAME } from './branding'
-import { removeWindowBorder } from './window-border'
+import { removeBorderFromAllWindows } from './window-border'
 // Patches `node_modules/electron-chrome-extensions/dist/cjs/index.js` BEFORE
 // the lib is imported anywhere. ES module imports are statically hoisted, so
 // the side-effect of this module runs prior to any `require('electron-
@@ -197,6 +197,8 @@ export function addBypassedCertOrigin(url: string): void {
     /* ignore invalid URLs */
   }
 }
+
+removeBorderFromAllWindows()
 
 // Diagnostic: log any child-process crash. Each tab is its own renderer,
 // each profile has a session-process, GPU + utility helpers run separately.
@@ -3176,7 +3178,6 @@ export function createWorkspaceWindow(profileId: string, workspaceId: string, wo
       // the property to keep TypeScript happy with @types/electron 41+.
     },
   })
-  removeWindowBorder(win)
   if (!isMac) {
     win.setMenuBarVisibility(false)
   }

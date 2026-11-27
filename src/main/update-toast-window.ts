@@ -16,7 +16,6 @@ import { app, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
 import { log } from './log'
-import { removeWindowBorder } from './window-border'
 
 type UpdateToastStatus =
   | { phase: 'checking' }
@@ -135,7 +134,6 @@ function getOrCreateToast(parent: BrowserWindow): ToastRecord {
       sandbox: false,
     },
   })
-  removeWindowBorder(win)
   win.setAlwaysOnTop(true, 'pop-up-menu')
 
   const html = popupHtmlPath()

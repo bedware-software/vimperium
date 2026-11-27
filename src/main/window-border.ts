@@ -1,6 +1,6 @@
 // Removes the 1px accent-colored border DWM draws around every window on Windows 11
 // when "Show accent color on title bars and window borders" is on; CSS can't reach it.
-import type { BrowserWindow } from 'electron'
+import { app, type BrowserWindow } from 'electron'
 
 type SetAttr = (hwnd: bigint, attr: number, value: Buffer, size: number) => number
 
@@ -46,8 +46,7 @@ function apply(win: BrowserWindow): void {
 // accentColor: false doesn't help — it sets DWMWA_COLOR_DEFAULT, which is the accent border
 // when the setting is on. Don't swap this for thickFrame: false: that also drops the shadow,
 // rounded corners and Snap. Windows 10 ignores attribute 34 — harmless.
-export function removeWindowBorder(win: BrowserWindow): void {
-  if (process.platform !== 'win32') return
+function removeWindowBorder(win: BrowserWindow): void {
   const later = (): void => {
     setImmediate(() => apply(win))
   }
@@ -57,4 +56,12 @@ export function removeWindowBorder(win: BrowserWindow): void {
   win.on('blur', later)
   win.hookWindowMessage(WM_DWMCOLORIZATIONCOLORCHANGED, later)
   win.hookWindowMessage(WM_SETTINGCHANGE, later)
+}
+
+// Via browser-window-created, not at each `new BrowserWindow`: window.open popups (Command
+// Palette, Go, pickers, sites' OAuth popups) are built by Electron in did-create-window and
+// were missed. Nothing else may hookWindowMessage 0x001A/0x0320 — a second hook replaces this one.
+export function removeBorderFromAllWindows(): void {
+  if (process.platform !== 'win32') return
+  app.on('browser-window-created', (_e, win) => removeWindowBorder(win))
 }
