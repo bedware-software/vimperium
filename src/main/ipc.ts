@@ -13,6 +13,7 @@ import {
   clearPasswordEntries,
   deletePasswordEntry,
   importPasswordsCsv,
+  exportPasswordsCsv,
   listPasswordEntries,
   lookupPasswords,
   markPasswordUsed,
@@ -20,7 +21,7 @@ import {
   revealPassword,
   upsertPassword,
 } from './password-store'
-import { ensureVaultAccess, isAppUiSender } from './vault-access'
+import { confirmDeviceOwner, ensureVaultAccess, isAppUiSender } from './vault-access'
 import { detectEdgePasswords, importEdgePasswords, openEdgePasswordExport } from './edge-password-import'
 import {
   registerSyncCategory,
@@ -1176,6 +1177,29 @@ export function registerIpcHandlers(): void {
     const text = await fs.promises.readFile(file, 'utf8')
     const result = await importPasswordsCsv(partition, text)
     return { result, entries: listPasswordEntries(partition) }
+  })
+  // Null when the device check or the save dialog was cancelled.
+  ipcMain.handle('passwords:export-csv', async (event, partition: string) => {
+    if (!isAppUiSender(event)) throw new Error('Not allowed.')
+    if (!(await confirmDeviceOwner('export saved passwords'))) return null
+    const { csv, exported, failed } = await exportPasswordsCsv(partition)
+    const owner = nativeDialogOwner(event)
+    const options: Electron.SaveDialogOptions = {
+      title: 'Export passwords',
+      defaultPath: path.join(app.getPath('downloads'), 'Vimperium Passwords.csv'),
+      filters: [{ name: 'Password CSV', extensions: ['csv'] }],
+    }
+    let picked: Electron.SaveDialogReturnValue
+    try {
+      picked = owner
+        ? await dialog.showSaveDialog(owner, options)
+        : await dialog.showSaveDialog(options)
+    } finally {
+      restoreNativeDialogOwner(owner)
+    }
+    if (picked.canceled || !picked.filePath) return null
+    await fs.promises.writeFile(picked.filePath, csv, { encoding: 'utf8', mode: 0o600 })
+    return { exported, failed, filePath: picked.filePath }
   })
   ipcMain.handle('passwords:edge-detect', () => detectEdgePasswords())
   ipcMain.handle('passwords:edge-open-export', (_event, profileId: string) => openEdgePasswordExport(profileId))

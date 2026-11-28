@@ -1,6 +1,6 @@
 import { Badge, Button, ChoiceCards, Hint, HintBar, HotkeyButton, LinkButton, ListRow, Nav, NavItem, Panel, PanelRow, Segmented, Switch, Textarea, InputField as TextField, IconButton, Slider, PageHeader, SectionTitle } from '@bedware/ui'
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { X, RotateCcw, Sun, Moon, Monitor, AlertTriangle, Trash2, Download, Bell, CheckCircle2, Loader2, Puzzle, ExternalLink, Plus, Globe, Pin, PinOff, SlidersHorizontal, Palette, Keyboard, Info, Compass, ShieldCheck, Cloud, FolderOpen, RefreshCw, Wifi, Building2, KeyRound, Search, FileUp, Pencil, Copy, Check, Eye, EyeOff, ChevronDown, ChevronRight, UserRound, FingerprintPattern } from 'lucide-react'
+import { X, RotateCcw, Sun, Moon, Monitor, AlertTriangle, Trash2, Download, Bell, CheckCircle2, Loader2, Puzzle, ExternalLink, Plus, Globe, Pin, PinOff, SlidersHorizontal, Palette, Keyboard, Info, Compass, ShieldCheck, Cloud, FolderOpen, RefreshCw, Wifi, Building2, KeyRound, Search, FileUp, FileDown, Pencil, Copy, Check, Eye, EyeOff, ChevronDown, ChevronRight, UserRound, FingerprintPattern } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { CloudSyncInfo, SyncCategory, SavedCredentialInfo, PasswordEntryInfo, PasskeyInfo, PasswordImportResult, EdgePasswordSourceInfo, EdgePasswordImportResult, OtherBrowser } from '../App'
 import { DetachedWindow } from './DetachedWindow'
@@ -570,6 +570,7 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
   const [passwordPartition, setPasswordPartition] = useState('')
   const [passwordSearch, setPasswordSearch] = useState('')
   const [passwordImporting, setPasswordImporting] = useState(false)
+  const [passwordExporting, setPasswordExporting] = useState(false)
   const [edgeSource, setEdgeSource] = useState<EdgePasswordSourceInfo | null>(null)
   const [edgeDetecting, setEdgeDetecting] = useState(false)
   const [edgeImporting, setEdgeImporting] = useState(false)
@@ -1217,6 +1218,23 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
       setPasswordError(err instanceof Error ? err.message : String(err))
     } finally {
       setPasswordImporting(false)
+    }
+  }, [passwordPartition])
+
+  const handleExportPasswords = useCallback(async () => {
+    if (!passwordPartition) return
+    setPasswordExporting(true)
+    setPasswordNotice(null)
+    setPasswordError(null)
+    try {
+      const exported = await window.electronAPI.passwordsExportCsv(passwordPartition)
+      if (!exported) return
+      const failed = exported.failed ? ` ${exported.failed} could not be decrypted and were left out.` : ''
+      setPasswordNotice(`${exported.exported} exported to ${exported.filePath}.${failed} The file is not encrypted: anyone who can open it can read your passwords. Delete it when you no longer need it.`)
+    } catch (err) {
+      setPasswordError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setPasswordExporting(false)
     }
   }, [passwordPartition])
 
@@ -2138,6 +2156,16 @@ export function SettingsDialog({ open, onClose, settings, onSave, onAppearancePr
                     {passwordImporting ? <Loader2 size={13} className="animate-spin" /> : <FileUp size={13} />}
                     Import CSV…
                   </Button>
+                  {passwordEntries.length > 0 && (
+                    <Button variant="secondary"
+                      data-vim-item="pw:export-csv"
+                      onClick={handleExportPasswords}
+                      disabled={!passwordPartition || passwordExporting}
+                    >
+                      {passwordExporting ? <Loader2 size={13} className="animate-spin" /> : <FileDown size={13} />}
+                      Export CSV…
+                    </Button>
+                  )}
                   {passwordEntries.length > 0 && (
                     <Button variant="quiet-danger" size="sm"
                       data-vim-item="pw:remove-all"

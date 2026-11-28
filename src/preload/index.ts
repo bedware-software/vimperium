@@ -92,6 +92,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('passwords:delete', partition, id),
   passwordsClear: (partition: string): Promise<unknown[]> => ipcRenderer.invoke('passwords:clear', partition),
   passwordsImportCsv: (partition: string): Promise<unknown> => ipcRenderer.invoke('passwords:import-csv', partition),
+  passwordsExportCsv: (partition: string): Promise<unknown> => ipcRenderer.invoke('passwords:export-csv', partition),
   edgePasswordsDetect: (): Promise<unknown> => ipcRenderer.invoke('passwords:edge-detect'),
   edgePasswordsOpenExport: (profileId: string): Promise<void> => ipcRenderer.invoke('passwords:edge-open-export', profileId),
   passwordsImportEdge: (partition: string): Promise<unknown> => ipcRenderer.invoke('passwords:import-edge', partition),

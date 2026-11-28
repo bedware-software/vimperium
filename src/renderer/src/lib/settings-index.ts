@@ -90,6 +90,7 @@ const STATIC: SettingsIndexEntry[] = [
   { section: 'passwords', item: 'pw:profile', title: 'Saved passwords', keywords: 'profile vault' },
   { section: 'passwords', item: 'pw:add', title: 'Add password', keywords: 'new entry' },
   { section: 'passwords', item: 'pw:import-csv', title: 'Import passwords from CSV', keywords: 'import file' },
+  { section: 'passwords', item: 'pw:export-csv', title: 'Export passwords to CSV', keywords: 'export file save backup download', fallback: 'pw:import-csv' },
   { section: 'passwords', item: 'pw:edge-import', title: 'Import passwords from Microsoft Edge', keywords: 'edge import', fallback: 'pw:import-csv' },
   { section: 'passwords', item: 'pw:search', title: 'Search saved passwords', keywords: 'websites usernames', fallback: 'pw:profile' },
   // Network

@@ -3,8 +3,8 @@
 // This is deliberately separate from credentials-store.ts: that store answers
 // HTTP Basic/Digest/NTLM/Negotiate challenges, while this one holds credentials
 // entered into ordinary HTML forms. Passwords never appear in list APIs and are
-// never registered as a Cloud Sync category. The one way out to the app's UI
-// is revealPassword, behind the vault-access check (see vault-access.ts).
+// never registered as a Cloud Sync category. The ways out to the app's UI are
+// revealPassword and exportPasswordsCsv, behind the vault-access checks.
 
 import Store from 'electron-store'
 import { safeStorage } from 'electron'
@@ -181,6 +181,40 @@ export async function revealPassword(partition: string, id: string): Promise<str
   const entry = store.get('entries')[id]
   if (!entry || entry.partition !== normalizedPartition) throw new Error('Password entry not found.')
   return decryptSecret(entry.passwordEnc)
+}
+
+function csvField(value: string): string {
+  // Leading =+-@ make spreadsheets run the cell as a formula; Chrome's own
+  // export doesn't guard it either, and a tab prefix would corrupt the password
+  // on re-import, so fields are only quoted.
+  return /[",\r\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value
+}
+
+/** Plaintext CSV in Chrome's export layout (name,url,username,password,note),
+ *  which importPasswordsCsv, Chrome, Edge and most managers read back. The
+ *  caller is responsible for the device check. */
+export async function exportPasswordsCsv(partition: string): Promise<{ csv: string; exported: number; failed: number }> {
+  const normalizedPartition = normalizePartition(partition)
+  const keyMissing = vaultKeyMissingReason()
+  if (keyMissing) throw new Error(keyMissing)
+  const entries = Object.values(store.get('entries'))
+    .filter((entry) => entry.partition === normalizedPartition)
+    .sort((a, b) => a.origin.localeCompare(b.origin) || a.username.localeCompare(b.username))
+  const lines = ['name,url,username,password,note']
+  let failed = 0
+  for (const entry of entries) {
+    let password: string
+    try {
+      password = await decryptSecret(entry.passwordEnc)
+    } catch (err) {
+      log.warn('passwords: export skipped an entry that failed to decrypt', { id: entry.id, err: String(err) })
+      failed += 1
+      continue
+    }
+    const name = entry.name || new URL(entry.origin).hostname
+    lines.push([name, entry.origin, entry.username, password, ''].map(csvField).join(','))
+  }
+  return { csv: `${lines.join('\r\n')}\r\n`, exported: lines.length - 1, failed }
 }
 
 export async function upsertPassword(input: {

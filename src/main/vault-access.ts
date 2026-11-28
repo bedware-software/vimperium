@@ -42,3 +42,17 @@ export function ensureVaultAccess(): Promise<boolean> {
   })().finally(() => { pending = null })
   return pending
 }
+
+/** A device check on every call, ignoring the session unlock: exporting puts
+ *  the whole vault in a plaintext file, so Chrome asks each time too. */
+export async function confirmDeviceOwner(reason: string): Promise<boolean> {
+  if (process.platform === 'darwin' && systemPreferences.canPromptTouchID()) {
+    try {
+      await systemPreferences.promptTouchID(reason)
+    } catch (err) {
+      log.info('vault-access: device check declined', String(err))
+      return false
+    }
+  }
+  return true
+}

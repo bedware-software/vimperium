@@ -319,6 +319,7 @@ declare global {
         result: PasswordImportResult
         entries: PasswordEntryInfo[]
       } | null>
+      passwordsExportCsv: (partition: string) => Promise<{ exported: number; failed: number; filePath: string } | null>
       edgePasswordsDetect: () => Promise<EdgePasswordSourceInfo>
       edgePasswordsOpenExport: (profileId: string) => Promise<void>
       passwordsImportEdge: (partition: string) => Promise<{
